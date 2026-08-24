@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>게시판 - 프린터모아</title>
+  <meta name="description" content="프린터모아 공지사항, 상담게시판, 사용후기">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../style.css">
+  <script src="../auth.js"></script>
+  <script src="board.js"></script>
+</head>
+<body class="board-page">
+
+  <!-- TOP BAR -->
+  <header class="top-bar">
+    <div class="container">
+      <div class="inner">
+        <div class="top-search" style="visibility:hidden;"></div>
+
+        <a href="../index.html" class="logo" id="boardLogo">
+          <div class="logo-text">프린터<span>모아</span></div>
+        </a>
+
+        <div class="top-phone">
+          <div class="auth-nav-area">
+            <span class="header-user-name" id="headerUserName" style="display:none"></span>
+            <a href="../login.html" class="header-auth-btn" id="headerLoginLink">로그인</a>
+            <a href="../register.html" class="header-auth-btn filled" id="headerRegisterLink">회원가입</a>
+            <button class="header-auth-btn logout" id="headerLogoutBtn" style="display:none">로그아웃</button>
+          </div>
+          <div class="label">상담 전화</div>
+          <a href="tel:07051333777" class="number">070-5133-3777</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- GNB -->
+  <nav class="gnb">
+    <div class="container">
+      <div class="gnb-menu">
+        <ul>
+          <li><a href="../index.html">홈</a></li>
+          <li><a href="board.html?type=notice" id="gnbNotice">공지사항</a></li>
+          <li><a href="board.html?type=consult" id="gnbConsult">상담게시판</a></li>
+          <li><a href="board.html?type=review" id="gnbReview">사용후기</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 게시판 본문 -->
+  <div class="board-content">
+
+    <!-- 게시판 탭 -->
+    <div class="board-tabs">
+      <button class="board-tab" id="tabNotice" data-type="notice" onclick="switchTab('notice')">
+        📢 공지사항
+      </button>
+      <button class="board-tab" id="tabConsult" data-type="consult" onclick="switchTab('consult')">
+        💬 상담게시판
+      </button>
+      <button class="board-tab" id="tabReview" data-type="review" onclick="switchTab('review')">
+        ⭐ 사용후기
+      </button>
+    </div>
+
+    <!-- 게시판 헤더 -->
+    <div class="board-header">
+      <h2 class="board-title" id="boardTitle">공지사항</h2>
+      <button class="board-write-btn" id="writeBtn" onclick="goWrite()">
+        <i class="fa fa-pen"></i> 글쓰기
+      </button>
+    </div>
+
+    <!-- 게시글 목록 테이블 -->
+    <div class="board-table-wrap">
+      <table class="board-table" id="boardTable">
+        <thead>
+          <tr>
+            <th style="width:60px;">번호</th>
+            <th class="title-col">제목</th>
+            <th style="width:100px;">작성자</th>
+            <th style="width:110px;">작성일</th>
+            <th style="width:70px;">조회</th>
+          </tr>
+        </thead>
+        <tbody id="boardTbody">
+          <!-- JS로 동적 렌더링 -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 빈 게시판 메시지 (초기 숨김) -->
+    <div class="board-empty" id="boardEmpty" style="display:none">
+      <i class="fa fa-inbox" style="font-size:36px; margin-bottom:12px; color:#ccc;"></i>
+      <p>등록된 게시글이 없습니다.</p>
+    </div>
+
+    <!-- 페이지네이션 -->
+    <div class="pagination" id="pagination"></div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer" style="margin-top: 60px;">
+    <div class="container">
+      <div class="footer-links">
+        <a href="../index.html" class="bold">홈</a>
+        <a href="board.html?type=notice">공지사항</a>
+        <a href="board.html?type=consult">상담게시판</a>
+        <a href="board.html?type=review">사용후기</a>
+      </div>
+      <p class="footer-company">프린터모아</p>
+      <div class="footer-info">전화 : 070-5133-3777</div>
+      <div class="footer-copyright">Copyright © 프린터모아. All Rights Reserved.</div>
+    </div>
+  </footer>
+
+  <script>
+    // ── 현재 상태 변수 ─────────────────────────────
+    let currentType = 'notice';
+    let currentPage = 1;
+    const PAGE_SIZE = 10;
+
+    // ── 초기화 ──────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      Auth.updateHeaderUI();
+
+      // URL 파라미터에서 게시판 타입 읽기
+      const params = new URLSearchParams(window.location.search);
+      const type = params.get('type') || 'notice';
+      switchTab(type);
+    });
+
+    // ── 탭 전환 ─────────────────────────────────────
+    function switchTab(type) {
+      currentType = type;
+      currentPage = 1;
+
+      // 탭 활성화 스타일
+      ['notice', 'consult', 'review'].forEach(t => {
+        const tab = document.getElementById(`tab${capitalize(t)}`);
+        tab.classList.toggle('active', t === type);
+      });
+
+      // GNB 활성화
+      ['Notice', 'Consult', 'Review'].forEach(t => {
+        const el = document.getElementById(`gnb${t}`);
+        if (el) el.style.fontWeight = t.toLowerCase() === type ? '700' : '';
+      });
+
+      // 게시판 제목 업데이트
+      document.getElementById('boardTitle').textContent = Board.getBoardName(type);
+
+      // URL 업데이트 (새로고침 없이)
+      history.replaceState(null, '', `?type=${type}`);
+
+      // 게시글 렌더링
+      renderPosts();
+    }
+
+    // ── 게시글 목록 렌더링 ──────────────────────────
+    function renderPosts() {
+      const posts = Board.getPostsByType(currentType);
+      const tbody = document.getElementById('boardTbody');
+      const emptyEl = document.getElementById('boardEmpty');
+      const tableWrap = document.querySelector('.board-table-wrap');
+
+      if (posts.length === 0) {
+        tableWrap.style.display = 'none';
+        emptyEl.style.display = 'block';
+        document.getElementById('pagination').innerHTML = '';
+        return;
+      }
+
+      tableWrap.style.display = 'block';
+      emptyEl.style.display = 'none';
+
+      // 페이지네이션 계산
+      const total = posts.length;
+      const totalPages = Math.ceil(total / PAGE_SIZE);
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const pagePosts = posts.slice(start, start + PAGE_SIZE);
+
+      // 행 렌더링
+      tbody.innerHTML = pagePosts.map((post, idx) => {
+        const num = total - start - idx;
+        const badge = post.isPinned
+          ? `<span class="pinned-badge">공지</span>`
+          : (currentType !== 'notice' ? '' : `<span class="notice-badge">${num}</span>`);
+        return `
+          <tr onclick="goView('${post.id}')" style="cursor:pointer;">
+            <td>${post.isPinned ? '📌' : num}</td>
+            <td class="title-col">
+              <span class="post-title-link">${badge}${escapeHtml(post.title)}</span>
+            </td>
+            <td>${escapeHtml(post.author)}</td>
+            <td>${Board.formatDate(post.createdAt)}</td>
+            <td>${post.views || 0}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // 페이지네이션 렌더링
+      renderPagination(totalPages);
+    }
+
+    // ── 페이지네이션 ────────────────────────────────
+    function renderPagination(totalPages) {
+      const el = document.getElementById('pagination');
+      if (totalPages <= 1) { el.innerHTML = ''; return; }
+
+      let html = '';
+      for (let i = 1; i <= totalPages; i++) {
+        html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+      }
+      el.innerHTML = html;
+    }
+
+    function goPage(page) {
+      currentPage = page;
+      renderPosts();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ── 게시글 상세 이동 ────────────────────────────
+    function goView(id) {
+      window.location.href = `board-view.html?id=${id}&type=${currentType}`;
+    }
+
+    // ── 글쓰기 이동 ─────────────────────────────────
+    function goWrite() {
+      if (!Auth.requireLogin('../login.html')) return;
+      // 공지사항은 관리자만 작성 가능
+      if (currentType === 'notice' && !Auth.isAdmin()) {
+        alert('공지사항은 관리자만 작성할 수 있습니다.');
+        return;
+      }
+      window.location.href = `board-write.html?type=${currentType}`;
+    }
+
+    // ── 유틸: 첫 글자 대문자 ────────────────────────
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // ── 유틸: HTML 이스케이프 (XSS 방지) ───────────
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>

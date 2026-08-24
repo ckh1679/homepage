@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>상품 목록 - 프린터모아</title>
+  <meta name="description" content="프린터모아 복합기·프린터·노트북 렌탈 상품 목록">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../style.css">
+  <script src="../auth.js"></script>
+  <script src="shop.js"></script>
+  <style>
+    /* ─── 상품 페이지 전용 스타일 ─── */
+    .shop-page { background: var(--bg-light); min-height: 100vh; }
+
+    /* 카테고리 사이드바 + 메인 레이아웃 */
+    .shop-layout {
+      max-width: var(--container-width);
+      margin: 0 auto;
+      padding: 32px 20px;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    /* ─── 사이드 카테고리 메뉴 ─── */
+    .shop-sidebar {
+      background: var(--white);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      position: sticky;
+      top: 20px;
+    }
+
+    .sidebar-header {
+      background: var(--primary);
+      color: var(--white);
+      padding: 16px 20px;
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar-cat-list { padding: 8px 0; }
+
+    .sidebar-cat-item {
+      display: block;
+      padding: 11px 20px;
+      font-size: 14px;
+      color: var(--gray-dark);
+      cursor: pointer;
+      transition: var(--transition);
+      border-left: 3px solid transparent;
+      text-decoration: none;
+    }
+
+    .sidebar-cat-item:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .sidebar-cat-item.active {
+      background: var(--primary-light);
+      color: var(--primary);
+      border-left-color: var(--primary);
+      font-weight: 700;
+    }
+
+    .sidebar-cat-item .cat-emoji { margin-right: 8px; }
+
+    /* ─── 메인 콘텐츠 영역 ─── */
+    .shop-main {}
+
+    /* 상단 제목 + 서브카테고리 탭 */
+    .shop-main-header {
+      margin-bottom: 20px;
+    }
+
+    .shop-main-title {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--dark);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .shop-main-count {
+      font-size: 13px;
+      color: var(--gray-mid);
+      font-weight: 400;
+      margin-bottom: 16px;
+    }
+
+    /* 서브카테고리 탭 */
+    .sub-cat-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .sub-cat-tab {
+      padding: 7px 16px;
+      border-radius: 20px;
+      border: 1.5px solid #ddd;
+      background: var(--white);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-dark);
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: var(--font);
+    }
+
+    .sub-cat-tab:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .sub-cat-tab.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--white);
+    }
+
+    /* ─── 상품 그리드 ─── */
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .shop-product-card {
+      background: var(--white);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: var(--transition);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .shop-product-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+    }
+
+    /* 인기 뱃지 */
+    .popular-ribbon {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: #ff5722;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 3px;
+      z-index: 2;
+    }
+
+    .shop-product-img {
+      width: 100%;
+      height: 170px;
+      background: linear-gradient(135deg, #f0f4f8 60%, #e3eef7 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 44px;
+      border-bottom: 1px solid #f0f0f0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .shop-product-img .img-text {
+      font-size: 12px;
+      color: var(--gray-mid);
+      position: absolute;
+      bottom: 8px;
+      right: 10px;
+      font-weight: 500;
+    }
+
+    .shop-product-body {
+      padding: 16px;
+    }
+
+    .shop-product-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .shop-product-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--dark);
+      line-height: 1.5;
+      margin-bottom: 6px;
+      min-height: 42px;
+    }
+
+    .shop-product-spec {
+      font-size: 12px;
+      color: var(--gray-mid);
+      line-height: 1.6;
+      margin-bottom: 14px;
+    }
+
+    .shop-product-price-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .shop-price-wrap {}
+
+    .shop-original-price {
+      font-size: 12px;
+      color: var(--gray-light);
+      text-decoration: line-through;
+      display: block;
+    }
+
+    .shop-price {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--primary);
+    }
+
+    .shop-price .unit {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--gray-mid);
+    }
+
+    .shop-consult-btn {
+      background: var(--primary);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--transition);
+      white-space: nowrap;
+      font-family: var(--font);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .shop-consult-btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    /* 상품 없음 */
+    .shop-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--gray-mid);
+    }
+
+    /* ─── 비교 안내 배너 ─── */
+    .shop-info-banner {
+      background: linear-gradient(90deg, var(--primary) 0%, #0077aa 100%);
+      color: var(--white);
+      border-radius: var(--radius-md);
+      padding: 20px 28px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .shop-info-banner .banner-text {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .shop-info-banner .banner-sub {
+      font-size: 13px;
+      opacity: 0.85;
+      margin-top: 4px;
+    }
+
+    .shop-info-banner .banner-btn {
+      background: #fff;
+      color: var(--primary);
+      border-radius: var(--radius-sm);
+      padding: 10px 22px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      white-space: nowrap;
+      font-family: var(--font);
+      transition: var(--transition);
+      text-decoration: none;
+    }
+
+    .shop-info-banner .banner-btn:hover {
+      background: #e3f4ff;
+    }
+
+    /* ─── 반응형 ─── */
+    @media (max-width: 900px) {
+      .shop-layout {
+        grid-template-columns: 1fr;
+      }
+      .shop-sidebar {
+        position: static;
+      }
+      .sidebar-cat-list {
+        display: flex;
+        flex-wrap: wrap;
+        padding: 8px;
+        gap: 4px;
+      }
+      .sidebar-cat-item {
+        border-left: none;
+        border-radius: var(--radius-sm);
+        border: 1.5px solid transparent;
+        padding: 8px 12px;
+      }
+      .sidebar-cat-item.active {
+        border-color: var(--primary);
+      }
+      .shop-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 540px) {
+      .shop-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ─── 라이트박스 모달 ─── */
+    .lightbox-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      animation: fadeOverlay 0.2s ease;
+    }
+    .lightbox-overlay.open { display: flex; }
+    @keyframes fadeOverlay {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    .lightbox-box {
+      position: relative;
+      background: #1a1a2e;
+      border-radius: 16px;
+      max-width: 860px;
+      width: 94vw;
+      max-height: 92vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+      animation: scaleIn 0.22s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes scaleIn {
+      from { transform: scale(0.88); opacity: 0; }
+      to   { transform: scale(1);    opacity: 1; }
+    }
+
+    /* 모달 헤더 */
+    .lb-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 22px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+    .lb-product-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.4;
+    }
+    .lb-close {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: #fff;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .lb-close:hover { background: rgba(255,255,255,0.22); }
+
+    /* 이미지 뷰어 */
+    .lb-viewer {
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #111;
+      overflow: hidden;
+    }
+    .lb-main-img {
+      max-width: 100%;
+      max-height: 58vh;
+      object-fit: contain;
+      display: block;
+      transition: opacity 0.25s ease;
+    }
+    .lb-main-img.loading { opacity: 0.3; }
+
+    /* 이전/다음 화살표 */
+    .lb-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.13);
+      border: none;
+      color: #fff;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      z-index: 2;
+    }
+    .lb-arrow:hover { background: rgba(255,255,255,0.28); }
+    .lb-arrow.prev { left: 12px; }
+    .lb-arrow.next { right: 12px; }
+    .lb-arrow:disabled { opacity: 0.2; cursor: default; }
+
+    /* 카운터 */
+    .lb-counter {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    /* 썸네일 스트립 */
+    .lb-thumbs {
+      display: flex;
+      gap: 8px;
+      padding: 12px 18px;
+      background: #111827;
+      overflow-x: auto;
+      flex-shrink: 0;
+      scrollbar-width: thin;
+      scrollbar-color: #444 transparent;
+    }
+    .lb-thumb {
+      width: 70px;
+      height: 55px;
+      object-fit: contain;
+      border-radius: 6px;
+      border: 2.5px solid transparent;
+      background: #1e293b;
+      cursor: pointer;
+      transition: border-color 0.18s, transform 0.18s;
+      flex-shrink: 0;
+    }
+    .lb-thumb:hover  { transform: scale(1.07); }
+    .lb-thumb.active { border-color: #0099cc; }
+
+    /* 상품 카드 클릭 커서 */
+    .shop-product-img { cursor: zoom-in; }
+  </style>
+</head>
+<body class="shop-page">
+
+  <!-- TOP BAR -->
+  <header class="top-bar">
+    <div class="container">
+      <div class="inner">
+        <div class="top-search" style="visibility:hidden;"></div>
+        <a href="../index.html" class="logo" id="shopLogo">
+          <div class="logo-text">프린터<span>모아</span></div>
+        </a>
+        <div class="top-phone">
+          <div class="auth-nav-area">
+            <span class="header-user-name" id="headerUserName" style="display:none"></span>
+            <a href="../login.html" class="header-auth-btn" id="headerLoginLink">로그인</a>
+            <a href="../register.html" class="header-auth-btn filled" id="headerRegisterLink">회원가입</a>
+            <button class="header-auth-btn logout" id="headerLogoutBtn" style="display:none">로그아웃</button>
+          </div>
+          <div class="label">상담 전화</div>
+          <a href="tel:07051333777" class="number">070-5133-3777</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- GNB -->
+  <nav class="gnb" id="shopGnb">
+    <div class="container">
+      <div class="gnb-menu">
+        <ul id="shopGnbList">
+          <!-- JS로 렌더링 -->
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- SHOP 레이아웃 -->
+  <div class="shop-layout">
+
+    <!-- 사이드바: 카테고리 목록 -->
+    <aside class="shop-sidebar" id="shopSidebar">
+      <div class="sidebar-header">
+        <i class="fa fa-list"></i> 카테고리
+      </div>
+      <nav class="sidebar-cat-list" id="sidebarCatList">
+        <!-- JS로 렌더링 -->
+      </nav>
+    </aside>
+
+    <!-- 메인: 상품 목록 -->
+    <main class="shop-main">
+
+      <!-- 안내 배너 -->
+      <div class="shop-info-banner">
+        <div>
+          <p class="banner-text">💬 렌탈 비용이 궁금하신가요?</p>
+          <p class="banner-sub">전문 상담사가 최적 견적을 안내해 드립니다. 무료 상담!</p>
+        </div>
+        <a href="../board/board.html?type=consult" class="banner-btn" id="bannerConsultBtn">
+          상담 문의하기
+        </a>
+      </div>
+
+      <!-- 상단: 제목 + 서브카테고리 탭 -->
+      <div class="shop-main-header">
+        <h1 class="shop-main-title" id="shopMainTitle">
+          <span id="shopMainEmoji">🖨️</span>
+          <span id="shopMainTitleText">잉크젯복합기</span>
+        </h1>
+        <p class="shop-main-count" id="shopMainCount"></p>
+
+        <!-- 서브카테고리 탭 -->
+        <div class="sub-cat-tabs" id="subCatTabs">
+          <!-- JS로 렌더링 -->
+        </div>
+      </div>
+
+      <!-- 상품 그리드 -->
+      <div class="shop-grid" id="shopGrid">
+        <!-- JS로 렌더링 -->
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ─── 라이트박스 모달 ─── -->
+  <div class="lightbox-overlay" id="lbOverlay" role="dialog" aria-modal="true" aria-label="상품 이미지 보기">
+    <div class="lightbox-box" id="lbBox">
+
+      <!-- 헤더: 상품명 + 닫기 -->
+      <div class="lb-header">
+        <span class="lb-product-name" id="lbProductName"></span>
+        <button class="lb-close" id="lbClose" aria-label="닫기">✕</button>
+      </div>
+
+      <!-- 메인 이미지 뷰어 -->
+      <div class="lb-viewer">
+        <button class="lb-arrow prev" id="lbPrev" aria-label="이전 이미지"><i class="fa fa-chevron-left"></i></button>
+        <img class="lb-main-img" id="lbMainImg" src="" alt="상품 이미지">
+        <button class="lb-arrow next" id="lbNext" aria-label="다음 이미지"><i class="fa fa-chevron-right"></i></button>
+        <span class="lb-counter" id="lbCounter">1 / 1</span>
+      </div>
+
+      <!-- 썸네일 스트립 -->
+      <div class="lb-thumbs" id="lbThumbs"></div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer" style="margin-top: 60px;">
+    <div class="container">
+      <div class="footer-links">
+        <a href="../index.html" class="bold">홈</a>
+        <a href="../board/board.html?type=notice">공지사항</a>
+        <a href="../board/board.html?type=consult">상담게시판</a>
+        <a href="../board/board.html?type=review">사용후기</a>
+      </div>
+      <p class="footer-company">프린터모아</p>
+      <div class="footer-info">
+        대표 : 화정원 &nbsp; 주소 : 경기도 성남시 중원구 둔촌대로388 크란츠테크노 407호<br>
+        전화 : 070-5133-3777 &nbsp; 사업자 등록번호 : 214-08-41154
+      </div>
+      <div class="footer-copyright">Copyright © 프린터모아. All Rights Reserved.</div>
+    </div>
+  </footer>
+
+  <script>
+    // ── 현재 선택된 카테고리·서브카테고리 ─────────────
+    let currentCatId    = 'inkjet';
+    let currentSubCatId = null;   // null = 전체
+
+    // ── 초기화 ──────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      Auth.updateHeaderUI();
+
+      // URL 파라미터에서 카테고리 읽기
+      const params = new URLSearchParams(window.location.search);
+      const cat = params.get('category') || 'inkjet';
+      const sub = params.get('sub') || null;  // 서브카테고리 (선택)
+
+      renderGnb();
+      renderSidebar();
+      switchCategory(cat, sub);  // sub 파라미터 전달
+    });
+
+    // ── GNB 렌더링 ──────────────────────────────────────
+    function renderGnb() {
+      const ul = document.getElementById('shopGnbList');
+      const catItems = ShopData.categories.map(cat => `
+        <li>
+          <a href="shop.html?category=${cat.id}"
+             id="gnb_${cat.id}"
+             onclick="switchCategory('${cat.id}'); return false;">
+            ${cat.label}
+          </a>
+        </li>
+      `).join('');
+
+      ul.innerHTML = catItems + `
+        <li><a href="../board/board.html?type=notice">공지사항</a></li>
+        <li><a href="../board/board.html?type=consult">상담게시판</a></li>
+        <li><a href="../board/board.html?type=review">사용후기</a></li>
+      `;
+    }
+
+    // ── 사이드바 렌더링 ──────────────────────────────────
+    function renderSidebar() {
+      const nav = document.getElementById('sidebarCatList');
+      nav.innerHTML = ShopData.categories.map(cat => `
+        <a class="sidebar-cat-item ${cat.id === currentCatId ? 'active' : ''}"
+           id="sidebar_${cat.id}"
+           href="javascript:void(0)"
+           onclick="switchCategory('${cat.id}')">
+          <span class="cat-emoji">${cat.emoji}</span>${cat.label}
+        </a>
+      `).join('');
+    }
+
+    // ── 카테고리 전환 ────────────────────────────────────
+    function switchCategory(catId, initialSubCat) {
+      currentCatId    = catId;
+      currentSubCatId = null;
+
+      const cat = ShopData.getCategoryById(catId);
+
+      // 페이지 타이틀 업데이트
+      document.title = `${cat.label} - 프린터모아`;
+
+      // URL 업데이트 (새로고침 없이)
+      history.replaceState(null, '', `?category=${catId}`);
+
+      // 사이드바 활성화
+      document.querySelectorAll('.sidebar-cat-item').forEach(el => {
+        el.classList.toggle('active', el.id === `sidebar_${catId}`);
+      });
+
+      // GNB 활성화
+      document.querySelectorAll('#shopGnbList a').forEach(el => {
+        el.style.color = '';
+        el.style.fontWeight = '';
+      });
+      const gnbItem = document.getElementById(`gnb_${catId}`);
+      if (gnbItem) { gnbItem.style.color = '#fff'; gnbItem.style.fontWeight = '700'; }
+
+      // 제목 업데이트
+      document.getElementById('shopMainEmoji').textContent = cat.emoji;
+      document.getElementById('shopMainTitleText').textContent = cat.label;
+
+      // 서브카테고리 탭 렌더링
+      renderSubCatTabs(cat);
+
+      // 초기 서브카테고리 선택 처리
+      if (initialSubCat) {
+        // 탭 렌더링 후 해당 서브카테고리 활성화
+        currentSubCatId = initialSubCat;
+        document.querySelectorAll('.sub-cat-tab').forEach(btn => btn.classList.remove('active'));
+        const subBtn = document.getElementById(`sub_${initialSubCat}`);
+        if (subBtn) subBtn.classList.add('active');
+        else {
+          // 서브카테고리 탭 없으면 전체로 리셋
+          currentSubCatId = null;
+          const allBtn = document.getElementById('subAll');
+          if (allBtn) allBtn.classList.add('active');
+        }
+      }
+
+      // 상품 렌더링
+      renderProducts();
+    }
+
+    // ── 서브카테고리 탭 렌더링 ───────────────────────────
+    function renderSubCatTabs(cat) {
+      const wrap = document.getElementById('subCatTabs');
+
+      if (cat.subCategories.length <= 1) {
+        wrap.innerHTML = '';
+        return;
+      }
+
+      wrap.innerHTML = `
+        <button class="sub-cat-tab active" onclick="filterSubCat(null)" id="subAll">
+          전체
+        </button>
+        ${cat.subCategories.map(sub => `
+          <button class="sub-cat-tab" onclick="filterSubCat('${sub.id}')" id="sub_${sub.id}">
+            ${sub.label}
+          </button>
+        `).join('')}
+      `;
+    }
+
+    // ── 서브카테고리 필터링 ──────────────────────────────
+    function filterSubCat(subCatId) {
+      currentSubCatId = subCatId;
+
+      // 탭 활성화
+      document.querySelectorAll('.sub-cat-tab').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      const target = subCatId ? document.getElementById(`sub_${subCatId}`) : document.getElementById('subAll');
+      if (target) target.classList.add('active');
+
+      renderProducts();
+    }
+
+    // ── 상품 목록 렌더링 ─────────────────────────────────
+    function renderProducts() {
+      const grid = document.getElementById('shopGrid');
+
+      let products = currentSubCatId
+        ? ShopData.getProductsBySubCategory(currentSubCatId)
+        : ShopData.getProductsByCategory(currentCatId);
+
+      // 카운트 표시
+      document.getElementById('shopMainCount').textContent =
+        `총 ${products.length}개의 상품이 있습니다.`;
+
+      if (products.length === 0) {
+        grid.innerHTML = `
+          <div class="shop-empty">
+            <i class="fa fa-inbox" style="font-size:40px;margin-bottom:12px;color:#ddd;display:block;"></i>
+            해당 카테고리 상품을 준비 중입니다.
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = products.map(p => renderProductCard(p)).join('');
+    }
+
+    // ── 상품 카드 HTML 생성 ──────────────────────────────
+    function renderProductCard(p) {
+      const badges = p.badges.map((b, i) =>
+        `<span class="badge ${ShopData.getBadgeClass(p.badgeTypes[i] || 'new')}">${b}</span>`
+      ).join('');
+
+      const popularRibbon = p.popular
+        ? `<span class="popular-ribbon">🔥 인기</span>`
+        : '';
+
+      const discount = Math.round((1 - p.price / p.originalPrice) * 100);
+      const discountBadge = discount > 0
+        ? `<span style="color:#e53935; font-size:12px; font-weight:700;">${discount}% 할인</span>`
+        : '';
+
+      // 이미지 배열이 있으면 첫 번째를 대표 이미지로 사용, 없으면 이모지
+      const hasImages = Array.isArray(p.images) && p.images.length > 0;
+      const thumbSrc  = hasImages ? p.images[0] : '';
+      const imgHtml   = hasImages
+        ? `<img
+              src="${thumbSrc}"
+              alt="${escapeHtml(p.name)}"
+              loading="lazy"
+              style="width:100%;height:170px;object-fit:contain;background:#f8f9fa;display:block;"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+           />
+           <div style="display:none;width:100%;height:170px;align-items:center;justify-content:center;font-size:52px;background:linear-gradient(135deg,#f0f4f8 60%,#e3eef7 100%);">🖨️</div>`
+        : `<span style="font-size:52px;">${getCatEmoji(p.category)}</span>
+           <span class="img-text">${escapeHtml(p.imageText)}</span>`;
+
+      return `
+        <div class="shop-product-card" id="card_${p.id}"
+             onclick="goToDetail('${p.id}')"
+             style="cursor:pointer;">
+          ${popularRibbon}
+          <div class="shop-product-img" style="${hasImages ? 'padding:0;background:#f8f9fa;' : ''}">
+            ${imgHtml}
+            ${hasImages ? '<span style="position:absolute;bottom:8px;right:10px;background:rgba(0,0,0,0.45);color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;z-index:1;"><i class="fa fa-search-plus"></i> 상세 보기</span>' : ''}
+          </div>
+          <div class="shop-product-body">
+            <div class="shop-product-badges">${badges}</div>
+            <p class="shop-product-name">${escapeHtml(p.name)}</p>
+            <p class="shop-product-spec">${escapeHtml(p.spec)}</p>
+            <div class="shop-product-price-row">
+              <div class="shop-price-wrap">
+                <span class="shop-original-price">
+                  ${ShopData.formatPrice(p.originalPrice)}원 ${discountBadge}
+                </span>
+                <div>
+                  <span class="shop-price">${ShopData.formatPrice(p.price)}</span>
+                  <span class="shop-price"><span class="unit">원/월</span></span>
+                </div>
+              </div>
+              <a href="../board/board.html?type=consult"
+                 class="shop-consult-btn"
+                 id="consult_${p.id}"
+                 onclick="event.stopPropagation(); handleConsult(event, '${p.name}')">
+                <i class="fa fa-comment"></i> 상담
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ── 상세 페이지 이동 (상품 ID로 분기) ────────────────
+    // product.html 이 있는 복합기 및 세단기 등은 상세 페이지로, 나머지는 라이트박스
+    function goToDetail(productId) {
+      const detailEnabled = ['p001', 'p002', 'p003', 'p006', 'p012', 'p013'];
+      if (detailEnabled.includes(productId)) {
+        window.location.href = `product.html?id=${productId}`;
+      } else {
+        openLightbox(productId);
+      }
+    }
+
+    // ── 상담 버튼 클릭 핸들러 ────────────────────────────
+    function handleConsult(e, productName) {
+      // 비로그인도 열람 가능, 작성 시 로그인 유도는 board.html에서 처리
+    }
+
+    // ── 카테고리 이모지 헬퍼 ────────────────────────────
+    function getCatEmoji(catId) {
+      const map = { inkjet: '🖨️', laser: '📠', doc: '✂️', pc: '💻' };
+      return map[catId] || '🖨️';
+    }
+
+    // ── XSS 방지 ─────────────────────────────────────────
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>글쓰기 - 프린터모아</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../style.css">
+  <script src="../auth.js"></script>
+  <script src="board.js"></script>
+</head>
+<body class="board-page">
+
+  <!-- TOP BAR -->
+  <header class="top-bar">
+    <div class="container">
+      <div class="inner">
+        <div></div>
+        <a href="../index.html" class="logo">
+          <div class="logo-text">프린터<span>모아</span></div>
+        </a>
+        <div class="top-phone">
+          <div class="auth-nav-area">
+            <span class="header-user-name" id="headerUserName" style="display:none"></span>
+            <a href="../login.html" class="header-auth-btn" id="headerLoginLink">로그인</a>
+            <a href="../register.html" class="header-auth-btn filled" id="headerRegisterLink">회원가입</a>
+            <button class="header-auth-btn logout" id="headerLogoutBtn" style="display:none">로그아웃</button>
+          </div>
+          <div class="label">상담 전화</div>
+          <a href="tel:07051333777" class="number">070-5133-3777</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- GNB -->
+  <nav class="gnb">
+    <div class="container">
+      <div class="gnb-menu">
+        <ul>
+          <li><a href="../index.html">홈</a></li>
+          <li><a href="board.html?type=notice">공지사항</a></li>
+          <li><a href="board.html?type=consult">상담게시판</a></li>
+          <li><a href="board.html?type=review">사용후기</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 글쓰기 / 수정 폼 -->
+  <div class="board-content">
+    <div class="write-form-box">
+      <h2 id="formTitle">글쓰기</h2>
+
+      <form id="writeForm" novalidate>
+
+        <!-- 게시판 선택 (새 글 작성 시만 표시) -->
+        <div class="write-form-group" id="boardTypeGroup">
+          <label for="boardTypeSelect">게시판 선택</label>
+          <select id="boardTypeSelect">
+            <option value="consult">상담게시판</option>
+            <option value="review">사용후기</option>
+            <option value="notice">공지사항 (관리자 전용)</option>
+          </select>
+        </div>
+
+        <!-- 제목 -->
+        <div class="write-form-group">
+          <label for="postTitle">제목 <span style="color:#e53935">*</span></label>
+          <input
+            type="text"
+            id="postTitle"
+            placeholder="제목을 입력하세요 (최대 100자)"
+            maxlength="100"
+          >
+          <span class="field-msg error" id="titleError" style="display:none"></span>
+        </div>
+
+        <!-- 내용 -->
+        <div class="write-form-group">
+          <label for="postContent">내용 <span style="color:#e53935">*</span></label>
+          <textarea
+            id="postContent"
+            placeholder="내용을 입력하세요..."
+          ></textarea>
+          <span class="field-msg error" id="contentError" style="display:none"></span>
+        </div>
+
+        <!-- 글자 수 카운터 -->
+        <div style="text-align:right; font-size:12px; color:var(--gray-mid); margin-top:-14px; margin-bottom:16px;">
+          <span id="charCount">0</span>자 작성됨
+        </div>
+
+        <!-- 버튼 영역 -->
+        <div class="write-form-btns">
+          <button type="button" class="post-btn list-btn" id="cancelBtn" onclick="goCancel()">
+            <i class="fa fa-times"></i> 취소
+          </button>
+          <button type="submit" class="post-btn edit-btn" id="submitBtn">
+            <i class="fa fa-check"></i> 등록
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer" style="margin-top:60px;">
+    <div class="container">
+      <div class="footer-links">
+        <a href="../index.html" class="bold">홈</a>
+        <a href="board.html?type=notice">공지사항</a>
+        <a href="board.html?type=consult">상담게시판</a>
+        <a href="board.html?type=review">사용후기</a>
+      </div>
+      <p class="footer-company">프린터모아</p>
+      <div class="footer-copyright">Copyright © 프린터모아. All Rights Reserved.</div>
+    </div>
+  </footer>
+
+  <script>
+    // ── 현재 상태 변수 ─────────────────────────────
+    let editPostId = null;    // 수정 중인 게시글 ID (null = 새 글)
+    let currentType = 'consult';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // 로그인 확인: 비로그인 시 로그인 페이지로 이동
+      if (!Auth.requireLogin('../login.html')) return;
+
+      Auth.updateHeaderUI();
+
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');        // 수정 시 게시글 ID
+      currentType = params.get('type') || 'consult';
+
+      if (id) {
+        // ── 수정 모드 ──
+        loadEditPost(id);
+      } else {
+        // ── 새 글 작성 모드 ──
+        setupNewPost();
+      }
+
+      // 글자 수 카운터
+      document.getElementById('postContent').addEventListener('input', () => {
+        const len = document.getElementById('postContent').value.length;
+        document.getElementById('charCount').textContent = len;
+      });
+    });
+
+    // ── 새 글 작성 설정 ──────────────────────────────
+    function setupNewPost() {
+      document.getElementById('formTitle').textContent = '새 글 작성';
+      document.getElementById('submitBtn').innerHTML = '<i class="fa fa-check"></i> 등록';
+
+      // 게시판 타입 선택 초기값
+      const select = document.getElementById('boardTypeSelect');
+      if (currentType) {
+        select.value = currentType;
+      }
+
+      // 관리자가 아니면 공지사항 옵션 비활성화
+      if (!Auth.isAdmin()) {
+        const noticeOpt = select.querySelector('option[value="notice"]');
+        if (noticeOpt) noticeOpt.disabled = true;
+      }
+
+      // 관리자가 아니고 공지사항으로 접근 시 리다이렉트
+      if (currentType === 'notice' && !Auth.isAdmin()) {
+        alert('공지사항은 관리자만 작성할 수 있습니다.');
+        window.location.href = `board.html?type=notice`;
+        return;
+      }
+    }
+
+    // ── 수정 모드 설정 ───────────────────────────────
+    function loadEditPost(id) {
+      const post = Board.getPost(id, false);
+      const user = Auth.getCurrentUser();
+
+      if (!post) {
+        alert('게시글을 찾을 수 없습니다.');
+        window.location.href = `board.html?type=${currentType}`;
+        return;
+      }
+
+      // 권한 확인
+      if (post.userId !== user.id && user.role !== 'admin') {
+        alert('수정 권한이 없습니다.');
+        window.location.href = `board-view.html?id=${id}&type=${post.boardType}`;
+        return;
+      }
+
+      editPostId = id;
+      currentType = post.boardType;
+
+      // 폼 채우기
+      document.getElementById('formTitle').textContent = '게시글 수정';
+      document.getElementById('submitBtn').innerHTML = '<i class="fa fa-save"></i> 수정 완료';
+      document.getElementById('postTitle').value = post.title;
+      document.getElementById('postContent').value = post.content;
+      document.getElementById('charCount').textContent = post.content.length;
+
+      // 수정 시 게시판 선택 비활성화
+      document.getElementById('boardTypeGroup').style.display = 'none';
+    }
+
+    // ── 폼 제출 (등록 / 수정) ────────────────────────
+    document.getElementById('writeForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const user = Auth.getCurrentUser();
+      if (!user) { Auth.requireLogin(); return; }
+
+      const title   = document.getElementById('postTitle').value.trim();
+      const content = document.getElementById('postContent').value.trim();
+      const type    = editPostId ? currentType : document.getElementById('boardTypeSelect').value;
+
+      // 유효성 검사
+      const titleErr = document.getElementById('titleError');
+      const contentErr = document.getElementById('contentError');
+      titleErr.style.display = 'none';
+      contentErr.style.display = 'none';
+
+      if (!title) {
+        titleErr.textContent = '제목을 입력해주세요.';
+        titleErr.style.display = 'block';
+        document.getElementById('postTitle').focus();
+        return;
+      }
+
+      if (!content) {
+        contentErr.textContent = '내용을 입력해주세요.';
+        contentErr.style.display = 'block';
+        document.getElementById('postContent').focus();
+        return;
+      }
+
+      let result;
+
+      if (editPostId) {
+        // ── 수정 ──
+        result = Board.updatePost(editPostId, { title, content }, user);
+        if (result.success) {
+          alert('게시글이 수정되었습니다.');
+          window.location.href = `board-view.html?id=${editPostId}&type=${type}`;
+        } else {
+          alert(result.message);
+        }
+      } else {
+        // ── 새 글 등록 ──
+        // 공지사항 권한 체크
+        if (type === 'notice' && user.role !== 'admin') {
+          alert('공지사항은 관리자만 작성할 수 있습니다.');
+          return;
+        }
+
+        result = Board.createPost({
+          boardType: type,
+          title,
+          content,
+          author: user.name,
+          userId: user.id
+        });
+
+        if (result.success) {
+          alert('게시글이 등록되었습니다.');
+          window.location.href = `board-view.html?id=${result.post.id}&type=${type}`;
+        } else {
+          alert(result.message);
+        }
+      }
+    });
+
+    // ── 취소 ─────────────────────────────────────────
+    function goCancel() {
+      if (confirm('작성을 취소하시겠습니까? 입력한 내용은 저장되지 않습니다.')) {
+        if (editPostId) {
+          window.location.href = `board-view.html?id=${editPostId}&type=${currentType}`;
+        } else {
+          window.location.href = `board.html?type=${currentType}`;
+        }
+      }
+    }
+  </script>
+</body>
+</html>

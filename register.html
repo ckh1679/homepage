@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>회원가입 - 프린터모아</title>
+  <meta name="description" content="프린터모아 회원가입 페이지">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="auth.js"></script>
+  <style>
+    /* 회원가입 박스는 더 넓게 */
+    .auth-box { max-width: 520px; }
+  </style>
+</head>
+<body class="auth-page">
+
+  <!-- TOP BAR -->
+  <header class="top-bar">
+    <div class="container">
+      <div class="inner">
+        <div></div>
+        <a href="index.html" class="logo" id="registerLogo">
+          <div class="logo-text">프린터<span>모아</span></div>
+        </a>
+        <div class="top-phone">
+          <div class="label">상담 전화</div>
+          <a href="tel:07051333777" class="number">070-5133-3777</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- GNB -->
+  <nav class="gnb">
+    <div class="container">
+      <div class="gnb-menu">
+        <ul>
+          <li><a href="index.html">홈</a></li>
+          <li><a href="board/board.html?type=notice">공지사항</a></li>
+          <li><a href="board/board.html?type=consult">상담게시판</a></li>
+          <li><a href="board/board.html?type=review">사용후기</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 회원가입 폼 -->
+  <main class="auth-main">
+    <div class="auth-box">
+      <h2>📝 회원가입</h2>
+      <p class="auth-sub">프린터모아 회원이 되시면 게시판 이용이 가능합니다.</p>
+
+      <form id="registerForm" novalidate>
+
+        <!-- 아이디 -->
+        <div class="form-group">
+          <label for="regId">아이디 <span style="color:#e53935">*</span></label>
+          <div class="input-row">
+            <input
+              type="text"
+              id="regId"
+              placeholder="영문/숫자 4~16자"
+              maxlength="16"
+              autocomplete="username"
+            >
+            <button type="button" class="check-btn" id="checkIdBtn">중복확인</button>
+          </div>
+          <span class="field-msg" id="idMsg" style="display:none"></span>
+        </div>
+
+        <!-- 비밀번호 -->
+        <div class="form-group">
+          <label for="regPw">비밀번호 <span style="color:#e53935">*</span></label>
+          <input
+            type="password"
+            id="regPw"
+            placeholder="6자 이상"
+            maxlength="32"
+            autocomplete="new-password"
+          >
+          <span class="field-msg" id="pwMsg" style="display:none"></span>
+        </div>
+
+        <!-- 비밀번호 확인 -->
+        <div class="form-group">
+          <label for="regPwConfirm">비밀번호 확인 <span style="color:#e53935">*</span></label>
+          <input
+            type="password"
+            id="regPwConfirm"
+            placeholder="비밀번호를 다시 입력하세요"
+            maxlength="32"
+            autocomplete="new-password"
+          >
+          <span class="field-msg" id="pwConfirmMsg" style="display:none"></span>
+        </div>
+
+        <!-- 이름 -->
+        <div class="form-group">
+          <label for="regName">이름 <span style="color:#e53935">*</span></label>
+          <input
+            type="text"
+            id="regName"
+            placeholder="실명을 입력하세요"
+            maxlength="10"
+          >
+          <span class="field-msg error" id="nameMsg" style="display:none"></span>
+        </div>
+
+        <!-- 연락처 -->
+        <div class="form-group">
+          <label for="regPhone">연락처</label>
+          <input
+            type="tel"
+            id="regPhone"
+            placeholder="010-0000-0000"
+            maxlength="13"
+          >
+        </div>
+
+        <!-- 이메일 -->
+        <div class="form-group">
+          <label for="regEmail">이메일</label>
+          <input
+            type="email"
+            id="regEmail"
+            placeholder="example@email.com"
+          >
+        </div>
+
+        <!-- 약관 동의 -->
+        <div class="form-group" style="margin-top: 20px; padding: 16px; background:#f8f8f8; border-radius:8px;">
+          <div class="agree-row">
+            <input type="checkbox" id="agreeAll">
+            <label for="agreeAll" style="font-weight:700; font-size:14px;">전체 동의</label>
+          </div>
+          <hr style="border:none; border-top:1px solid #ddd; margin:10px 0;">
+          <div class="agree-row">
+            <input type="checkbox" id="agreeTerms">
+            <label for="agreeTerms">
+              <a href="#" onclick="return false">[필수] 이용약관 동의</a>
+            </label>
+          </div>
+          <div class="agree-row">
+            <input type="checkbox" id="agreePrivacy">
+            <label for="agreePrivacy">
+              <a href="#" onclick="return false">[필수] 개인정보 수집·이용 동의</a>
+            </label>
+          </div>
+          <div class="agree-row">
+            <input type="checkbox" id="agreeMarketing">
+            <label for="agreeMarketing">
+              [선택] 마케팅 정보 수신 동의
+            </label>
+          </div>
+        </div>
+
+        <!-- 에러 메시지 영역 -->
+        <span class="field-msg error" id="formError" style="display:none; margin-top:8px;"></span>
+
+        <!-- 회원가입 버튼 -->
+        <button type="submit" class="auth-submit-btn" id="registerSubmitBtn" style="margin-top:16px;">
+          <i class="fa fa-user-plus"></i> 회원가입 완료
+        </button>
+      </form>
+
+      <div class="auth-footer-links">
+        이미 회원이신가요?
+        <a href="login.html" id="goLoginLink">로그인</a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // 이미 로그인된 경우 홈으로 이동
+    if (Auth.isLoggedIn()) {
+      window.location.href = 'index.html';
+    }
+
+    let idChecked = false;  // 아이디 중복확인 완료 여부
+
+    // ── 전체 동의 체크박스 연동 ───────────────────────
+    const agreeAll = document.getElementById('agreeAll');
+    const subChecks = ['agreeTerms', 'agreePrivacy', 'agreeMarketing'].map(id => document.getElementById(id));
+
+    agreeAll.addEventListener('change', () => {
+      subChecks.forEach(cb => { cb.checked = agreeAll.checked; });
+    });
+
+    subChecks.forEach(cb => {
+      cb.addEventListener('change', () => {
+        agreeAll.checked = subChecks.every(c => c.checked);
+      });
+    });
+
+    // ── 아이디 중복 확인 ─────────────────────────────
+    document.getElementById('checkIdBtn').addEventListener('click', () => {
+      const id = document.getElementById('regId').value.trim();
+      const msgEl = document.getElementById('idMsg');
+
+      if (!id) {
+        msgEl.textContent = '아이디를 입력해주세요.';
+        msgEl.className = 'field-msg error';
+        msgEl.style.display = 'block';
+        return;
+      }
+
+      if (id.length < 4) {
+        msgEl.textContent = '아이디는 4자 이상이어야 합니다.';
+        msgEl.className = 'field-msg error';
+        msgEl.style.display = 'block';
+        idChecked = false;
+        return;
+      }
+
+      if (!/^[a-zA-Z0-9_]+$/.test(id)) {
+        msgEl.textContent = '영문, 숫자, 언더스코어(_)만 사용할 수 있습니다.';
+        msgEl.className = 'field-msg error';
+        msgEl.style.display = 'block';
+        idChecked = false;
+        return;
+      }
+
+      if (Auth.checkIdDuplicate(id)) {
+        msgEl.textContent = '❌ 이미 사용 중인 아이디입니다.';
+        msgEl.className = 'field-msg error';
+        idChecked = false;
+      } else {
+        msgEl.textContent = '✅ 사용 가능한 아이디입니다.';
+        msgEl.className = 'field-msg success';
+        idChecked = true;
+      }
+      msgEl.style.display = 'block';
+    });
+
+    // 아이디 변경 시 중복확인 초기화
+    document.getElementById('regId').addEventListener('input', () => {
+      idChecked = false;
+      document.getElementById('idMsg').style.display = 'none';
+    });
+
+    // ── 비밀번호 확인 실시간 체크 ────────────────────
+    document.getElementById('regPwConfirm').addEventListener('input', () => {
+      const pw = document.getElementById('regPw').value;
+      const pwConfirm = document.getElementById('regPwConfirm').value;
+      const msgEl = document.getElementById('pwConfirmMsg');
+      if (pwConfirm === '') { msgEl.style.display = 'none'; return; }
+      if (pw === pwConfirm) {
+        msgEl.textContent = '✅ 비밀번호가 일치합니다.';
+        msgEl.className = 'field-msg success';
+      } else {
+        msgEl.textContent = '❌ 비밀번호가 일치하지 않습니다.';
+        msgEl.className = 'field-msg error';
+      }
+      msgEl.style.display = 'block';
+    });
+
+    // ── 전화번호 자동 포매팅 ─────────────────────────
+    document.getElementById('regPhone').addEventListener('input', (e) => {
+      let val = e.target.value.replace(/\D/g, '');
+      if (val.length <= 3) e.target.value = val;
+      else if (val.length <= 7) e.target.value = `${val.slice(0,3)}-${val.slice(3)}`;
+      else e.target.value = `${val.slice(0,3)}-${val.slice(3,7)}-${val.slice(7,11)}`;
+    });
+
+    // ── 폼 제출 ──────────────────────────────────────
+    document.getElementById('registerForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const id       = document.getElementById('regId').value.trim();
+      const pw       = document.getElementById('regPw').value;
+      const pwConfirm = document.getElementById('regPwConfirm').value;
+      const name     = document.getElementById('regName').value.trim();
+      const phone    = document.getElementById('regPhone').value.trim();
+      const email    = document.getElementById('regEmail').value.trim();
+      const agreeTerms   = document.getElementById('agreeTerms').checked;
+      const agreePrivacy = document.getElementById('agreePrivacy').checked;
+      const errEl = document.getElementById('formError');
+
+      errEl.style.display = 'none';
+
+      // 유효성 검사
+      if (!idChecked) {
+        errEl.textContent = '아이디 중복확인을 완료해주세요.';
+        errEl.style.display = 'block';
+        document.getElementById('regId').focus();
+        return;
+      }
+
+      if (pw !== pwConfirm) {
+        errEl.textContent = '비밀번호가 일치하지 않습니다.';
+        errEl.style.display = 'block';
+        document.getElementById('regPwConfirm').focus();
+        return;
+      }
+
+      if (!name) {
+        errEl.textContent = '이름을 입력해주세요.';
+        errEl.style.display = 'block';
+        document.getElementById('regName').focus();
+        return;
+      }
+
+      if (!agreeTerms || !agreePrivacy) {
+        errEl.textContent = '필수 약관에 동의해주세요.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      // 회원가입 실행
+      const result = Auth.register({ id, password: pw, name, phone, email });
+      if (result.success) {
+        alert(`🎉 ${result.message}\n로그인 페이지로 이동합니다.`);
+        window.location.href = 'login.html';
+      } else {
+        errEl.textContent = result.message;
+        errEl.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

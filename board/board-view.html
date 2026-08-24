@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>게시글 보기 - 프린터모아</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../style.css">
+  <script src="../auth.js"></script>
+  <script src="board.js"></script>
+</head>
+<body class="board-page">
+
+  <!-- TOP BAR -->
+  <header class="top-bar">
+    <div class="container">
+      <div class="inner">
+        <div></div>
+        <a href="../index.html" class="logo">
+          <div class="logo-text">프린터<span>모아</span></div>
+        </a>
+        <div class="top-phone">
+          <div class="auth-nav-area">
+            <span class="header-user-name" id="headerUserName" style="display:none"></span>
+            <a href="../login.html" class="header-auth-btn" id="headerLoginLink">로그인</a>
+            <a href="../register.html" class="header-auth-btn filled" id="headerRegisterLink">회원가입</a>
+            <button class="header-auth-btn logout" id="headerLogoutBtn" style="display:none">로그아웃</button>
+          </div>
+          <div class="label">상담 전화</div>
+          <a href="tel:07051333777" class="number">070-5133-3777</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- GNB -->
+  <nav class="gnb">
+    <div class="container">
+      <div class="gnb-menu">
+        <ul>
+          <li><a href="../index.html">홈</a></li>
+          <li><a href="board.html?type=notice">공지사항</a></li>
+          <li><a href="board.html?type=consult">상담게시판</a></li>
+          <li><a href="board.html?type=review">사용후기</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 게시글 상세 -->
+  <div class="board-content">
+
+    <!-- 게시글 내용 박스 -->
+    <div class="post-detail" id="postDetail">
+      <!-- JS로 채워짐 -->
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer" style="margin-top:60px;">
+    <div class="container">
+      <div class="footer-links">
+        <a href="../index.html" class="bold">홈</a>
+        <a href="board.html?type=notice">공지사항</a>
+        <a href="board.html?type=consult">상담게시판</a>
+        <a href="board.html?type=review">사용후기</a>
+      </div>
+      <p class="footer-company">프린터모아</p>
+      <div class="footer-copyright">Copyright © 프린터모아. All Rights Reserved.</div>
+    </div>
+  </footer>
+
+  <script>
+    let currentPost = null;
+    let currentType = 'notice';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      Auth.updateHeaderUI();
+
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      currentType = params.get('type') || 'notice';
+
+      if (!id) {
+        window.location.href = `board.html?type=${currentType}`;
+        return;
+      }
+
+      // 게시글 조회 (조회수 증가)
+      currentPost = Board.getPost(id, true);
+
+      if (!currentPost) {
+        document.getElementById('postDetail').innerHTML = `
+          <div class="board-empty">
+            <p>게시글을 찾을 수 없습니다.</p>
+            <a href="board.html?type=${currentType}" class="post-btn list-btn" style="margin-top:16px; display:inline-flex;">
+              목록으로
+            </a>
+          </div>
+        `;
+        return;
+      }
+
+      // 페이지 타이틀 업데이트
+      document.title = `${currentPost.title} - 프린터모아`;
+
+      renderPost();
+    });
+
+    // ── 게시글 렌더링 ────────────────────────────────
+    function renderPost() {
+      const user = Auth.getCurrentUser();
+      // 수정/삭제 버튼 노출 여부: 본인 또는 관리자
+      const canEdit = user && (user.id === currentPost.userId || user.role === 'admin');
+
+      const updatedText = currentPost.updatedAt
+        ? `<span> · 수정됨: ${Board.formatDate(currentPost.updatedAt)}</span>`
+        : '';
+
+      const actionBtns = canEdit ? `
+        <div style="display:flex; gap:10px;">
+          <button class="post-btn edit-btn" id="editBtn" onclick="goEdit()">
+            <i class="fa fa-edit"></i> 수정
+          </button>
+          <button class="post-btn delete-btn" id="deleteBtn" onclick="doDelete()">
+            <i class="fa fa-trash"></i> 삭제
+          </button>
+        </div>
+      ` : '<div></div>';
+
+      document.getElementById('postDetail').innerHTML = `
+        <div class="post-detail-header">
+          <p class="post-detail-board">
+            <a href="board.html?type=${currentPost.boardType}" style="color:var(--primary);">
+              ${Board.getBoardName(currentPost.boardType)}
+            </a>
+          </p>
+          <h1 class="post-detail-title">${escapeHtml(currentPost.title)}</h1>
+          <div class="post-detail-meta">
+            <span><i class="fa fa-user" style="margin-right:4px;"></i>${escapeHtml(currentPost.author)}</span>
+            <span><i class="fa fa-calendar" style="margin-right:4px;"></i>${Board.formatDate(currentPost.createdAt)}${updatedText}</span>
+            <span><i class="fa fa-eye" style="margin-right:4px;"></i>조회 ${currentPost.views}</span>
+          </div>
+        </div>
+
+        <div class="post-detail-body">${escapeHtml(currentPost.content)}</div>
+
+        <div class="post-detail-actions">
+          <a href="board.html?type=${currentPost.boardType}" class="post-btn list-btn">
+            <i class="fa fa-list"></i> 목록
+          </a>
+          ${actionBtns}
+        </div>
+      `;
+    }
+
+    // ── 수정 페이지 이동 ─────────────────────────────
+    function goEdit() {
+      window.location.href = `board-write.html?id=${currentPost.id}&type=${currentPost.boardType}`;
+    }
+
+    // ── 삭제 처리 ────────────────────────────────────
+    function doDelete() {
+      const user = Auth.getCurrentUser();
+      if (!user) { alert('로그인이 필요합니다.'); return; }
+
+      if (!confirm('정말 이 게시글을 삭제하시겠습니까?')) return;
+
+      const result = Board.deletePost(currentPost.id, user);
+      if (result.success) {
+        alert('게시글이 삭제되었습니다.');
+        window.location.href = `board.html?type=${currentPost.boardType}`;
+      } else {
+        alert(result.message);
+      }
+    }
+
+    // ── XSS 방지 이스케이프 ──────────────────────────
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>

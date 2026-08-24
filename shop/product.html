@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>상품 상세 - 프린터모아</title>
+  <meta name="description" content="프린터모아 상품 상세 페이지">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../style.css">
+  <script src="../auth.js"></script>
+  <script src="shop.js"></script>
+  <style>
+    /* ── 기본 레이아웃 ── */
+    body { background: #f4f6f9; }
+
+    .pd-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+    }
+
+    /* ── 뒤로가기 ── */
+    .pd-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--gray-mid);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      margin-bottom: 20px;
+      transition: color 0.2s;
+    }
+    .pd-back:hover { color: var(--primary); }
+
+    /* ── 상단 2열 (이미지 | 요약 정보) ── */
+    .pd-top {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+      padding: 32px;
+      margin-bottom: 28px;
+    }
+
+    /* ── 이미지 갤러리 ── */
+    .pd-gallery {}
+
+    .pd-main-img-wrap {
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: #f8f9fa;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      border: 1.5px solid #eee;
+      cursor: zoom-in;
+      position: relative;
+    }
+    .pd-main-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: transform 0.35s ease;
+    }
+    .pd-main-img-wrap:hover img { transform: scale(1.04); }
+
+    /* 썸네일 */
+    .pd-thumbs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .pd-thumb {
+      width: 72px;
+      height: 60px;
+      object-fit: contain;
+      border-radius: 8px;
+      border: 2.5px solid #e0e0e0;
+      background: #f8f9fa;
+      cursor: pointer;
+      transition: border-color 0.18s, transform 0.18s;
+    }
+    .pd-thumb:hover   { transform: scale(1.08); }
+    .pd-thumb.active  { border-color: var(--primary); }
+
+    /* ── 우측: 상품 요약 ── */
+    .pd-info {}
+
+    .pd-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 12px;
+    }
+
+    .pd-name {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--dark);
+      line-height: 1.45;
+      margin-bottom: 8px;
+    }
+
+    .pd-desc {
+      font-size: 14px;
+      color: var(--gray-mid);
+      line-height: 1.7;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    /* 가격 */
+    .pd-price-box {
+      background: linear-gradient(135deg, #e8f4fd 0%, #f0faff 100%);
+      border: 1.5px solid #b3ddf5;
+      border-radius: 12px;
+      padding: 20px 22px;
+      margin-bottom: 20px;
+    }
+    .pd-price-label {
+      font-size: 12px;
+      color: var(--gray-mid);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .pd-original-price {
+      font-size: 14px;
+      color: #aaa;
+      text-decoration: line-through;
+      margin-bottom: 2px;
+    }
+    .pd-discount-rate {
+      display: inline-block;
+      background: #e53935;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .pd-price-main {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--primary);
+      line-height: 1.2;
+    }
+    .pd-price-unit {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--gray-mid);
+      margin-left: 4px;
+    }
+    .pd-price-note {
+      font-size: 12px;
+      color: var(--gray-mid);
+      margin-top: 6px;
+    }
+
+    /* 추천 대상 태그 */
+    .pd-rec-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 8px;
+    }
+    .pd-rec-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 24px;
+    }
+    .pd-rec-tag {
+      background: #eef7ff;
+      color: var(--primary);
+      border: 1px solid #c5e3f7;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 12px;
+    }
+
+    /* CTA 버튼 */
+    .pd-cta-row {
+      display: flex;
+      gap: 10px;
+    }
+    .pd-btn-primary {
+      flex: 1;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 0;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+    .pd-btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+    .pd-btn-secondary {
+      flex: 0 0 auto;
+      background: #fff;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: background 0.2s;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pd-btn-secondary:hover { background: #e8f4fd; }
+
+    /* ── 캐논 C3926 전용: 플랜 선택 UI ── */
+    .pd-plan-section {
+      margin-bottom: 18px;
+    }
+    .pd-plan-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pd-plan-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .pd-plan-card {
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+      background: #fff;
+      position: relative;
+    }
+    .pd-plan-card:hover {
+      border-color: var(--primary);
+      background: #f0f8ff;
+    }
+    .pd-plan-card.selected {
+      border-color: var(--primary);
+      background: linear-gradient(135deg, #e8f4fd 0%, #f0faff 100%);
+      box-shadow: 0 2px 12px rgba(0,100,200,0.12);
+    }
+    .pd-plan-card.selected::after {
+      content: '✔';
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      font-size: 14px;
+      font-weight: 900;
+      color: var(--primary);
+    }
+    .pd-plan-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .pd-plan-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+    .pd-plan-badge {
+      font-size: 11px;
+      font-weight: 700;
+      background: #e53935;
+      color: #fff;
+      border-radius: 4px;
+      padding: 2px 7px;
+    }
+    .pd-plan-price {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+    .pd-plan-price .orig {
+      font-size: 12px;
+      font-weight: 400;
+      color: #aaa;
+      text-decoration: line-through;
+      margin-right: 6px;
+    }
+    .pd-plan-price .unit {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-mid);
+    }
+    .pd-plan-desc {
+      font-size: 12px;
+      color: #555;
+      line-height: 1.6;
+    }
+    .pd-plan-desc span {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* 팩스 옵션 */
+    .pd-option-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fffbf0;
+      border: 1.5px solid #ffe082;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .pd-option-row:hover { background: #fff8e1; }
+    .pd-option-checkbox {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .pd-option-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--dark);
+      flex: 1;
+    }
+    .pd-option-price {
+      font-size: 13px;
+      font-weight: 700;
+      color: #e53935;
+    }
+
+    /* 합산 가격 표시 */
+    .pd-total-box {
+      background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .pd-total-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.8);
+    }
+    .pd-total-price {
+      font-size: 26px;
+      font-weight: 900;
+      color: #fff;
+    }
+    .pd-total-price .unit {
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.75);
+      margin-left: 4px;
+    }
+    .pd-total-note {
+      font-size: 11px;
+      color: rgba(255,255,255,0.6);
+      margin-top: 2px;
+    }
+
+    /* ── 주요 특징 섹션 ── */
+    .pd-section {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+      padding: 32px;
+      margin-bottom: 28px;
+    }
+    .pd-section-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--dark);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pd-section-title::after {
+      content: '';
+      flex: 1;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary) 0%, transparent 100%);
+      border-radius: 2px;
+    }
+
+    .pd-features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .pd-feature-card {
+      background: #f8fafc;
+      border: 1px solid #e8edf2;
+      border-radius: 12px;
+      padding: 20px 16px;
+      text-align: center;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .pd-feature-card:hover {
+      box-shadow: 0 4px 18px rgba(0,153,204,0.12);
+      transform: translateY(-3px);
+    }
+    .pd-feature-icon { font-size: 32px; margin-bottom: 10px; display: block; }
+    .pd-feature-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--dark);
+      margin-bottom: 5px;
+    }
+    .pd-feature-desc {
+      font-size: 12px;
+      color: var(--gray-mid);
+      line-height: 1.6;
+    }
+
+    /* ── 스펙 테이블 ── */
+    .pd-spec-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .pd-spec-table tr { border-bottom: 1px solid #f0f0f0; }
+    .pd-spec-table tr:last-child { border-bottom: none; }
+    .pd-spec-table th {
+      width: 160px;
+      background: #f4f6f9;
+      color: var(--gray-dark);
+      font-weight: 700;
+      padding: 12px 16px;
+      text-align: left;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+    .pd-spec-table td {
+      padding: 12px 16px;
+      color: var(--dark);
+      line-height: 1.6;
+    }
+    /* 섹션 그룹 헤더 행 */
+    .pd-spec-table tr.spec-group-header td {
+      background: linear-gradient(90deg, #0099cc 0%, #0077a8 100%);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 9px 16px;
+      letter-spacing: 0.03em;
+    }
+    .pd-spec-table tr.spec-group-header:not(:first-child) td {
+      border-top: 8px solid #f4f6f9; /* 그룹 간 여백 */
+    }
+
+    /* ── 상세 이미지 (인포그래픽) ── */
+    .pd-detail-img-wrap {
+      text-align: center;
+    }
+    .pd-detail-img-wrap img {
+      max-width: 100%;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+    }
+
+    /* ── 관련 상품 ── */
+    .pd-related-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .pd-related-card {
+      background: #f8fafc;
+      border: 1px solid #e8edf2;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: box-shadow 0.2s, transform 0.2s;
+      text-decoration: none;
+    }
+    .pd-related-card:hover {
+      box-shadow: 0 6px 24px rgba(0,153,204,0.15);
+      transform: translateY(-4px);
+    }
+    .pd-related-img {
+      width: 100%;
+      height: 120px;
+      object-fit: contain;
+      background: #fff;
+      display: block;
+    }
+    .pd-related-body { padding: 12px 14px; }
+    .pd-related-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--dark);
+      line-height: 1.4;
+      margin-bottom: 6px;
+    }
+    .pd-related-price {
+      font-size: 15px;
+      font-weight: 900;
+      color: var(--primary);
+    }
+
+    /* ── 반응형 ── */
+    @media (max-width: 768px) {
+      .pd-top { grid-template-columns: 1fr; gap: 20px; }
+      .pd-features-grid { grid-template-columns: repeat(2, 1fr); }
+      .pd-related-grid { grid-template-columns: repeat(2, 1fr); }
+      .pd-name { font-size: 18px; }
+    }
+    @media (max-width: 480px) {
+      .pd-features-grid { grid-template-columns: 1fr 1fr; }
+      .pd-related-grid { grid-template-columns: 1fr; }
+    }
+
+    /* 로딩 스피너 */
+    .pd-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+      color: var(--gray-mid);
+      font-size: 16px;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <header class="top-bar">
+    <div class="container">
+      <div class="inner">
+        <div class="top-search" style="visibility:hidden;"></div>
+        <a href="../index.html" class="logo" id="pdLogo">
+          <div class="logo-text">프린터<span>모아</span></div>
+        </a>
+        <div class="top-phone">
+          <div class="auth-nav-area">
+            <span class="header-user-name" id="headerUserName" style="display:none"></span>
+            <a href="../login.html" class="header-auth-btn" id="headerLoginLink">로그인</a>
+            <a href="../register.html" class="header-auth-btn filled" id="headerRegisterLink">회원가입</a>
+            <button class="header-auth-btn logout" id="headerLogoutBtn" style="display:none">로그아웃</button>
+          </div>
+          <div class="label">상담 전화</div>
+          <a href="tel:07051333777" class="number">070-5133-3777</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- GNB -->
+  <nav class="gnb">
+    <div class="container">
+      <div class="gnb-menu">
+        <ul>
+          <li><a href="shop.html?category=inkjet">잉크젯복합기</a></li>
+          <li><a href="shop.html?category=laser">레이저복합기</a></li>
+          <li><a href="shop.html?category=doc">문서세단기</a></li>
+          <li><a href="shop.html?category=pc">컴퓨터·노트북</a></li>
+          <li><a href="../board/board.html?type=notice">공지사항</a></li>
+          <li><a href="../board/board.html?type=consult">상담게시판</a></li>
+          <li><a href="../board/board.html?type=review">사용후기</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 상품 상세 콘텐츠 -->
+  <div class="pd-wrap" id="pdWrap">
+    <div class="pd-loading" id="pdLoading">
+      <i class="fa fa-spinner fa-spin"></i> 상품 정보를 불러오는 중...
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer" style="margin-top: 0;">
+    <div class="container">
+      <div class="footer-links">
+        <a href="../index.html" class="bold">홈</a>
+        <a href="../board/board.html?type=notice">공지사항</a>
+        <a href="../board/board.html?type=consult">상담게시판</a>
+        <a href="../board/board.html?type=review">사용후기</a>
+      </div>
+      <p class="footer-company">프린터모아</p>
+      <div class="footer-info">
+        대표 : 화정원 &nbsp; 주소 : 경기도 성남시 중원구 둔촌대로388 크란츠테크노 407호<br>
+        전화 : 070-5133-3777 &nbsp; 사업자 등록번호 : 214-08-41154
+      </div>
+      <div class="footer-copyright">Copyright © 프린터모아. All Rights Reserved.</div>
+    </div>
+  </footer>
+
+  <script>
+    // ── 초기화 ─────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      Auth.updateHeaderUI();
+
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get('id');
+
+      if (!productId) {
+        showError('상품 ID가 없습니다.');
+        return;
+      }
+
+      const product = ShopData.products.find(p => p.id === productId);
+      if (!product) {
+        showError('존재하지 않는 상품입니다.');
+        return;
+      }
+
+      // 페이지 타이틀 업데이트
+      document.title = `${product.name} - 프린터모아`;
+
+      renderPage(product);
+    });
+
+    // ── 페이지 전체 렌더링 ────────────────────────────────
+    function renderPage(p) {
+      const wrap = document.getElementById('pdWrap');
+      const cat = ShopData.getCategoryById(p.category);
+      const discount = Math.round((1 - p.price / p.originalPrice) * 100);
+      const images = Array.isArray(p.images) ? p.images : [];
+
+      // 뱃지 HTML
+      const badgesHtml = p.badges.map((b, i) =>
+        `<span class="badge ${ShopData.getBadgeClass(p.badgeTypes[i] || 'new')}">${b}</span>`
+      ).join('');
+
+      // 썸네일 HTML
+      const thumbsHtml = images.map((src, i) => `
+        <img class="pd-thumb ${i === 0 ? 'active' : ''}"
+             src="${src}" alt="이미지 ${i + 1}"
+             loading="${i === 0 ? 'eager' : 'lazy'}"
+             onclick="changeMainImg(${i})"
+             onerror="this.style.opacity='0.3';"
+        />
+      `).join('');
+
+      // 주요 특징 HTML
+      const featuresHtml = (p.features || []).map(f => `
+        <div class="pd-feature-card">
+          <span class="pd-feature-icon">${f.icon}</span>
+          <div class="pd-feature-title">${f.title}</div>
+          <div class="pd-feature-desc">${f.desc}</div>
+        </div>
+      `).join('');
+
+      // 스펙 테이블 HTML — group 키가 있으면 섹션 헤더, 아니면 일반 행
+      const specRows = (p.specDetail || []).map((s, idx) => {
+        if (s.group) {
+          // 그룹 헤더 행: colspan=2, 파란 배경
+          return `<tr class="spec-group-header"><td colspan="2">${s.group}</td></tr>`;
+        }
+        return `
+          <tr>
+            <th>${s.label}</th>
+            <td>${s.value}</td>
+          </tr>`;
+      }).join('');
+
+      // 추천 대상 태그
+      const recTags = (p.recommend || []).map(r =>
+        `<span class="pd-rec-tag">${r}</span>`
+      ).join('');
+
+      // 상세 인포그래픽 이미지 (마지막 이미지가 spec 이미지)
+      const specImgSrc = images.length >= 3 ? images[images.length - 1] : '';
+      const specImgSection = specImgSrc ? `
+        <div class="pd-section">
+          <h2 class="pd-section-title"><i class="fa fa-file-image" style="color:var(--primary);"></i> 상세 설명</h2>
+          <div class="pd-detail-img-wrap">
+            <img src="${specImgSrc}" alt="${p.name} 상세 설명" loading="lazy">
+          </div>
+        </div>
+      ` : '';
+
+      // 관련 상품 (같은 카테고리, 본 상품 제외, 최대 3개)
+      const related = ShopData.products
+        .filter(x => x.category === p.category && x.id !== p.id)
+        .slice(0, 3);
+
+      const relatedHtml = related.length > 0 ? `
+        <div class="pd-section">
+          <h2 class="pd-section-title"><i class="fa fa-th-large" style="color:var(--primary);"></i> 관련 상품</h2>
+          <div class="pd-related-grid">
+            ${related.map(r => {
+              const rImg = Array.isArray(r.images) && r.images.length > 0 ? r.images[0] : '';
+              return `
+                <a class="pd-related-card" href="product.html?id=${r.id}">
+                  ${rImg ? `<img class="pd-related-img" src="${rImg}" alt="${r.name}" loading="lazy">` : `<div class="pd-related-img" style="display:flex;align-items:center;justify-content:center;font-size:36px;">🖨️</div>`}
+                  <div class="pd-related-body">
+                    <div class="pd-related-name">${r.name}</div>
+                    <div class="pd-related-price">${ShopData.formatPrice(r.price)}<span style="font-size:12px;font-weight:400;color:var(--gray-mid);">원/월</span></div>
+                  </div>
+                </a>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      ` : '';
+
+      // 전체 페이지 HTML 조립
+      wrap.innerHTML = `
+        <!-- 뒤로가기 -->
+        <a class="pd-back" href="shop.html?category=${p.category}">
+          <i class="fa fa-chevron-left"></i> ${cat.label} 목록으로
+        </a>
+
+        <!-- 상단: 이미지 + 요약 -->
+        <div class="pd-top">
+
+          <!-- 이미지 갤러리 -->
+          <div class="pd-gallery">
+            <div class="pd-main-img-wrap" id="pdMainImgWrap">
+              <img id="pdMainImg"
+                   src="${images[0] || ''}"
+                   alt="${p.name}"
+                   onerror="this.src=''; this.alt='이미지 없음';"
+              >
+            </div>
+            ${images.length > 1 ? `<div class="pd-thumbs" id="pdThumbs">${thumbsHtml}</div>` : ''}
+          </div>
+
+          <!-- 상품 요약 정보 -->
+          <div class="pd-info">
+            <div class="pd-badges">${badgesHtml}</div>
+            <h1 class="pd-name">${p.name}</h1>
+            <p class="pd-desc">${p.description}</p>
+
+            <!-- 가격 박스: p006(캐논)은 플랜 선택 UI, 나머지는 단일 가격 -->
+            ${
+              p.id === 'p006'
+              ? `
+              <!-- ① 플랜 선택 -->
+              <div class="pd-plan-section">
+                <div class="pd-plan-label"><i class="fa fa-list" style="color:var(--primary);"></i> 출력카운터 요금 플랜 선택</div>
+                <div class="pd-plan-grid" id="planGrid">
+
+                  <div class="pd-plan-card selected" id="plan0" onclick="selectPlan(0)">
+                    <div class="pd-plan-top">
+                      <span class="pd-plan-name">🔹 기본형</span>
+                      <span class="pd-plan-badge">30% 할인</span>
+                    </div>
+                    <div class="pd-plan-price">
+                      <span class="orig">100,000원</span>
+                      70,000<span class="unit">원/월</span>
+                    </div>
+                    <div class="pd-plan-desc">
+                      흑백 <span>1,000장</span> 포함 (초과 시 장당 10원)<br>
+                      컬러 <span>100장</span> 포함 (초과 시 장당 100원)
+                    </div>
+                  </div>
+
+                  <div class="pd-plan-card" id="plan1" onclick="selectPlan(1)">
+                    <div class="pd-plan-top">
+                      <span class="pd-plan-name">🔶 중형</span>
+                    </div>
+                    <div class="pd-plan-price">
+                      90,000<span class="unit">원/월</span>
+                    </div>
+                    <div class="pd-plan-desc">
+                      흑백 <span>3,000장</span> 포함 (초과 시 장당 10원)<br>
+                      컬러 <span>300장</span> 포함 (초과 시 장당 100원)
+                    </div>
+                  </div>
+
+                  <div class="pd-plan-card" id="plan2" onclick="selectPlan(2)">
+                    <div class="pd-plan-top">
+                      <span class="pd-plan-name">🔴 대형</span>
+                    </div>
+                    <div class="pd-plan-price">
+                      110,000<span class="unit">원/월</span>
+                    </div>
+                    <div class="pd-plan-desc">
+                      흑백 <span>5,000장</span> 포함 (초과 시 장당 10원)<br>
+                      컬러 <span>500장</span> 포함 (초과 시 장당 100원)
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- ② 팩스 옵션 -->
+              <label class="pd-option-row" for="faxOption">
+                <input type="checkbox" id="faxOption" class="pd-option-checkbox" onchange="updateTotal()">
+                <div class="pd-option-label">
+                  📠 팩스 기능 추가
+                  <div style="font-size:11px;font-weight:400;color:#888;margin-top:2px;">팩스 수신·발신 지원 (옵션 추가 시)</div>
+                </div>
+                <span class="pd-option-price">+ 10,000원/월</span>
+              </label>
+
+              <!-- ③ 합산 가격 -->
+              <div class="pd-total-box">
+                <div>
+                  <div class="pd-total-label">선택된 월 렌탈료 합계</div>
+                  <div class="pd-total-note">3년 약정 기준 / VAT 별도</div>
+                </div>
+                <div style="text-align:right;">
+                  <div class="pd-total-price" id="totalPrice">70,000<span class="unit">원/월</span></div>
+                </div>
+              </div>`
+
+              : `
+              <div class="pd-price-box">
+                <div class="pd-price-label">월 렌탈료 (3년 약정 기준 / VAT 별도)</div>
+                <div class="pd-original-price">
+                  정가 ${ShopData.formatPrice(p.originalPrice)}원
+                  ${discount > 0 ? '<span class="pd-discount-rate">' + discount + '% 할인</span>' : ''}
+                </div>
+                <div class="pd-price-main">
+                  ${ShopData.formatPrice(p.price)}<span class="pd-price-unit">원 / 월</span>
+                </div>
+                <div class="pd-price-note">
+                  ✅ 무상 AS 포함 &nbsp;|&nbsp; ✅ 잉크 무료 &nbsp;|&nbsp; ✅ 설치비 무료
+                </div>
+              </div>`
+            }
+
+            <!-- 추천 대상 -->
+            ${recTags ? `<div class="pd-rec-label">추천 대상</div><div class="pd-rec-tags">${recTags}</div>` : ''}
+
+            <!-- CTA 버튼 -->
+            <div class="pd-cta-row">
+              <a href="../board/board.html?type=consult" class="pd-btn-primary" id="pdConsultBtn">
+                <i class="fa fa-comment"></i> 렌탈 상담 신청
+              </a>
+              <a href="tel:07051333777" class="pd-btn-secondary">
+                <i class="fa fa-phone"></i> 전화
+              </a>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 주요 특징 -->
+        ${featuresHtml ? `
+        <div class="pd-section">
+          <h2 class="pd-section-title"><i class="fa fa-star" style="color:var(--primary);"></i> 주요 특징</h2>
+          <div class="pd-features-grid">${featuresHtml}</div>
+        </div>` : ''}
+
+        <!-- 상세 설명 (인포그래픽) -->
+        ${specImgSection}
+
+        <!-- 상세 스펙 -->
+        ${specRows ? `
+        <div class="pd-section">
+          <h2 class="pd-section-title"><i class="fa fa-list-alt" style="color:var(--primary);"></i> 상세 스펙</h2>
+          <table class="pd-spec-table">${specRows}</table>
+        </div>` : ''}
+
+        <!-- 관련 상품 -->
+        ${relatedHtml}
+      `;
+    }
+
+    // ── 메인 이미지 변경 ────────────────────────────────────
+    function changeMainImg(idx) {
+      const p = getCurrentProduct();
+      if (!p) return;
+      const images = Array.isArray(p.images) ? p.images : [];
+      if (!images[idx]) return;
+
+      const mainImg = document.getElementById('pdMainImg');
+      mainImg.style.opacity = '0.4';
+      mainImg.src = images[idx];
+      mainImg.onload = () => { mainImg.style.opacity = '1'; };
+
+      // 썸네일 활성화
+      document.querySelectorAll('.pd-thumb').forEach((el, i) => {
+        el.classList.toggle('active', i === idx);
+      });
+    }
+
+    // ── 캐논 C3926 플랜 선택 ──────────────────────────────
+    // 선택된 플랜 가격 (기본형 70,000 / 중형 90,000 / 대형 110,000)
+    const PLAN_PRICES = [70000, 90000, 110000];
+    let selectedPlan = 0;
+
+    function selectPlan(idx) {
+      selectedPlan = idx;
+      // 카드 활성화 토글
+      document.querySelectorAll('.pd-plan-card').forEach((card, i) => {
+        card.classList.toggle('selected', i === idx);
+      });
+      updateTotal();
+    }
+
+    function updateTotal() {
+      const fax = document.getElementById('faxOption');
+      if (!fax) return; // p006 아닌 경우 무시
+      const faxCost = fax.checked ? 10000 : 0;
+      const total = PLAN_PRICES[selectedPlan] + faxCost;
+      const el = document.getElementById('totalPrice');
+      if (el) {
+        el.innerHTML = total.toLocaleString() + '<span class="unit">원/월</span>';
+      }
+    }
+
+    // ── 현재 상품 가져오기 ─────────────────────────────────
+    function getCurrentProduct() {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      return ShopData.products.find(p => p.id === id) || null;
+    }
+
+    // ── 에러 표시 ──────────────────────────────────────────
+    function showError(msg) {
+      document.getElementById('pdWrap').innerHTML = `
+        <div style="text-align:center; padding: 80px 20px; color: var(--gray-mid);">
+          <i class="fa fa-exclamation-circle" style="font-size:48px; margin-bottom:16px; display:block; color:#ddd;"></i>
+          <p style="font-size:16px;">${msg}</p>
+          <a href="shop.html" style="color:var(--primary); font-weight:700;">상품 목록으로 돌아가기</a>
+        </div>
+      `;
+    }
+  </script>
+
+</body>
+</html>

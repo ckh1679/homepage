@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>프린터모아 - 복합기·프린터 렌탈 전문 | 전국 설치 가능 | 070-5133-3777</title>
+  <meta name="description" content="복합기, 프린터, 노트북 렌탈 전문 기업 프린터모아. 전국 모든 지역 설치 가능, 잉크젯 가격으로 레이저 렌탈. 무상 AS, 토너 무료 서비스 제공. 상담 070-5133-3777">
+  <meta name="keywords" content="복합기렌탈, 프린터렌탈, 레이저복합기, 잉크젯복합기, 사무기기렌탈, 신도리코, 삼성복합기, 캐논, 프린터모아">
+  <meta property="og:title" content="프린터모아 - 복합기·프린터 렌탈 전문">
+  <meta property="og:description" content="전국 모든 지역 설치 가능. 잉크젯 가격으로 레이저 렌탈하자!">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <!-- Font Awesome 아이콘 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="auth.js"></script>
+</head>
+<body>
+
+  <!-- ============================================
+       TOP BAR - 로고 / 검색 / 전화번호
+       ============================================ -->
+  <header class="top-bar">
+    <div class="container">
+      <div class="inner">
+
+        <!-- 검색창 -->
+        <div class="top-search">
+          <input type="text" id="searchInput" placeholder="검색어를 입력해주세요" aria-label="상품 검색">
+          <button id="searchBtn" aria-label="검색하기"><i class="fa fa-search"></i></button>
+        </div>
+
+        <!-- 로고 -->
+        <a href="index.html" class="logo" id="mainLogo">
+          <div class="logo-text">프린터<span>모아</span></div>
+        </a>
+
+        <!-- 우측: 전화번호 + 로그인/회원가입 -->
+        <div class="top-phone">
+          <div class="auth-nav-area">
+            <span class="header-user-name" id="headerUserName" style="display:none"></span>
+            <a href="login.html" class="header-auth-btn" id="headerLoginLink">로그인</a>
+            <a href="register.html" class="header-auth-btn filled" id="headerRegisterLink">회원가입</a>
+            <button class="header-auth-btn logout" id="headerLogoutBtn" style="display:none">로그아웃</button>
+          </div>
+          <div class="label">상담 전화</div>
+          <a href="tel:07051333777" class="number">070-5133-3777</a>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================================
+       GNB - 메인 네비게이션
+       ============================================ -->
+  <nav class="gnb" id="gnbNav">
+    <div class="container">
+      <div class="gnb-menu">
+          <ul>
+            <li><a href="shop/shop.html?category=inkjet" id="navInkjet">잉크젯복합기</a></li>
+            <li><a href="shop/shop.html?category=laser" id="navLaser">레이저복합기</a></li>
+            <li><a href="shop/shop.html?category=doc" id="navDoc">문서세단기</a></li>
+            <li><a href="shop/shop.html?category=pc" id="navPc">컴퓨터·노트북</a></li>
+            <li><a href="board/board.html?type=notice" id="navNotice">공지사항</a></li>
+            <li><a href="board/board.html?type=consult" id="navConsult">상담게시판</a></li>
+            <li><a href="board/board.html?type=review" id="navReview">사용후기</a></li>
+          </ul>
+        </div>
+    </div>
+  </nav>
+
+  <!-- ============================================
+       HERO SLIDER - 메인 배너 (실제 제품 슬라이드)
+       ============================================ -->
+  <section class="hero-slider" id="heroSlider">
+    <div class="hero-slides" id="heroSlidesTrack">
+
+      <!-- 슬라이드 1: HP 9010 -->
+      <div class="hero-slide">
+        <div class="hero-slide-inner">
+          <div class="hero-content fade-in-up">
+            <div class="hero-badge">🖨️ 잉크젯복합기 A4 인기 1위</div>
+            <h1 class="hero-title">HP OfficeJet Pro 9010<br><em>월 40,000원</em>부터</h1>
+            <p class="hero-subtitle">무한 잉크탱크 · 자동 양면인쇄 · 팩스 지원<br>무상 AS + 잉크 무료 · 3년 약정 / VAT 별도</p>
+            <a href="shop/product.html?id=p001" class="hero-cta" id="heroCta1">
+              상세보기 <i class="fa fa-arrow-right"></i>
+            </a>
+          </div>
+          <div class="hero-slide-decorator" style="display:flex;align-items:center;justify-content:center;flex:1;">
+            <img src="shop/images/hp9010_main.jpg" alt="HP OfficeJet Pro 9010"
+                 style="max-height:220px;max-width:320px;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,0.35));border-radius:12px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- 슬라이드 2: HP 9020 -->
+      <div class="hero-slide">
+        <div class="hero-slide-inner">
+          <div class="hero-content fade-in-up">
+            <div class="hero-badge">⚡ 초고속 39ppm 출력</div>
+            <h1 class="hero-title">HP OfficeJet Pro 9020<br><em>월 45,000원</em>부터</h1>
+            <p class="hero-subtitle">흑백·컬러 39ppm 고속 출력 · 500매 급지<br>에어프린팅 · Wi-Fi · 3년 약정 / VAT 별도</p>
+            <a href="shop/product.html?id=p002" class="hero-cta" id="heroCta2">
+              상세보기 <i class="fa fa-arrow-right"></i>
+            </a>
+          </div>
+          <div class="hero-slide-decorator" style="display:flex;align-items:center;justify-content:center;flex:1;">
+            <img src="shop/images/hp9020_main.jpg" alt="HP OfficeJet Pro 9020"
+                 style="max-height:220px;max-width:320px;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,0.35));border-radius:12px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- 슬라이드 3: HP 7740 A3 -->
+      <div class="hero-slide">
+        <div class="hero-slide-inner">
+          <div class="hero-content fade-in-up">
+            <div class="hero-badge">📐 A3 와이드포맷 복합기</div>
+            <h1 class="hero-title">HP OfficeJet Pro 7740<br><em>월 50,000원</em>부터</h1>
+            <p class="hero-subtitle">최대 A3 지원 · 500매 급지 · 광학 스캔 1200dpi<br>도면·디자인·학원 최적 · 3년 약정 / VAT 별도</p>
+            <a href="shop/product.html?id=p003" class="hero-cta" id="heroCta3">
+              상세보기 <i class="fa fa-arrow-right"></i>
+            </a>
+          </div>
+          <div class="hero-slide-decorator" style="display:flex;align-items:center;justify-content:center;flex:1;">
+            <img src="shop/images/hp7740_main.jpg" alt="HP OfficeJet Pro 7740"
+                 style="max-height:220px;max-width:320px;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,0.35));border-radius:12px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- 슬라이드 4: 캐논 C3926 레이저 -->
+      <div class="hero-slide">
+        <div class="hero-slide-inner">
+          <div class="hero-content fade-in-up">
+            <div class="hero-badge">🏢 기업용 A3 컬러 레이저</div>
+            <h1 class="hero-title">캐논 imageRUNNER<br><em>ADVANCE DX C3926</em></h1>
+            <p class="hero-subtitle">10.1인치 터치패널 · 분당 26매 · 스캔 70ipm<br>월 70,000원부터 (월 출력카운터 기준) / VAT 별도</p>
+            <a href="shop/product.html?id=p006" class="hero-cta" id="heroCta4">
+              상세보기 <i class="fa fa-arrow-right"></i>
+            </a>
+          </div>
+          <div class="hero-slide-decorator" style="display:flex;align-items:center;justify-content:center;flex:1;">
+            <img src="shop/images/c3926_main.jpg" alt="캐논 imageRUNNER ADVANCE DX C3926"
+                 style="max-height:220px;max-width:320px;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,0.35));border-radius:12px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- 슬라이드 5: 현대오피스 세단기 -->
+      <div class="hero-slide">
+        <div class="hero-slide-inner">
+          <div class="hero-content fade-in-up">
+            <div class="hero-badge">🔒 개인정보 보호 필수 아이템</div>
+            <h1 class="hero-title">현대오피스 페이퍼프랜드<br><em>문서세단기 렌탈</em></h1>
+            <p class="hero-subtitle">소형(PK-612X) · 중형(PK-7100CD) 구비<br>꽃가루형 세단 · CD·카드 파쇄 · 월 15,000원~</p>
+            <a href="shop/product.html?id=p012" class="hero-cta" id="heroCta5">
+              상세보기 <i class="fa fa-arrow-right"></i>
+            </a>
+          </div>
+          <div class="hero-slide-decorator" style="display:flex;align-items:center;justify-content:center;flex:1;">
+            <img src="shop/images/pk612x_main.jpg" alt="현대오피스 페이퍼프랜드 문서세단기"
+                 style="max-height:220px;max-width:320px;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,0.35));border-radius:12px;">
+          </div>
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- 슬라이더 화살표 -->
+    <button class="slider-arrow prev" id="heroPrevBtn" aria-label="이전 슬라이드">
+      <i class="fa fa-chevron-left"></i>
+    </button>
+    <button class="slider-arrow next" id="heroNextBtn" aria-label="다음 슬라이드">
+      <i class="fa fa-chevron-right"></i>
+    </button>
+
+    <!-- 슬라이더 닷 인디케이터 (5개) -->
+    <div class="slider-dots" id="sliderDots">
+      <button class="dot active" data-slide="0" aria-label="슬라이드 1"></button>
+      <button class="dot" data-slide="1" aria-label="슬라이드 2"></button>
+      <button class="dot" data-slide="2" aria-label="슬라이드 3"></button>
+      <button class="dot" data-slide="3" aria-label="슬라이드 4"></button>
+      <button class="dot" data-slide="4" aria-label="슬라이드 5"></button>
+    </div>
+  </section>
+
+  <!-- ============================================
+       분류별 렌탈 상품 아이콘 (카테고리)
+       ============================================ -->
+  <section class="category-section" id="categorySection">
+    <div class="container">
+      <div class="category-icons">
+
+        <a href="shop/shop.html?category=inkjet&sub=inkjet-a3" class="category-icon-item reveal" id="catInkjetA3" style="text-decoration:none;cursor:pointer;">
+          <div class="cat-icon-wrap"><i class="fa fa-print"></i></div>
+          <span class="cat-label">잉크복합기 · A3</span>
+        </a>
+
+        <a href="shop/shop.html?category=laser&sub=laser-mono-a3" class="category-icon-item reveal" id="catMonoA3" style="text-decoration:none;cursor:pointer;">
+          <div class="cat-icon-wrap"><i class="fa fa-copy"></i></div>
+          <span class="cat-label">흑백복합기 · A3</span>
+        </a>
+
+        <a href="shop/shop.html?category=laser&sub=laser-color-a4" class="category-icon-item reveal" id="catLaserA4" style="text-decoration:none;cursor:pointer;">
+          <div class="cat-icon-wrap"><i class="fa fa-file-alt"></i></div>
+          <span class="cat-label">레이저복합기 · A4</span>
+        </a>
+
+        <a href="shop/shop.html?category=inkjet&sub=inkjet-a4" class="category-icon-item reveal" id="catInkjetA4" style="text-decoration:none;cursor:pointer;">
+          <div class="cat-icon-wrap"><i class="fa fa-tint"></i></div>
+          <span class="cat-label">잉크복합기 · A4</span>
+        </a>
+
+        <a href="shop/shop.html?category=pc" class="category-icon-item reveal" id="catPcNotebook" style="text-decoration:none;cursor:pointer;">
+          <div class="cat-icon-wrap"><i class="fa fa-laptop"></i></div>
+          <span class="cat-label">PC · 노트북</span>
+        </a>
+
+        <a href="shop/shop.html?category=doc" class="category-icon-item reveal" id="catShredder" style="text-decoration:none;cursor:pointer;">
+          <div class="cat-icon-wrap"><i class="fa fa-scissors"></i></div>
+          <span class="cat-label">세단기</span>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       업종별 맞춤 서비스
+       ============================================ -->
+  <section class="industry-section" id="industrySection">
+    <div class="container">
+      <div class="industry-title-area reveal">
+        <h2>업종별 맞춤 서비스</h2>
+      </div>
+      <div class="industry-grid">
+
+        <div class="industry-card reveal" id="industryHome">
+          <div class="industry-icon">🏠</div>
+          <span class="industry-label">가정 · 소호</span>
+        </div>
+
+        <div class="industry-card reveal" id="industryOffice">
+          <div class="industry-icon">🏢</div>
+          <span class="industry-label">사무용</span>
+        </div>
+
+        <div class="industry-card reveal" id="industryDesign">
+          <div class="industry-icon">🎨</div>
+          <span class="industry-label">디자인 공통용</span>
+        </div>
+
+        <div class="industry-card reveal" id="industryConstruction">
+          <div class="industry-icon">🏗️</div>
+          <span class="industry-label">도면 건축용</span>
+        </div>
+
+        <div class="industry-card reveal" id="industryInsurance">
+          <div class="industry-icon">📋</div>
+          <span class="industry-label">학원 · 보험사용</span>
+        </div>
+
+        <div class="industry-card reveal" id="industryShortTerm">
+          <div class="industry-icon">📅</div>
+          <span class="industry-label">단기 임대용</span>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       이런 상품 어때요? (추천 상품)
+       ============================================ -->
+  <section class="section bg-light" id="recommendSection">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2 class="section-title">이런 상품 어때요?</h2>
+        <p class="section-subtitle">프린터모아 MD가 자체적으로 추천하는 추천상품</p>
+        <span class="section-badge">MD추천</span>
+      </div>
+
+      <div class="products-slider-wrap" id="productsSlider1">
+        <button class="prod-arrow prev" id="prodPrev1" aria-label="이전 상품">
+          <i class="fa fa-chevron-left"></i>
+        </button>
+
+        <div class="products-row" id="productsGrid1">
+
+          <!-- HP 9010 -->
+          <a class="product-card reveal" id="prod1" href="shop/product.html?id=p001" style="text-decoration:none;color:inherit;cursor:pointer;">
+            <div class="product-img-wrap">
+              <img src="shop/images/hp9010_main.jpg" alt="HP OfficeJet Pro 9010 A4 잉크젯복합기" loading="lazy">
+            </div>
+            <div class="product-info">
+              <div class="product-badges">
+                <span class="badge badge-new">새상품</span>
+                <span class="badge badge-color">컬러</span>
+                <span class="badge badge-free-as">무상AS</span>
+                <span class="badge badge-free-toner">잉크무료</span>
+              </div>
+              <p class="product-name">HP OfficeJet Pro 9010 A4 잉크젯복합기</p>
+              <div class="product-price">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                  <span style="font-size:12px;color:#999;text-decoration:line-through;">50,000원</span>
+                  <span style="font-size:11px;font-weight:700;color:#fff;background:#e53935;border-radius:4px;padding:1px 6px;">20% 할인</span>
+                </div>
+                <span class="price">40,000</span>
+                <span class="unit">원/월</span>
+                <span class="chat-btn"><i class="fa fa-search"></i> 상세보기</span>
+              </div>
+            </div>
+          </a>
+
+          <!-- HP 9020 -->
+          <a class="product-card reveal" id="prod2" href="shop/product.html?id=p002" style="text-decoration:none;color:inherit;cursor:pointer;">
+            <div class="product-img-wrap">
+              <img src="shop/images/hp9020_main.jpg" alt="HP OfficeJet Pro 9020 A4 잉크젯복합기" loading="lazy">
+            </div>
+            <div class="product-info">
+              <div class="product-badges">
+                <span class="badge badge-new">새상품</span>
+                <span class="badge badge-color">컬러</span>
+                <span class="badge badge-free-as">무상AS</span>
+                <span class="badge badge-free-toner">잉크무료</span>
+              </div>
+              <p class="product-name">HP OfficeJet Pro 9020 A4 잉크젯복합기</p>
+              <div class="product-price">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                  <span style="font-size:12px;color:#999;text-decoration:line-through;">60,000원</span>
+                  <span style="font-size:11px;font-weight:700;color:#fff;background:#e53935;border-radius:4px;padding:1px 6px;">25% 할인</span>
+                </div>
+                <span class="price">45,000</span>
+                <span class="unit">원/월</span>
+                <span class="chat-btn"><i class="fa fa-search"></i> 상세보기</span>
+              </div>
+            </div>
+          </a>
+
+          <!-- HP 7740 -->
+          <a class="product-card reveal" id="prod3" href="shop/product.html?id=p003" style="text-decoration:none;color:inherit;cursor:pointer;">
+            <div class="product-img-wrap">
+              <img src="shop/images/hp7740_main.jpg" alt="HP OfficeJet Pro 7740 A3 와이드포맷 복합기" loading="lazy">
+            </div>
+            <div class="product-info">
+              <div class="product-badges">
+                <span class="badge badge-new">새상품</span>
+                <span class="badge badge-color">컬러</span>
+                <span class="badge badge-free-as">무상AS</span>
+                <span class="badge badge-free-toner">잉크무료</span>
+              </div>
+              <p class="product-name">HP OfficeJet Pro 7740 A3 와이드포맷 복합기</p>
+              <div class="product-price">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                  <span style="font-size:12px;color:#999;text-decoration:line-through;">70,000원</span>
+                  <span style="font-size:11px;font-weight:700;color:#fff;background:#e53935;border-radius:4px;padding:1px 6px;">28% 할인</span>
+                </div>
+                <span class="price">50,000</span>
+                <span class="unit">원/월</span>
+                <span class="chat-btn"><i class="fa fa-search"></i> 상세보기</span>
+              </div>
+            </div>
+          </a>
+
+          <!-- 캐논 C3926 -->
+          <a class="product-card reveal" id="prod4" href="shop/product.html?id=p006" style="text-decoration:none;color:inherit;cursor:pointer;">
+            <div class="product-img-wrap">
+              <img src="shop/images/c3926_main.jpg" alt="캐논 imageRUNNER ADVANCE DX C3926 컬러 레이저복합기" loading="lazy">
+            </div>
+            <div class="product-info">
+              <div class="product-badges">
+                <span class="badge badge-new">새상품</span>
+                <span class="badge badge-color">컬러</span>
+                <span class="badge badge-free-as">무상AS</span>
+                <span class="badge badge-free-toner">토너무료</span>
+              </div>
+              <p class="product-name">캐논 imageRUNNER ADVANCE DX C3926 컬러 레이저복합기</p>
+              <div class="product-price">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                  <span style="font-size:12px;color:#999;text-decoration:line-through;">기본가 100,000원</span>
+                  <span style="font-size:11px;font-weight:700;color:#fff;background:#e53935;border-radius:4px;padding:1px 6px;">30% 할인</span>
+                </div>
+                <span class="price">70,000~</span>
+                <span class="unit">원/월</span>
+                <span class="chat-btn"><i class="fa fa-search"></i> 상세보기</span>
+              </div>
+            </div>
+          </a>
+
+        </div>
+
+        <button class="prod-arrow next" id="prodNext1" aria-label="다음 상품">
+          <i class="fa fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       프린터모아 서비스 특징 (4개 카드)
+       ============================================ -->
+  <section class="service-features" id="featuresSection">
+    <div class="container">
+      <div class="section-header reveal" style="justify-content: center; text-align: center; flex-direction: column; margin-bottom: 40px;">
+        <h2 class="section-title" style="color: white; font-size: 28px;">프린터모아 서비스란?</h2>
+        <p style="color: rgba(255,255,255,0.8); margin-top: 8px;">프린터모아는 전국 어디나 당일 설치 제공해드립니다.</p>
+      </div>
+
+      <div class="features-grid">
+
+        <div class="feature-card reveal" id="feature1">
+          <span class="feature-icon">🚚</span>
+          <h3 class="feature-title">전국 모든 지역<br><em>배송비+설치비 무료</em></h3>
+          <p class="feature-desc">전국 어느 지역이든 설치비, 배송비 없이 무료로 설치해드립니다.</p>
+        </div>
+
+        <div class="feature-card reveal" id="feature2">
+          <span class="feature-icon">🏆</span>
+          <h3 class="feature-title">업계 최다<br><em>기업 맞춤 제공</em></h3>
+          <p class="feature-desc">가정, 소호, 사무용, 디자인, 건축 등 업종별 최적화 상품을 추천해드립니다.</p>
+        </div>
+
+        <div class="feature-card reveal" id="feature3">
+          <span class="feature-icon">🔧</span>
+          <h3 class="feature-title">방문서비스 및<br><em>실시간 원격서비스</em></h3>
+          <p class="feature-desc">고장 시 당일 방문 AS와 실시간 원격 지원으로 업무 공백을 최소화합니다.</p>
+        </div>
+
+        <div class="feature-card reveal" id="feature4">
+          <span class="feature-icon">📦</span>
+          <h3 class="feature-title">이사해도 걱정 없는<br><em>이전 누수</em></h3>
+          <p class="feature-desc">이사 시 무료로 이전 설치 해드립니다. 전국 어디서나 안심 이전!</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       잘나가는 상품 (베스트셀러)
+       ============================================ -->
+  <section class="section" id="bestSection">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2 class="section-title">프린터모아 잘나가는 상품?</h2>
+        <p class="section-subtitle">전국의 고객분들이 가장 선호하는 제품입니다.</p>
+        <span class="section-badge green">베스트</span>
+      </div>
+
+      <div class="products-row" id="bestProductsGrid">
+
+        <!-- HP 9010 -->
+        <a class="product-card reveal" id="best1" href="shop/product.html?id=p001" style="text-decoration:none;color:inherit;cursor:pointer;">
+          <div class="product-img-wrap">
+            <img src="shop/images/hp9010_main.jpg" alt="HP OfficeJet Pro 9010" loading="lazy">
+          </div>
+          <div class="product-info">
+            <div class="product-badges">
+              <span class="badge badge-new">새상품</span>
+              <span class="badge badge-color">컬러</span>
+              <span class="badge badge-free-as">무상AS</span>
+              <span class="badge badge-free-toner">잉크무료</span>
+            </div>
+            <p class="product-name">HP OfficeJet Pro 9010 A4 잉크젯복합기</p>
+            <div class="product-price">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                <span style="font-size:12px;color:#999;text-decoration:line-through;">50,000원</span>
+                <span style="font-size:11px;font-weight:700;color:#fff;background:#e53935;border-radius:4px;padding:1px 6px;">20% 할인</span>
+              </div>
+              <span class="price">40,000</span>
+              <span class="unit">원/월</span>
+              <span class="chat-btn" id="chatBest1"><i class="fa fa-search"></i> 상세보기</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- HP 9020 -->
+        <a class="product-card reveal" id="best2" href="shop/product.html?id=p002" style="text-decoration:none;color:inherit;cursor:pointer;">
+          <div class="product-img-wrap">
+            <img src="shop/images/hp9020_main.jpg" alt="HP OfficeJet Pro 9020" loading="lazy">
+          </div>
+          <div class="product-info">
+            <div class="product-badges">
+              <span class="badge badge-new">새상품</span>
+              <span class="badge badge-color">컬러</span>
+              <span class="badge badge-free-as">무상AS</span>
+              <span class="badge badge-free-toner">잉크무료</span>
+            </div>
+            <p class="product-name">HP OfficeJet Pro 9020 A4 잉크젯복합기</p>
+            <div class="product-price">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                <span style="font-size:12px;color:#999;text-decoration:line-through;">60,000원</span>
+                <span style="font-size:11px;font-weight:700;color:#fff;background:#e53935;border-radius:4px;padding:1px 6px;">25% 할인</span>
+              </div>
+              <span class="price">45,000</span>
+              <span class="unit">원/월</span>
+              <span class="chat-btn" id="chatBest2"><i class="fa fa-search"></i> 상세보기</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- HP 7740 -->
+        <a class="product-card reveal" id="best3" href="shop/product.html?id=p003" style="text-decoration:none;color:inherit;cursor:pointer;">
+          <div class="product-img-wrap">
+            <img src="shop/images/hp7740_main.jpg" alt="HP OfficeJet Pro 7740 A3" loading="lazy">
+          </div>
+          <div class="product-info">
+            <div class="product-badges">
+              <span class="badge badge-new">새상품</span>
+              <span class="badge badge-color">컬러</span>
+              <span class="badge badge-free-as">무상AS</span>
+              <span class="badge badge-free-toner">잉크무료</span>
+            </div>
+            <p class="product-name">HP OfficeJet Pro 7740 A3 와이드포맷 복합기</p>
+            <div class="product-price">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                <span style="font-size:12px;color:#999;text-decoration:line-through;">70,000원</span>
+                <span style="font-size:11px;font-weight:700;color:#fff;background:#e53935;border-radius:4px;padding:1px 6px;">28% 할인</span>
+              </div>
+              <span class="price">50,000</span>
+              <span class="unit">원/월</span>
+              <span class="chat-btn" id="chatBest3"><i class="fa fa-search"></i> 상세보기</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 캐논 C3926 -->
+        <a class="product-card reveal" id="best4" href="shop/product.html?id=p006" style="text-decoration:none;color:inherit;cursor:pointer;">
+          <div class="product-img-wrap">
+            <img src="shop/images/c3926_main.jpg" alt="캐논 imageRUNNER ADVANCE DX C3926" loading="lazy">
+          </div>
+          <div class="product-info">
+            <div class="product-badges">
+              <span class="badge badge-new">새상품</span>
+              <span class="badge badge-color">컬러</span>
+              <span class="badge badge-free-as">무상AS</span>
+              <span class="badge badge-free-toner">토너무료</span>
+            </div>
+            <p class="product-name">캐논 imageRUNNER ADVANCE DX C3926 레이저복합기</p>
+            <div class="product-price">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                <span style="font-size:12px;color:#999;text-decoration:line-through;">기본가 100,000원</span>
+                <span style="font-size:11px;font-weight:700;color:#fff;background:#e53935;border-radius:4px;padding:1px 6px;">30% 할인</span>
+              </div>
+              <span class="price">70,000~</span>
+              <span class="unit">원/월</span>
+              <span class="chat-btn" id="chatBest4"><i class="fa fa-search"></i> 상세보기</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 현대오피스 PK-612X -->
+        <a class="product-card reveal" id="best5" href="shop/product.html?id=p012" style="text-decoration:none;color:inherit;cursor:pointer;">
+          <div class="product-img-wrap">
+            <img src="shop/images/pk612x_main.jpg" alt="현대오피스 PK-612X 소형 문서세단기" loading="lazy">
+          </div>
+          <div class="product-info">
+            <div class="product-badges">
+              <span class="badge badge-new">새상품</span>
+              <span class="badge badge-color">소형</span>
+              <span class="badge badge-free-as">무상AS</span>
+            </div>
+            <p class="product-name">현대오피스 PK-612X 소형 문서세단기</p>
+            <div class="product-price">
+              <span class="price">15,000</span>
+              <span class="unit">원</span>
+              <span class="chat-btn" id="chatBest5"><i class="fa fa-search"></i> 상세보기</span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 현대오피스 PK-7100CD -->
+        <a class="product-card reveal" id="best6" href="shop/product.html?id=p013" style="text-decoration:none;color:inherit;cursor:pointer;">
+          <div class="product-img-wrap">
+            <img src="shop/images/pk7100cd_main.jpg" alt="현대오피스 PK-7100CD 중형 문서세단기" loading="lazy">
+          </div>
+          <div class="product-info">
+            <div class="product-badges">
+              <span class="badge badge-new">새상품</span>
+              <span class="badge badge-color">중형</span>
+              <span class="badge badge-free-as">무상AS</span>
+            </div>
+            <p class="product-name">현대오피스 PK-7100CD 중형 문서세단기</p>
+            <div class="product-price">
+              <span class="price">25,000</span>
+              <span class="unit">원</span>
+              <span class="chat-btn" id="chatBest6"><i class="fa fa-search"></i> 상세보기</span>
+            </div>
+          </div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       사용후기
+       ============================================ -->
+  <section class="section bg-light" id="reviewSection">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2 class="section-title">프린터모아 제품의 사용후기</h2>
+        <a href="board/board.html?type=review" style="font-size:13px; color: var(--primary); font-weight:600;" id="moreReviewBtn">더보기 →</a>
+      </div>
+
+      <div class="blog-grid">
+
+        <!-- 후기 1: HP 9010 -->
+        <div class="blog-card reveal" id="review1">
+          <div class="blog-img">🖨️</div>
+          <div class="blog-info">
+            <div class="blog-tags">
+              <span class="blog-tag">#HP9010</span>
+              <span class="blog-tag">#잉크젯복합기</span>
+              <span class="blog-tag">#소호사무실</span>
+            </div>
+            <p class="blog-title" style="font-weight:700; margin-bottom:6px;">소규모 사무실에 딱 맞는 복합기!</p>
+            <p style="font-size:12px; color:#666; line-height:1.6;">HP 9010 렌탈 후 3개월째 사용 중입니다. 출력 속도가 빠르고 잉크 무제한이라 비용 걱정이 없어요. 설치도 당일에 깔끔하게 해주셔서 만족합니다. ★★★★★</p>
+            <p style="font-size:11px; color:#999; margin-top:6px;">김○○ · 서울 강남구 · 2026.07</p>
+          </div>
+        </div>
+
+        <!-- 후기 2: HP 7740 A3 -->
+        <div class="blog-card reveal" id="review2">
+          <div class="blog-img">📐</div>
+          <div class="blog-info">
+            <div class="blog-tags">
+              <span class="blog-tag">#HP7740</span>
+              <span class="blog-tag">#A3복합기</span>
+              <span class="blog-tag">#도면출력</span>
+            </div>
+            <p class="blog-title" style="font-weight:700; margin-bottom:6px;">A3 도면 출력, 이 제품으로 해결했어요</p>
+            <p style="font-size:12px; color:#666; line-height:1.6;">건축사무소에서 도면 출력용으로 HP 7740을 렌탈했는데 A3 출력 품질이 기대 이상입니다. 와이파이 연결도 안정적이고 AS도 빠릅니다. 강력 추천! ★★★★★</p>
+            <p style="font-size:11px; color:#999; margin-top:6px;">이○○ · 경기 성남시 · 2026.07</p>
+          </div>
+        </div>
+
+        <!-- 후기 3: 캐논 C3926 -->
+        <div class="blog-card reveal" id="review3">
+          <div class="blog-img">🏢</div>
+          <div class="blog-info">
+            <div class="blog-tags">
+              <span class="blog-tag">#캐논C3926</span>
+              <span class="blog-tag">#레이저복합기</span>
+              <span class="blog-tag">#기업용</span>
+            </div>
+            <p class="blog-title" style="font-weight:700; margin-bottom:6px;">대형 사무실에 완벽한 선택</p>
+            <p style="font-size:12px; color:#666; line-height:1.6;">캐논 C3926은 10.1인치 터치 패널 덕분에 조작이 너무 편해요. 분당 출력 속도도 빠르고, 클라우드 연동까지 되니 업무 효율이 크게 올랐습니다. 프린터모아 상담부터 설치까지 매우 친절했어요. ★★★★★</p>
+            <p style="font-size:11px; color:#999; margin-top:6px;">박○○ · 서울 서초구 · 2026.06</p>
+          </div>
+        </div>
+
+        <!-- 후기 4: 현대오피스 PK-7100CD -->
+        <div class="blog-card reveal" id="review4">
+          <div class="blog-img">📄</div>
+          <div class="blog-info">
+            <div class="blog-tags">
+              <span class="blog-tag">#PK7100CD</span>
+              <span class="blog-tag">#문서세단기</span>
+              <span class="blog-tag">#저소음</span>
+            </div>
+            <p class="blog-title" style="font-weight:700; margin-bottom:6px;">조용하고 강력한 세단 성능!</p>
+            <p style="font-size:12px; color:#666; line-height:1.6;">PK-7100CD 세단기를 사무실에 놓았는데 소음이 정말 조용합니다. 한 번에 15장씩 잘리고 CD, 신용카드도 파쇄 가능해서 매우 만족합니다. 렌탈 비용도 합리적이에요. ★★★★☆</p>
+            <p style="font-size:11px; color:#999; margin-top:6px;">최○○ · 인천 남동구 · 2026.06</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       견적문의 + 고객센터
+       ============================================ -->
+  <section class="inquiry-section" id="inquirySection">
+    <div class="container">
+      <div class="inquiry-inner">
+
+        <div class="inquiry-left reveal">
+          <div class="icon">📝</div>
+          <h3>실시간 온라인 견적문의</h3>
+          <p>복합기 렌탈도 전문가의 상담이 필요합니다.</p>
+          <a href="#" class="inquiry-btn" id="inquiryFormBtn">견적 문의하기</a>
+        </div>
+
+        <div class="customer-center reveal">
+          <h3>고객센터</h3>
+          <div class="phone">
+            <a href="tel:07051333777">070-5133-3777</a>
+          </div>
+          <div class="hours">
+            평일 AM 09:00 - PM 17:00<br>
+            토요일 일요일 공휴일 : <span class="closed">휴무</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       FOOTER
+       ============================================ -->
+  <footer class="footer" id="pageFooter">
+    <div class="container">
+      <div class="footer-links">
+        <a href="#" class="bold" id="footerAbout">회사소개</a>
+        <a href="#" id="footerPrivacy">개인정보처리방침</a>
+        <a href="#" id="footerTerms">이용약관</a>
+        <a href="board/board.html?type=notice" id="footerNotice">공지사항</a>
+        <a href="board/board.html?type=consult" id="footerConsult">상담게시판</a>
+        <a href="board/board.html?type=review" id="footerReview">사용후기</a>
+      </div>
+
+      <p class="footer-company">프린터모아</p>
+      <div class="footer-info">
+        대표 : 화정원 &nbsp; 주소 : 경기도 성남시 중원구 둔촌대로388 크란츠테크노 407호<br>
+        전화 : 070-5133-3777 &nbsp; 사업자 등록번호 : 214-08-41154<br>
+        통신판매업신고번호 : 2024-성남중원-0023
+      </div>
+
+      <div class="footer-copyright">
+        Copyright © 프린터모아. All Rights Reserved.
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================================
+       우측 플로팅 퀵메뉴
+       ============================================ -->
+
+  <!-- ============================================
+       하단 스티키 견적 바
+       ============================================ -->
+  <div class="sticky-quote-bar" id="stickyQuoteBar">
+    <div class="container">
+      <div class="inner">
+
+        <div class="sticky-logo-area">
+          <span class="sticky-phone-label">전화상담신청</span>
+          <span class="sticky-logo-text">프린터<strong>모아</strong></span>
+          <a href="tel:07051333777" class="sticky-phone">070-5133-3777</a>
+        </div>
+
+        <div class="sticky-form">
+          <input type="text" id="stickyName" placeholder="이름" aria-label="이름 입력">
+          <input type="tel" id="stickyPhone" placeholder="연락처" aria-label="연락처 입력">
+          <div class="captcha-area" id="captchaArea">
+            <span style="font-size:14px; font-weight:700; color:#333; letter-spacing:2px;">A7K2</span>
+          </div>
+          <input type="text" id="captchaInput" placeholder="자동입력방지" aria-label="자동입력방지 문자 입력" style="width:120px;">
+        </div>
+
+        <div class="sticky-agree">
+          <input type="checkbox" id="agreeCheck">
+          <label for="agreeCheck">개인정보 수집이용동의 <a href="#">[확인보기]</a></label>
+        </div>
+
+        <button class="sticky-submit-btn" id="stickySubmitBtn">간편견적신청</button>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    // 헤더 로그인 상태 UI 업데이트
+    document.addEventListener('DOMContentLoaded', () => Auth.updateHeaderUI());
+  </script>
+</body>
+</html>
