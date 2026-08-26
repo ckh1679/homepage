@@ -839,21 +839,19 @@
             <p class="shop-product-name">${escapeHtml(p.name)}</p>
             <p class="shop-product-spec">${escapeHtml(p.spec)}</p>
             <div class="shop-product-price-row">
-              <div class="shop-price-wrap">
-                <span class="shop-original-price">
-                  ${ShopData.formatPrice(p.originalPrice)}원 ${discountBadge}
-                </span>
-                <div>
-                  <span class="shop-price">${ShopData.formatPrice(p.price)}</span>
-                  <span class="shop-price"><span class="unit">원/월</span></span>
-                </div>
-              </div>
-              <a href="../board/board.html?type=consult"
-                 class="shop-consult-btn"
-                 id="consult_${p.id}"
-                 onclick="event.stopPropagation(); handleConsult(event, '${p.name}')">
-                <i class="fa fa-comment"></i> 상담
-              </a>
+              ${p.price === 0
+                ? `<div style="padding-top:6px;"><span class="shop-price" style="font-size:18px;">📞 상담전화 요망</span></div>`
+                : `<div class="shop-price-wrap">
+                    <span class="shop-original-price">
+                      ${ShopData.formatPrice(p.originalPrice)}원 ${discountBadge}
+                    </span>
+                    <div>
+                      <span class="shop-price">${ShopData.formatPrice(p.price)}</span>
+                      <span class="shop-price"><span class="unit">원/월</span></span>
+                    </div>
+                  </div>
+                  <button class="shop-consult-btn" onclick="event.stopPropagation(); location.href='../board/board.html?type=consult'"><i class="fa fa-comment-dots"></i> 문의</button>`
+              }
             </div>
           </div>
         </div>
@@ -867,7 +865,7 @@
       if (detailEnabled.includes(productId)) {
         window.location.href = `product.html?id=${productId}`;
       } else {
-        openLightbox(productId);
+        alert('이 상품은 전화 상담을 통해서만 맞춤 견적 및 주문이 가능합니다.\n(상담전화: 010-5922-3650)');
       }
     }
 
