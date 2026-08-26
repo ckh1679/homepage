@@ -1939,3 +1939,19 @@ body {
   color: var(--white);
   border-color: var(--gray-dark);
 }
+/* =========================================================
+   선오픈 임시 숨김 처리 (추후 정식 오픈 시 아래 블록 삭제)
+   - 로그인, 회원가입, 상담게시판, 사용후기 기능 비활성화
+   ========================================================= */
+.auth-buttons,
+.auth-nav-area,
+a[href*="login.html"],
+a[href*="register.html"],
+a[href*="type=consult"],
+a[href*="type=review"],
+.tab[data-type="consult"],
+.tab[data-type="review"],
+option[value="consult"],
+option[value="review"] {
+    display: none !important;
+}
