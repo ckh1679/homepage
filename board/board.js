@@ -40,7 +40,7 @@ const Board = (() => {
       id: 'notice-3',
       boardType: 'notice',
       title: '고객센터 운영시간 안내',
-      content: `고객센터 운영시간을 안내드립니다.\n\n📞 전화: 070-5133-3777\n⏰ 평일 AM 09:00 ~ PM 17:00\n🚫 토·일요일, 공휴일 휴무\n\n긴급 문의는 카카오톡 채널 '프린터모아'로 연락 주세요.`,
+      content: `고객센터 운영시간을 안내드립니다.\n\n📞 전화: 010-5922-3650\n⏰ 평일 AM 09:00 ~ PM 17:00\n🚫 토·일요일, 공휴일 휴무\n\n긴급 문의는 카카오톡 채널 '프린터모아'로 연락 주세요.`,
       author: '관리자',
       userId: 'admin',
       createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
