@@ -388,26 +388,91 @@ const ShopData = {
 
 
     // === 레이저복합기 ===
+
+    // ─ 캐논 C3922 ─
+    {
+      id: 'p004',
+      category: 'laser',
+      subCategory: 'laser-color-a3',
+      name: '캐논 imageRUNNER ADVANCE DX C3922 컬러 레이저복합기',
+      price: 70000,        // 기본형 시작가 (VAT 별도 / 3년 약정)
+      originalPrice: 100000, // 기본형 정상가
+      badges: ['새상품', '컬러', '무상AS', '토너무료'],
+      badgeTypes: ['new', 'color', 'free-as', 'free-toner'],
+      description: '출력 카운터 기반 요금제. 분당 22매 A3 컬러 레이저복합기. 70,000원~130,000원 / VAT 별도 / 3년 약정.',
+      spec: 'A3 컬러 / 흑백 22ppm·컬러 22ppm / 스캔 70ipm / 터치패널',
+
+      // 플랜별 요금 (동적 UI 렌더링에 사용)
+      plans: [
+        { label: '기본형', emoji: '🔹', origPrice: 100000, price: 70000,  bw: 1000, color: 100 },
+        { label: '중형',   emoji: '🔶', origPrice: 130000, price: 95000,  bw: 3000, color: 300 },
+        { label: '대형',   emoji: '🔴', origPrice: 170000, price: 130000, bw: 5000, color: 500 },
+      ],
+
+      specDetail: [
+        { group: '📋 렌탈 요금 안내 (3년 약정 / VAT 별도)' },
+        { label: '기본형 · 월 70,000원',  value: '흑백 1,000장 포함 (초과 장당 10원) / 컬러 100장 포함 (초과 장당 100원)' },
+        { label: '중형   · 월 95,000원',  value: '흑백 3,000장 포함 (초과 장당 10원) / 컬러 300장 포함 (초과 장당 100원)' },
+        { label: '대형   · 월 130,000원', value: '흑백 5,000장 포함 (초과 장당 10원) / 컬러 500장 포함 (초과 장당 100원)' },
+        { group: '상품 상세 정보' },
+        { label: '인쇄 방식', value: '레이저' },
+        { label: '출력 색상', value: '컬러 출력' },
+        { label: '지원 용지', value: '최대 A3' },
+        { group: '출력 성능' },
+        { label: '컬러출력속도', value: '22ppm (A4 기준)' },
+        { label: '흑백출력속도', value: '22ppm (A4 기준)' },
+        { label: '인쇄 해상도',  value: '1,200 × 1,200 dpi' },
+        { group: '스캔 / 복사 성능' },
+        { label: '스캔 속도', value: '최대 70ipm' },
+        { label: '복사 속도', value: '22ppm' },
+      ],
+
+      features: [
+        { icon: '🚀', title: '생산성',       desc: '분당 22매 고속 컬러 출력' },
+        { icon: '✨', title: '고화질',       desc: '1,200×1,200dpi 고품질 인쇄' },
+        { icon: '📱', title: '스마트 연결',  desc: '모바일 프린팅 및 클라우드 연동' },
+        { icon: '📐', title: '최대 A3 지원', desc: '다양한 용지 사이즈 수용' },
+      ],
+
+      recommend: ['기업용 사무실', '중소 인쇄량 부서', '디자인·기획팀'],
+
+      images: [
+        './images/c3922_main.jpg',
+        './images/c3922_sub.jpg',
+        './images/c3922_spec.jpg',
+      ],
+      imageText: '캐논 C3922',
+      popular: false
+    },
+
+    // ─ 캐논 C3926 ─
     {
       id: 'p006',
       category: 'laser',
       subCategory: 'laser-color-a3',
       name: '캐논 imageRUNNER ADVANCE DX C3926 컬러 레이저복합기',
-      price: 70000,        // 출력카운터 기본 요금 (VAT 별도 / 3년 약정)
-      originalPrice: 100000, // 정상가 100,000원 → 30% 할인
+      price: 75000,        // 기본형 시작가 (VAT 별도 / 3년 약정)
+      originalPrice: 110000, // 기본형 정상가 → 약 32% 할인
       badges: ['새상품', '컬러', '무상AS', '토너무료'],
       badgeTypes: ['new', 'color', 'free-as', 'free-toner'],
-      description: '출력 카운터 기반 요금제. 70,000원~110,000원 / VAT 별도 / 3년 약정. 10.1인치 터치패널·클라우드 연동.',
+      description: '출력 카운터 기반 요금제. 75,000원~140,000원 / VAT 별도 / 3년 약정. 10.1인치 터치패널·클라우드 연동.',
       spec: 'A3 컬러 / 흑백 26ppm·컬러 26ppm / 스캔 70ipm / 10.1인치 터치패널',
+
+      // 플랜별 요금 (동적 UI 렌더링에 사용)
+      plans: [
+        { label: '기본형', emoji: '🔹', origPrice: 110000, price: 75000,  bw: 1000, color: 100 },
+        { label: '중형',   emoji: '🔶', origPrice: 140000, price: 100000, bw: 3000, color: 300 },
+        { label: '대형',   emoji: '🔴', origPrice: 180000, price: 140000, bw: 5000, color: 500 },
+      ],
 
       // 상세 스펙 테이블
       specDetail: [
 
         // ─ 렌탈 요금 안내 ─
         { group: '📋 렌탈 요금 안내 (3년 약정 / VAT 별도)' },
-        { label: '기본형 · 월 70,000원',  value: '흑백 1,000장 포함 (초과 시 장당 10원) / 컬러 100장 포함 (초과 시 장당 100원)' },
-        { label: '중형   · 월 90,000원',  value: '흑백 3,000장 포함 (초과 시 장당 10원) / 컬러 300장 포함 (초과 시 장당 100원)' },
-        { label: '대형   · 월 110,000원', value: '흑백 5,000장 포함 (초과 시 장당 10원) / 컬러 500장 포함 (초과 시 장당 100원)' },
+        { label: '기본형 · 월 75,000원',  value: '흑백 1,000장 포함 (초과 시 장당 10원) / 컬러 100장 포함 (초과 시 장당 100원)' },
+        { label: '중형   · 월 100,000원', value: '흑백 3,000장 포함 (초과 시 장당 10원) / 컬러 300장 포함 (초과 시 장당 100원)' },
+        { label: '대형   · 월 140,000원', value: '흑백 5,000장 포함 (초과 시 장당 10원) / 컬러 500장 포함 (초과 시 장당 100원)' },
 
         // ─ 상품 상세 정보 ─
         { group: '상품 상세 정보 제공' },
@@ -470,6 +535,67 @@ const ShopData = {
       ],
       imageText: '캐논 C3926',
       popular: true
+    },
+
+    // ─ 캐논 C3935i ─
+    {
+      id: 'p005',
+      category: 'laser',
+      subCategory: 'laser-color-a3',
+      name: '캐논 imageRUNNER ADVANCE DX C3935i 컬러 레이저복합기',
+      price: 90000,        // 기본형 시작가 (VAT 별도 / 3년 약정)
+      originalPrice: 130000, // 기본형 정상가
+      badges: ['새상품', '컬러', '무상AS', '토너무료'],
+      badgeTypes: ['new', 'color', 'free-as', 'free-toner'],
+      description: '출력 카운터 기반 요금제. 분당 35매 고속 A3 컬러 레이저복합기. 90,000원~150,000원 / VAT 별도 / 3년 약정.',
+      spec: 'A3 컬러 / 흑백 35ppm·컬러 35ppm / 스캔 80ipm / 10.1인치 터치패널',
+
+      // 플랜별 요금 (동적 UI 렌더링에 사용)
+      plans: [
+        { label: '기본형', emoji: '🔹', origPrice: 130000, price: 90000,  bw: 1000, color: 100 },
+        { label: '중형',   emoji: '🔶', origPrice: 160000, price: 120000, bw: 3000, color: 300 },
+        { label: '대형',   emoji: '🔴', origPrice: 200000, price: 150000, bw: 5000, color: 500 },
+      ],
+
+      specDetail: [
+        { group: '📋 렌탈 요금 안내 (3년 약정 / VAT 별도)' },
+        { label: '기본형 · 월 90,000원',  value: '흑백 1,000장 포함 (초과 장당 10원) / 컬러 100장 포함 (초과 장당 100원)' },
+        { label: '중형   · 월 120,000원', value: '흑백 3,000장 포함 (초과 장당 10원) / 컬러 300장 포함 (초과 장당 100원)' },
+        { label: '대형   · 월 150,000원', value: '흑백 5,000장 포함 (초과 장당 10원) / 컬러 500장 포함 (초과 장당 100원)' },
+        { group: '상품 상세 정보' },
+        { label: '인쇄 방식', value: '레이저' },
+        { label: '출력 색상', value: '컬러 출력' },
+        { label: '지원 용지', value: '최대 A3' },
+        { group: '출력 성능' },
+        { label: '컬러출력속도', value: '35ppm (A4 기준)' },
+        { label: '흑백출력속도', value: '35ppm (A4 기준)' },
+        { label: '인쇄 해상도',  value: '1,200 × 1,200 dpi' },
+        { group: '스캔 / 복사 성능' },
+        { label: '스캔 속도', value: '최대 80ipm' },
+        { label: '복사 속도', value: '35ppm' },
+        { group: '제품 사양' },
+        { label: 'RAM',        value: '3.5 GB' },
+        { label: '스토리지',   value: '256GB SSD' },
+        { label: '디스플레이', value: '10.1인치 TFT LCD 컬러 터치 패널' },
+      ],
+
+      features: [
+        { icon: '🚀', title: '고속 출력',       desc: '분당 35매 A3 컬러 고속 인쇄' },
+        { icon: '✨', title: '고화질',          desc: '1,200×1,200dpi 선명한 출력' },
+        { icon: '📱', title: '스마트 연결',     desc: '모바일 프린팅 및 클라우드 연동' },
+        { icon: '🖥️', title: '10.1인치 패널',  desc: '직관적인 대화면 터치 패널' },
+        { icon: '📐', title: '최대 A3 지원',    desc: '대형 용지까지 폭넓게 지원' },
+      ],
+
+      recommend: ['대용량 출력 기업', '법무·회계·컨설팅', '디자인 에이전시', '의료·금융 기관'],
+
+      images: [
+        './images/c3935i_main.jpeg',
+        './images/c3935i_sub.jpeg',
+        './images/c3935_spec.jpg',
+      ],
+      imageText: '캐논 C3935i',
+      popular: false
     },
 
     // === 문서세단기 ===

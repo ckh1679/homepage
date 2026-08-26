@@ -863,7 +863,7 @@
     // ── 상세 페이지 이동 (상품 ID로 분기) ────────────────
     // product.html 이 있는 복합기 및 세단기 등은 상세 페이지로, 나머지는 라이트박스
     function goToDetail(productId) {
-      const detailEnabled = ['p001', 'p002', 'p003', 'p006', 'p012', 'p013'];
+      const detailEnabled = ['p001', 'p002', 'p003', 'p004', 'p005', 'p006', 'p012', 'p013'];
       if (detailEnabled.includes(productId)) {
         window.location.href = `product.html?id=${productId}`;
       } else {

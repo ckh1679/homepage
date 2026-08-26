@@ -762,79 +762,65 @@
             <h1 class="pd-name">${p.name}</h1>
             <p class="pd-desc">${p.description}</p>
 
-            <!-- 가격 박스: p006(캐논)은 플랜 선택 UI, 나머지는 단일 가격 -->
+            <!-- 가격 박스: plans 배열이 있으면 플랜 선택 UI, 없으면 단일 가격 -->
             ${
-              p.id === 'p006'
-              ? `
-              <!-- ① 플랜 선택 -->
-              <div class="pd-plan-section">
-                <div class="pd-plan-label"><i class="fa fa-list" style="color:var(--primary);"></i> 출력카운터 요금 플랜 선택</div>
-                <div class="pd-plan-grid" id="planGrid">
+              (p.plans && p.plans.length > 0)
+              ? (() => {
+                  const planCardsHtml = p.plans.map((plan, idx) => {
+                    const planDiscount = Math.round((1 - plan.price / plan.origPrice) * 100);
+                    const discountBadge = planDiscount > 0
+                      ? '<span class="pd-plan-badge">' + planDiscount + '% 할인</span>'
+                      : '';
+                    const origPriceHtml = idx === 0
+                      ? '<span class="orig">' + plan.origPrice.toLocaleString() + '월</span>'
+                      : '';
+                    return `
+                    <div class="pd-plan-card ${idx === 0 ? 'selected' : ''}" id="plan${idx}" onclick="selectPlan(${idx})">
+                      <div class="pd-plan-top">
+                        <span class="pd-plan-name">${plan.emoji} ${plan.label}</span>
+                        ${discountBadge}
+                      </div>
+                      <div class="pd-plan-price">
+                        ${origPriceHtml}
+                        ${plan.price.toLocaleString()}<span class="unit">원/월</span>
+                      </div>
+                      <div class="pd-plan-desc">
+                        흑백 <span>${plan.bw.toLocaleString()}장</span> 포함 (초과 시 장당 10원)<br>
+                        컬러 <span>${plan.color.toLocaleString()}장</span> 포함 (초과 시 장당 100원)
+                      </div>
+                    </div>`;
+                  }).join('');
 
-                  <div class="pd-plan-card selected" id="plan0" onclick="selectPlan(0)">
-                    <div class="pd-plan-top">
-                      <span class="pd-plan-name">🔹 기본형</span>
-                      <span class="pd-plan-badge">30% 할인</span>
-                    </div>
-                    <div class="pd-plan-price">
-                      <span class="orig">100,000원</span>
-                      70,000<span class="unit">원/월</span>
-                    </div>
-                    <div class="pd-plan-desc">
-                      흑백 <span>1,000장</span> 포함 (초과 시 장당 10원)<br>
-                      컬러 <span>100장</span> 포함 (초과 시 장당 100원)
+                  return `
+                  <!-- ① 플랜 선택 -->
+                  <div class="pd-plan-section">
+                    <div class="pd-plan-label"><i class="fa fa-list" style="color:var(--primary);"></i> 출력카운터 요금 플랜 선택</div>
+                    <div class="pd-plan-grid" id="planGrid">
+                      ${planCardsHtml}
                     </div>
                   </div>
 
-                  <div class="pd-plan-card" id="plan1" onclick="selectPlan(1)">
-                    <div class="pd-plan-top">
-                      <span class="pd-plan-name">🔶 중형</span>
+                  <!-- ② 팩스 옵션 -->
+                  <label class="pd-option-row" for="faxOption">
+                    <input type="checkbox" id="faxOption" class="pd-option-checkbox" onchange="updateTotal()">
+                    <div class="pd-option-label">
+                      📠 팩스 기능 추가
+                      <div style="font-size:11px;font-weight:400;color:#888;margin-top:2px;">팩스 수신·발신 지원 (옵션 추가 시)</div>
                     </div>
-                    <div class="pd-plan-price">
-                      90,000<span class="unit">원/월</span>
-                    </div>
-                    <div class="pd-plan-desc">
-                      흑백 <span>3,000장</span> 포함 (초과 시 장당 10원)<br>
-                      컬러 <span>300장</span> 포함 (초과 시 장당 100원)
-                    </div>
-                  </div>
+                    <span class="pd-option-price">+ 10,000원/월</span>
+                  </label>
 
-                  <div class="pd-plan-card" id="plan2" onclick="selectPlan(2)">
-                    <div class="pd-plan-top">
-                      <span class="pd-plan-name">🔴 대형</span>
+                  <!-- ③ 합산 가격 -->
+                  <div class="pd-total-box">
+                    <div>
+                      <div class="pd-total-label">선택된 월 렌탈료 합계</div>
+                      <div class="pd-total-note">3년 약정 기준 / VAT 별도</div>
                     </div>
-                    <div class="pd-plan-price">
-                      110,000<span class="unit">원/월</span>
+                    <div style="text-align:right;">
+                      <div class="pd-total-price" id="totalPrice">${p.plans[0].price.toLocaleString()}<span class="unit">원/월</span></div>
                     </div>
-                    <div class="pd-plan-desc">
-                      흑백 <span>5,000장</span> 포함 (초과 시 장당 10원)<br>
-                      컬러 <span>500장</span> 포함 (초과 시 장당 100원)
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-              <!-- ② 팩스 옵션 -->
-              <label class="pd-option-row" for="faxOption">
-                <input type="checkbox" id="faxOption" class="pd-option-checkbox" onchange="updateTotal()">
-                <div class="pd-option-label">
-                  📠 팩스 기능 추가
-                  <div style="font-size:11px;font-weight:400;color:#888;margin-top:2px;">팩스 수신·발신 지원 (옵션 추가 시)</div>
-                </div>
-                <span class="pd-option-price">+ 10,000원/월</span>
-              </label>
-
-              <!-- ③ 합산 가격 -->
-              <div class="pd-total-box">
-                <div>
-                  <div class="pd-total-label">선택된 월 렌탈료 합계</div>
-                  <div class="pd-total-note">3년 약정 기준 / VAT 별도</div>
-                </div>
-                <div style="text-align:right;">
-                  <div class="pd-total-price" id="totalPrice">70,000<span class="unit">원/월</span></div>
-                </div>
-              </div>`
+                  </div>`;
+                })()
 
               : `
               <div class="pd-price-box">
@@ -908,14 +894,20 @@
       });
     }
 
-    // ── 캐논 C3926 플랜 선택 ──────────────────────────────
-    // 선택된 플랜 가격 (기본형 70,000 / 중형 90,000 / 대형 110,000)
-    const PLAN_PRICES = [70000, 90000, 110000];
+    // ── 레이저 도 배쳠 플랜 선택 (현재 상품의 plans 배열에서 동적 로드) ──
+    let currentPlanPrices = [];
     let selectedPlan = 0;
+
+    // 페이지 렌더링 시 자동 존마 로드
+    document.addEventListener('DOMContentLoaded', () => {
+      const p = getCurrentProduct();
+      if (p && p.plans && p.plans.length > 0) {
+        currentPlanPrices = p.plans.map(pl => pl.price);
+      }
+    });
 
     function selectPlan(idx) {
       selectedPlan = idx;
-      // 카드 활성화 토글
       document.querySelectorAll('.pd-plan-card').forEach((card, i) => {
         card.classList.toggle('selected', i === idx);
       });
@@ -924,13 +916,16 @@
 
     function updateTotal() {
       const fax = document.getElementById('faxOption');
-      if (!fax) return; // p006 아닌 경우 무시
+      if (!fax) return;
       const faxCost = fax.checked ? 10000 : 0;
-      const total = PLAN_PRICES[selectedPlan] + faxCost;
-      const el = document.getElementById('totalPrice');
-      if (el) {
-        el.innerHTML = total.toLocaleString() + '<span class="unit">원/월</span>';
+      // currentPlanPrices가 비어있으면 현재 상품의 plans에서 다시 로드
+      if (currentPlanPrices.length === 0) {
+        const p = getCurrentProduct();
+        if (p && p.plans) currentPlanPrices = p.plans.map(pl => pl.price);
       }
+      const total = (currentPlanPrices[selectedPlan] || 0) + faxCost;
+      const el = document.getElementById('totalPrice');
+      if (el) el.innerHTML = total.toLocaleString() + '<span class="unit">원/월</span>';
     }
 
     // ── 현재 상품 가져오기 ─────────────────────────────────
