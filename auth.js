@@ -22,7 +22,7 @@ const Auth = (() => {
         id: 'admin',
         password: 'admin1234',
         name: '관리자',
-        phone: '070-5133-3777',
+        phone: '010-5922-3650',
         email: 'admin@printermoa.kr',
         role: 'admin',        // 관리자 권한
         createdAt: new Date().toISOString()
