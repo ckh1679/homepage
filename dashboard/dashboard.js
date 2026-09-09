@@ -477,4 +477,307 @@ document.addEventListener('DOMContentLoaded', () => {
   addDevice();
   updatePreview();
 
+
+  // ══════════════════════════════════════════════════════
+  //   거래명세서 작성 모듈
+  // ══════════════════════════════════════════════════════
+
+  // 총 20행(빈 행 포함) 고정 표시
+  const ST_TOTAL_ROWS = 20;
+
+  // 품목 행 데이터 배열
+  let stItems = [];
+
+  // 오늘 날짜 기본값
+  const stDateEl = document.getElementById('stDate');
+  if (stDateEl) stDateEl.value = new Date().toISOString().split('T')[0];
+
+  // 품목 행 추가
+  function stAddRow() {
+    stItems.push({ date: '', code: '', name: '', spec: '', qty: '', price: '' });
+    stRenderItems();
+    stUpdatePreview();
+  }
+  window.stAddRow = stAddRow;
+
+  // 품목 행 삭제
+  function stRemoveRow(idx) {
+    stItems.splice(idx, 1);
+    stRenderItems();
+    stUpdatePreview();
+  }
+  window.stRemoveRow = stRemoveRow;
+
+  // 품목 필드값 동기화
+  function stSyncItem(idx, field, value) {
+    stItems[idx][field] = value;
+    stUpdatePreview();
+  }
+  window.stSyncItem = stSyncItem;
+
+  // 폼 내 품목 행 렌더링
+  function stRenderItems() {
+    const container = document.getElementById('stItemList');
+    if (!container) return;
+
+    container.innerHTML = stItems.map((item, i) => `
+      <div class="device-form-card" style="padding:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span class="device-form-card-title">품목 ${i + 1}</span>
+          <button class="btn-remove-device" onclick="stRemoveRow(${i})"><i class="fa fa-times"></i></button>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="max-width:80px;">
+            <label>월일</label>
+            <input type="text" value="${item.date}" placeholder="08-07" oninput="stSyncItem(${i},'date',this.value)">
+          </div>
+          <div class="form-group" style="max-width:90px;">
+            <label>품목코드</label>
+            <input type="text" value="${item.code}" placeholder="0001" oninput="stSyncItem(${i},'code',this.value)">
+          </div>
+          <div class="form-group">
+            <label>품목명</label>
+            <input type="text" value="${item.name}" placeholder="품목명 입력" oninput="stSyncItem(${i},'name',this.value)">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>규격</label>
+            <input type="text" value="${item.spec}" placeholder="규격" oninput="stSyncItem(${i},'spec',this.value)">
+          </div>
+          <div class="form-group" style="max-width:80px;">
+            <label>수량</label>
+            <input type="number" value="${item.qty}" placeholder="0" oninput="stSyncItem(${i},'qty',this.value)">
+          </div>
+          <div class="form-group">
+            <label>단가 (원)</label>
+            <input type="number" value="${item.price}" placeholder="0" oninput="stSyncItem(${i},'price',this.value)">
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // 숫자 포맷
+  function stFmt(n) {
+    return Number(n || 0).toLocaleString('ko-KR');
+  }
+
+  // 거래명세서 미리보기 HTML 생성 (이미지 양식과 동일한 레이아웃)
+  function stRenderPreviewHTML() {
+    const stDate    = document.getElementById('stDate')?.value       || '';
+    const stClient  = document.getElementById('stClient')?.value     || '';
+    const stSName   = document.getElementById('stSupName')?.value    || '';
+    const stSCeo    = document.getElementById('stSupCeo')?.value     || '';
+    const stSAddr   = document.getElementById('stSupAddr')?.value    || '';
+    const stSBiz    = document.getElementById('stSupBiz')?.value     || '';
+    const stSType   = document.getElementById('stSupType')?.value    || '';
+    const stSTel    = document.getElementById('stSupTel')?.value     || '';
+    const stSFax    = document.getElementById('stSupFax')?.value     || '';
+    const prevBal   = Number(document.getElementById('stPrevBalance')?.value || 0);
+    const payment   = Number(document.getElementById('stPayment')?.value    || 0);
+    const bankInfo  = document.getElementById('stBankInfo')?.value   || '';
+
+    // 계산
+    let totalQty    = 0;
+    let totalSupply = 0;
+    stItems.forEach(item => {
+      const q = Number(item.qty   || 0);
+      const p = Number(item.price || 0);
+      totalQty    += q;
+      totalSupply += q * p;
+    });
+    const totalVat   = Math.round(totalSupply * 0.1);
+    const totalAmt   = totalSupply + totalVat;
+    const totalBal   = prevBal + totalAmt - payment;
+
+    // 행 목록 (데이터 행 + 빈 행으로 총 ST_TOTAL_ROWS 행 채움)
+    const dataRows = stItems.map(item => {
+      const q = Number(item.qty   || 0);
+      const p = Number(item.price || 0);
+      const supply = q * p;
+      const vat    = Math.round(supply * 0.1);
+      return `
+        <tr>
+          <td style="border:1px solid #9ed8e8;padding:3px 4px;text-align:center;">${item.date}</td>
+          <td style="border:1px solid #9ed8e8;padding:3px 4px;text-align:center;">${item.code}</td>
+          <td style="border:1px solid #9ed8e8;padding:3px 4px;">${item.name}</td>
+          <td style="border:1px solid #9ed8e8;padding:3px 4px;text-align:center;">${item.spec}</td>
+          <td style="border:1px solid #9ed8e8;padding:3px 4px;text-align:right;">${q > 0 ? stFmt(q) : ''}</td>
+          <td style="border:1px solid #9ed8e8;padding:3px 4px;text-align:right;">${p > 0 ? stFmt(p) : ''}</td>
+          <td style="border:1px solid #9ed8e8;padding:3px 4px;text-align:right;">${supply > 0 ? stFmt(supply) : ''}</td>
+          <td style="border:1px solid #9ed8e8;padding:3px 4px;text-align:right;">${vat > 0 ? stFmt(vat) : ''}</td>
+        </tr>
+      `;
+    });
+
+    // 빈 행 채우기 (최소 ST_TOTAL_ROWS 행)
+    const emptyRowCount = Math.max(ST_TOTAL_ROWS - stItems.length, 0);
+    const emptyRows = Array.from({ length: emptyRowCount }, () => `
+      <tr style="height:20px;">
+        <td style="border:1px solid #9ed8e8;"></td>
+        <td style="border:1px solid #9ed8e8;"></td>
+        <td style="border:1px solid #9ed8e8;"></td>
+        <td style="border:1px solid #9ed8e8;"></td>
+        <td style="border:1px solid #9ed8e8;"></td>
+        <td style="border:1px solid #9ed8e8;"></td>
+        <td style="border:1px solid #9ed8e8;"></td>
+        <td style="border:1px solid #9ed8e8;"></td>
+      </tr>
+    `).join('');
+
+    return `
+      <div style="font-family:'맑은 고딕','Malgun Gothic',sans-serif;font-size:10px;color:#222;line-height:1.5;padding:4px;">
+
+        <!-- ── 상단 헤더 ── -->
+        <table style="width:100%;border-collapse:collapse;margin-bottom:8px;">
+          <tr>
+            <!-- 왼쪽: 발행정보 -->
+            <td style="width:38%;vertical-align:top;padding-right:10px;">
+              <table style="width:100%;border-collapse:collapse;font-size:9px;">
+                <tr>
+                  <td style="border:1px solid #9ed8e8;padding:3px 6px;background:#e0f5fb;width:35%;"><strong>Page</strong></td>
+                  <td style="border:1px solid #9ed8e8;padding:3px 6px;">1 / 1</td>
+                </tr>
+                <tr>
+                  <td style="border:1px solid #9ed8e8;padding:3px 6px;background:#e0f5fb;"><strong>발행일자</strong></td>
+                  <td style="border:1px solid #9ed8e8;padding:3px 6px;">${stDate}</td>
+                </tr>
+                <tr>
+                  <td style="border:1px solid #9ed8e8;padding:16px 6px 3px;background:#e0f5fb;vertical-align:top;"><strong>거래처명</strong></td>
+                  <td style="border:1px solid #9ed8e8;padding:16px 6px 3px;vertical-align:top;"><strong>${stClient}</strong></td>
+                </tr>
+              </table>
+              <div style="margin-top:8px;padding:6px 8px;border:2px solid #1a8fc1;border-radius:3px;text-align:center;">
+                <div style="font-size:9px;color:#555;">합계금액</div>
+                <div style="font-size:16px;font-weight:900;">${stFmt(totalAmt)}원</div>
+              </div>
+            </td>
+
+            <!-- 오른쪽: 제목 + 공급자 -->
+            <td style="width:62%;vertical-align:top;">
+              <div style="text-align:center;margin-bottom:6px;">
+                <div style="font-size:20px;font-weight:900;letter-spacing:-0.5px;">거래명세서</div>
+                <div style="font-size:9px;color:#555;">(공급받는 자 보관용)</div>
+              </div>
+              <table style="width:100%;border-collapse:collapse;font-size:9px;">
+                <tr>
+                  <td style="border:1px solid #9ed8e8;padding:3px 5px;background:#e0f5fb;width:18%;"><strong>상호</strong></td>
+                  <td style="border:1px solid #9ed8e8;padding:3px 5px;width:28%;">${stSName}</td>
+                  <td style="border:1px solid #9ed8e8;padding:3px 5px;background:#e0f5fb;width:15%;"><strong>성명</strong></td>
+                  <td style="border:1px solid #9ed8e8;padding:3px 5px;">${stSCeo} (인)</td>
+                </tr>
+                <tr>
+                  <td style="border:1px solid #9ed8e8;padding:3px 5px;background:#e0f5fb;"><strong>주소</strong></td>
+                  <td colspan="3" style="border:1px solid #9ed8e8;padding:3px 5px;">${stSAddr}</td>
+                </tr>
+                <tr>
+                  <td style="border:1px solid #9ed8e8;padding:3px 5px;background:#e0f5fb;"><strong>업태</strong></td>
+                  <td style="border:1px solid #9ed8e8;padding:3px 5px;">${stSBiz}</td>
+                  <td style="border:1px solid #9ed8e8;padding:3px 5px;background:#e0f5fb;"><strong>종목</strong></td>
+                  <td style="border:1px solid #9ed8e8;padding:3px 5px;">${stSType}</td>
+                </tr>
+                <tr>
+                  <td style="border:1px solid #9ed8e8;padding:3px 5px;background:#e0f5fb;"><strong>전화</strong></td>
+                  <td style="border:1px solid #9ed8e8;padding:3px 5px;">${stSTel}</td>
+                  <td style="border:1px solid #9ed8e8;padding:3px 5px;background:#e0f5fb;"><strong>팩스</strong></td>
+                  <td style="border:1px solid #9ed8e8;padding:3px 5px;">${stSFax}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+
+        <!-- ── 품목 테이블 ── -->
+        <table style="width:100%;border-collapse:collapse;font-size:9px;margin-bottom:6px;">
+          <thead>
+            <tr style="background:#c5eef8;text-align:center;">
+              <th style="border:1px solid #9ed8e8;padding:5px 3px;width:7%;">월일</th>
+              <th style="border:1px solid #9ed8e8;padding:5px 3px;width:9%;">품목코드</th>
+              <th style="border:1px solid #9ed8e8;padding:5px 3px;">품목명</th>
+              <th style="border:1px solid #9ed8e8;padding:5px 3px;width:12%;">규격</th>
+              <th style="border:1px solid #9ed8e8;padding:5px 3px;width:7%;">수량</th>
+              <th style="border:1px solid #9ed8e8;padding:5px 3px;width:12%;">단가</th>
+              <th style="border:1px solid #9ed8e8;padding:5px 3px;width:13%;">공급가액</th>
+              <th style="border:1px solid #9ed8e8;padding:5px 3px;width:10%;">세액</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dataRows.join('')}
+            ${emptyRows}
+          </tbody>
+        </table>
+
+        <!-- ── 하단 합계 ── -->
+        <table style="width:100%;border-collapse:collapse;font-size:9px;">
+          <tr>
+            <td style="border:1px solid #9ed8e8;padding:4px 6px;background:#e0f5fb;width:13%;"><strong>전잔금</strong></td>
+            <td style="border:1px solid #9ed8e8;padding:4px 6px;text-align:right;width:16%;">${stFmt(prevBal)}원</td>
+            <td style="border:1px solid #9ed8e8;padding:4px 6px;background:#e0f5fb;width:13%;"><strong>수량 합계</strong></td>
+            <td style="border:1px solid #9ed8e8;padding:4px 6px;text-align:right;width:16%;">${stFmt(totalQty)}</td>
+            <td colspan="4" style="border:1px solid #9ed8e8;padding:4px 6px;"></td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #9ed8e8;padding:4px 6px;background:#e0f5fb;"><strong>공급가액</strong></td>
+            <td style="border:1px solid #9ed8e8;padding:4px 6px;text-align:right;">${stFmt(totalSupply)}원</td>
+            <td style="border:1px solid #9ed8e8;padding:4px 6px;background:#e0f5fb;"><strong>세액</strong></td>
+            <td style="border:1px solid #9ed8e8;padding:4px 6px;text-align:right;">${stFmt(totalVat)}원</td>
+            <td colspan="4" style="border:1px solid #9ed8e8;padding:4px 6px;font-size:9px;color:#333;">${bankInfo}</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #9ed8e8;padding:4px 6px;background:#e0f5fb;"><strong>입금</strong></td>
+            <td style="border:1px solid #9ed8e8;padding:4px 6px;text-align:right;">${stFmt(payment)}원</td>
+            <td style="border:1px solid #9ed8e8;padding:4px 6px;background:#e0f5fb;"><strong>총잔액</strong></td>
+            <td style="border:1px solid #9ed8e8;padding:4px 6px;text-align:right;font-weight:700;">${stFmt(totalBal)}원</td>
+            <td colspan="4" style="border:1px solid #9ed8e8;padding:4px 6px;"></td>
+          </tr>
+        </table>
+
+      </div>
+    `;
+  }
+
+  // 미리보기 업데이트
+  function stUpdatePreview() {
+    const preview = document.getElementById('stPreview');
+    if (preview) preview.innerHTML = stRenderPreviewHTML();
+  }
+  window.stUpdatePreview = stUpdatePreview;
+
+  // 인쇄 / PDF 출력
+  function stPrint() {
+    const html = stRenderPreviewHTML();
+    const win  = window.open('', '_blank', 'width=900,height=700');
+    win.document.write(`
+      <!DOCTYPE html>
+      <html lang="ko">
+      <head>
+        <meta charset="UTF-8">
+        <title>거래명세서</title>
+        <style>
+          @page { size: A4; margin: 12mm; }
+          body { font-family:'맑은 고딕','Malgun Gothic',sans-serif; font-size:10px; color:#222; background:#fff; }
+        </style>
+      </head>
+      <body onload="window.print();">${html}</body>
+      </html>
+    `);
+    win.document.close();
+  }
+  window.stPrint = stPrint;
+
+  // 초기화
+  function stReset() {
+    if (!confirm('거래명세서를 초기화하시겠습니까?')) return;
+    stItems = [];
+    stRenderItems();
+    stUpdatePreview();
+  }
+  window.stReset = stReset;
+
+  // 초기 품목 1행 + 미리보기 렌더링
+  stAddRow();
+  stUpdatePreview();
+
 }); // END DOMContentLoaded
+

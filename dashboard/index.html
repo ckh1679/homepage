@@ -236,17 +236,102 @@
         <section id="page-statement" class="page-section">
           <div class="page-title">
             <h2><i class="fa fa-file-invoice" style="margin-right:10px;color:var(--accent-primary);"></i>거래명세서 작성</h2>
-            <p>거래처별 거래명세서를 작성하고 발행·출력합니다.</p>
+            <p>거래처별 거래명세서를 작성하고 발행·인쇄합니다.</p>
           </div>
-          <div class="panel">
-            <div class="panel-header">
-              <div class="panel-title">명세서 작성</div>
+
+          <!-- 상단 버튼 -->
+          <div style="display:flex;gap:10px;margin-bottom:24px;">
+            <button class="btn-primary-sm" onclick="stAddRow()"><i class="fa fa-plus"></i> 품목 행 추가</button>
+            <button class="btn-primary-sm" style="background:linear-gradient(135deg,#10b981,#059669);" onclick="stPrint()"><i class="fa fa-print"></i> 인쇄 / PDF 출력</button>
+            <button class="btn-primary-sm" style="background:linear-gradient(135deg,#64748b,#475569);" onclick="stReset()"><i class="fa fa-redo"></i> 초기화</button>
+          </div>
+
+          <div class="quote-editor-wrap">
+
+            <!-- ======== 왼쪽: 입력 폼 ======== -->
+            <div class="quote-form-panel panel">
+              <div class="panel-title" style="margin-bottom:16px;">📝 명세서 정보 입력</div>
+
+              <!-- 기본 정보 -->
+              <div class="form-section-label">기본 정보</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>발행일자</label>
+                  <input type="date" id="stDate" oninput="stUpdatePreview()">
+                </div>
+                <div class="form-group">
+                  <label>거래처명</label>
+                  <input type="text" id="stClient" placeholder="(주)○○" oninput="stUpdatePreview()">
+                </div>
+              </div>
+
+              <!-- 공급자 정보 -->
+              <div class="form-section-label" style="margin-top:16px;">공급자 정보</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>상호</label>
+                  <input type="text" id="stSupName" value="렌탈사무기" oninput="stUpdatePreview()">
+                </div>
+                <div class="form-group">
+                  <label>대표자</label>
+                  <input type="text" id="stSupCeo" value="최○○" oninput="stUpdatePreview()">
+                </div>
+              </div>
+              <div class="form-group" style="margin-bottom:10px;">
+                <label>주소</label>
+                <input type="text" id="stSupAddr" value="서울 강동구 아리수로64길 11 1층 렌탈사무기" oninput="stUpdatePreview()">
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>업태</label>
+                  <input type="text" id="stSupBiz" value="도소매 외" oninput="stUpdatePreview()">
+                </div>
+                <div class="form-group">
+                  <label>종목</label>
+                  <input type="text" id="stSupType" value="사무기기 외" oninput="stUpdatePreview()">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>전화</label>
+                  <input type="text" id="stSupTel" value="010-5922-3650" oninput="stUpdatePreview()">
+                </div>
+                <div class="form-group">
+                  <label>팩스</label>
+                  <input type="text" id="stSupFax" value="-" oninput="stUpdatePreview()">
+                </div>
+              </div>
+
+              <!-- 하단 합계 정보 -->
+              <div class="form-section-label" style="margin-top:16px;">합계 정보</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>전잔금 (원)</label>
+                  <input type="number" id="stPrevBalance" value="0" oninput="stUpdatePreview()">
+                </div>
+                <div class="form-group">
+                  <label>입금 (원)</label>
+                  <input type="number" id="stPayment" value="0" oninput="stUpdatePreview()">
+                </div>
+              </div>
+              <div class="form-group" style="margin-top:8px;">
+                <label>계좌 안내 (하단 표시)</label>
+                <input type="text" id="stBankInfo" value="우리은행 1002-000-000000 렌탈사무기(최○○)" oninput="stUpdatePreview()">
+              </div>
+
+              <!-- 품목 목록 입력 -->
+              <div class="form-section-label" style="margin-top:16px;">품목 목록</div>
+              <div id="stItemList"></div>
             </div>
-            <div class="empty-state">
-              <i class="fa fa-file-invoice"></i>
-              <p>거래명세서 작성 기능</p>
-              <span>거래처 및 품목 등록 후 명세서 작성 기능이 활성화됩니다.</span>
+
+            <!-- ======== 오른쪽: 미리보기 ======== -->
+            <div class="quote-preview-panel">
+              <div class="panel-title" style="margin-bottom:16px;">👁️ 거래명세서 미리보기</div>
+              <div id="stPreview" class="quote-preview-paper">
+                <!-- JS로 렌더링 -->
+              </div>
             </div>
+
           </div>
         </section>
 
