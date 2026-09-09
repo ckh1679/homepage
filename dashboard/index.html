@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>프린터모아 - 관리자 대시보드</title>
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <div class="dashboard-container">
+    
+    <!-- ==================== Sidebar ==================== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <i class="fa fa-print" style="margin-right:10px;"></i>
+        PrinterMoa OP
+      </div>
+      
+      <div class="sidebar-menu">
+        <!-- 대시보드 홈 -->
+        <div class="menu-label">홈</div>
+        <div class="menu-item active" data-page="home">
+          <i class="fa fa-chart-pie"></i> 대시보드 홈
+        </div>
+
+        <!-- 거래 관리 -->
+        <div class="menu-label">거래 관리</div>
+        <div class="menu-item" data-page="clients">
+          <i class="fa fa-building"></i> 거래처 관리
+        </div>
+        <div class="menu-item" data-page="items">
+          <i class="fa fa-boxes"></i> 품목 관리
+        </div>
+        <div class="menu-item" data-page="statement">
+          <i class="fa fa-file-invoice"></i> 거래명세서 작성
+        </div>
+
+        <!-- 렌탈 관리 -->
+        <div class="menu-label">렌탈 관리</div>
+        <div class="menu-item" data-page="rental-quote">
+          <i class="fa fa-file-signature"></i> 렌탈 견적서 작성
+        </div>
+        <div class="menu-item" data-page="rental-mgmt">
+          <i class="fa fa-laptop-house"></i> 임대 관리
+        </div>
+        <div class="menu-item" data-page="rental-analysis">
+          <i class="fa fa-chart-line"></i> 렌탈 분석
+        </div>
+
+        <!-- 고객 및 사이트 -->
+        <div class="menu-label">고객 및 사이트</div>
+        <div class="menu-item" data-page="members">
+          <i class="fa fa-users"></i> 가입회원 관리
+        </div>
+        <div class="menu-item" data-page="consult">
+          <i class="fa fa-headset"></i> 상담 내역 확인
+        </div>
+        <div class="menu-item" data-page="analytics">
+          <i class="fa fa-eye"></i> 방문자 통계
+        </div>
+
+        <!-- 시스템 -->
+        <div class="menu-label">시스템</div>
+        <div class="menu-item" data-page="users">
+          <i class="fa fa-user-shield"></i> 사용자 관리
+        </div>
+      </div>
+      
+      <div class="sidebar-footer">
+        <button class="logout-btn" onclick="window.location.href='../index.html'">
+          <i class="fa fa-arrow-left" style="margin-right:8px;"></i> 메인으로 돌아가기
+        </button>
+      </div>
+    </aside>
+
+    <!-- ==================== Main Wrapper ==================== -->
+    <div class="main-wrapper">
+      
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="icon-btn menu-toggle" id="menuToggle">
+            <i class="fa fa-bars"></i>
+          </button>
+          <div class="search-bar">
+            <i class="fa fa-search"></i>
+            <input type="text" placeholder="거래처명, 회원명, 연락처 검색...">
+          </div>
+        </div>
+        
+        <div class="header-right">
+          <button class="icon-btn" title="알림">
+            <i class="fa fa-bell"></i>
+            <span class="badge-dot"></span>
+          </button>
+          <div class="user-profile">
+            <div class="avatar">관</div>
+            <span style="font-size: 14px; font-weight: 500;">관리자</span>
+            <i class="fa fa-chevron-down" style="font-size: 12px; color: var(--text-muted);"></i>
+          </div>
+        </div>
+      </header>
+
+      <!-- ==================== Content Area ==================== -->
+      <main class="content-area">
+
+        <!-- ====== 대시보드 홈 ====== -->
+        <section id="page-home" class="page-section active">
+          <div class="page-title">
+            <h2><i class="fa fa-chart-pie" style="margin-right:10px;color:var(--accent-primary);"></i>대시보드 홈</h2>
+            <p>오늘의 주요 지표와 최근 활동 내역을 한눈에 확인하세요.</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon primary"><i class="fa fa-building"></i></div>
+              <div class="stat-details">
+                <div class="stat-title">총 거래처 수</div>
+                <div class="stat-value" id="stat-clients">0</div>
+                <div class="stat-trend trend-up"><i class="fa fa-arrow-up"></i> 이번 달 +3</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon success"><i class="fa fa-laptop-house"></i></div>
+              <div class="stat-details">
+                <div class="stat-title">임대 진행 중</div>
+                <div class="stat-value" id="stat-rentals">0</div>
+                <div class="stat-trend trend-up"><i class="fa fa-arrow-up"></i> 5건 신규</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon warning"><i class="fa fa-headset"></i></div>
+              <div class="stat-details">
+                <div class="stat-title">미처리 상담</div>
+                <div class="stat-value" id="stat-consult">0</div>
+                <div class="stat-trend trend-down"><i class="fa fa-arrow-down"></i> 2건 감소</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon secondary"><i class="fa fa-users"></i></div>
+              <div class="stat-details">
+                <div class="stat-title">가입 회원 수</div>
+                <div class="stat-value" id="stat-members">0</div>
+                <div class="stat-trend trend-up"><i class="fa fa-arrow-up"></i> 12% 이번 달</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="panel">
+              <div class="panel-header">
+                <div class="panel-title">최근 상담 및 렌탈 내역</div>
+                <div class="panel-action" onclick="showPage('consult')">전체 보기</div>
+              </div>
+              <div class="table-wrapper">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>구분</th><th>거래처 / 고객명</th><th>요청 내용</th><th>접수일</th><th>상태</th>
+                    </tr>
+                  </thead>
+                  <tbody id="homeRecentBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel-header"><div class="panel-title">최근 활동 로그</div></div>
+              <div class="activity-list" id="homeActivityList">
+                <div class="activity-item">
+                  <div class="activity-icon"><i class="fa fa-building"></i></div>
+                  <div class="activity-content"><p><strong>(주)미래오피스</strong> 거래처 등록 완료</p><span>10분 전</span></div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-icon"><i class="fa fa-file-invoice" style="color:var(--accent-success);"></i></div>
+                  <div class="activity-content"><p><strong>거래명세서 #2024-108</strong> 작성 완료</p><span>1시간 전</span></div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-icon"><i class="fa fa-comment-dots" style="color:var(--accent-warning);"></i></div>
+                  <div class="activity-content"><p>새로운 <strong>맞춤 렌탈 상담</strong> 접수</p><span>2시간 전</span></div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-icon"><i class="fa fa-wrench" style="color:var(--accent-secondary);"></i></div>
+                  <div class="activity-content"><p><strong>강동구 사무소</strong> A/S 처리 완료</p><span>5시간 전</span></div>
+                </div>
+                <div class="activity-item">
+                  <div class="activity-icon"><i class="fa fa-user-plus" style="color:var(--accent-primary);"></i></div>
+                  <div class="activity-content"><p><strong>김○○</strong>님 신규 회원 가입</p><span>6시간 전</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====== 거래처 관리 ====== -->
+        <section id="page-clients" class="page-section">
+          <div class="page-title">
+            <h2><i class="fa fa-building" style="margin-right:10px;color:var(--accent-primary);"></i>거래처 관리</h2>
+            <p>렌탈/임대 계약이 진행 중이거나 완료된 거래처를 통합 관리합니다.</p>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">거래처 목록</div>
+              <button class="btn-primary-sm"><i class="fa fa-plus"></i> 거래처 추가</button>
+            </div>
+            <div class="empty-state">
+              <i class="fa fa-building"></i>
+              <p>등록된 거래처가 없습니다.</p>
+              <span>상단 '거래처 추가' 버튼을 클릭하여 첫 거래처를 등록해 보세요.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====== 품목 관리 ====== -->
+        <section id="page-items" class="page-section">
+          <div class="page-title">
+            <h2><i class="fa fa-boxes" style="margin-right:10px;color:var(--accent-primary);"></i>품목 관리</h2>
+            <p>렌탈 제품 및 소모품 품목 목록을 관리합니다.</p>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">품목 목록</div>
+              <button class="btn-primary-sm"><i class="fa fa-plus"></i> 품목 추가</button>
+            </div>
+            <div class="empty-state">
+              <i class="fa fa-boxes"></i>
+              <p>등록된 품목이 없습니다.</p>
+              <span>상단 '품목 추가' 버튼을 클릭하여 제품을 등록해 주세요.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====== 거래명세서 작성 ====== -->
+        <section id="page-statement" class="page-section">
+          <div class="page-title">
+            <h2><i class="fa fa-file-invoice" style="margin-right:10px;color:var(--accent-primary);"></i>거래명세서 작성</h2>
+            <p>거래처별 거래명세서를 작성하고 발행·출력합니다.</p>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">명세서 작성</div>
+            </div>
+            <div class="empty-state">
+              <i class="fa fa-file-invoice"></i>
+              <p>거래명세서 작성 기능</p>
+              <span>거래처 및 품목 등록 후 명세서 작성 기능이 활성화됩니다.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====== 렌탈 견적서 작성 ====== -->
+        <section id="page-rental-quote" class="page-section">
+          <div class="page-title">
+            <h2><i class="fa fa-file-signature" style="margin-right:10px;color:var(--accent-primary);"></i>렌탈 견적서 작성</h2>
+            <p>고객 요구사항에 맞는 렌탈 견적서를 작성하고 PDF로 출력합니다.</p>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">견적서 작성</div>
+              <button class="btn-primary-sm"><i class="fa fa-plus"></i> 새 견적서</button>
+            </div>
+            <div class="empty-state">
+              <i class="fa fa-file-signature"></i>
+              <p>작성된 렌탈 견적서가 없습니다.</p>
+              <span>'새 견적서' 버튼을 눌러 고객 맞춤 렌탈 견적서를 작성하세요.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====== 임대 관리 ====== -->
+        <section id="page-rental-mgmt" class="page-section">
+          <div class="page-title">
+            <h2><i class="fa fa-laptop-house" style="margin-right:10px;color:var(--accent-primary);"></i>임대 관리</h2>
+            <p>현재 진행 중인 모든 렌탈·임대 계약을 관리합니다.</p>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">임대 계약 목록</div>
+              <button class="btn-primary-sm"><i class="fa fa-plus"></i> 계약 등록</button>
+            </div>
+            <div class="empty-state">
+              <i class="fa fa-laptop-house"></i>
+              <p>등록된 임대 계약이 없습니다.</p>
+              <span>거래처 등록 후 임대 계약을 추가해 주세요.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====== 렌탈 분석 ====== -->
+        <section id="page-rental-analysis" class="page-section">
+          <div class="page-title">
+            <h2><i class="fa fa-chart-line" style="margin-right:10px;color:var(--accent-primary);"></i>렌탈 분석</h2>
+            <p>기간별 렌탈 수익, 기기별 통계, 계약 현황 분석을 제공합니다.</p>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon primary"><i class="fa fa-won-sign"></i></div>
+              <div class="stat-details"><div class="stat-title">월간 렌탈 매출</div><div class="stat-value">₩ 0</div><div class="stat-trend">데이터 없음</div></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon success"><i class="fa fa-file-contract"></i></div>
+              <div class="stat-details"><div class="stat-title">신규 계약 (이달)</div><div class="stat-value">0 건</div><div class="stat-trend">데이터 없음</div></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon warning"><i class="fa fa-exclamation-triangle"></i></div>
+              <div class="stat-details"><div class="stat-title">만료 예정 계약</div><div class="stat-value">0 건</div><div class="stat-trend">30일 이내</div></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">월별 렌탈 추이</div></div>
+            <div class="chart-placeholder"><i class="fa fa-chart-bar" style="font-size:32px;margin-right:12px;"></i> 계약 데이터 등록 후 차트가 표시됩니다.</div>
+          </div>
+        </section>
+
+        <!-- ====== 가입회원 관리 ====== -->
+        <section id="page-members" class="page-section">
+          <div class="page-title">
+            <h2><i class="fa fa-users" style="margin-right:10px;color:var(--accent-primary);"></i>가입회원 관리</h2>
+            <p>홈페이지에 가입한 회원 목록을 조회하고 권한을 관리합니다.</p>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">회원 목록</div>
+              <span style="font-size:13px;color:var(--text-muted);">총 0명</span>
+            </div>
+            <div class="empty-state">
+              <i class="fa fa-users"></i>
+              <p>가입된 회원이 없습니다.</p>
+              <span>회원이 사이트에 가입하면 이 목록에 표시됩니다.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====== 상담 내역 확인 ====== -->
+        <section id="page-consult" class="page-section">
+          <div class="page-title">
+            <h2><i class="fa fa-headset" style="margin-right:10px;color:var(--accent-primary);"></i>상담 내역 확인</h2>
+            <p>홈페이지 게시판 및 간편견적 신청을 통해 접수된 상담 내역을 확인합니다.</p>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">상담 목록</div>
+              <div style="display:flex;gap:10px;">
+                <span class="status-badge status-pending">대기 0</span>
+                <span class="status-badge status-completed">완료 0</span>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr><th>번호</th><th>고객명</th><th>연락처</th><th>상담 내용</th><th>접수일</th><th>상태</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">접수된 상담 내역이 없습니다.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====== 방문자 통계 ====== -->
+        <section id="page-analytics" class="page-section">
+          <div class="page-title">
+            <h2><i class="fa fa-eye" style="margin-right:10px;color:var(--accent-primary);"></i>방문자 통계</h2>
+            <p>사이트 방문자 수, 유입 경로, 인기 페이지 등의 통계를 확인합니다.</p>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon primary"><i class="fa fa-eye"></i></div>
+              <div class="stat-details"><div class="stat-title">오늘 방문자</div><div class="stat-value">-</div><div class="stat-trend">GA 연동 필요</div></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon success"><i class="fa fa-calendar-week"></i></div>
+              <div class="stat-details"><div class="stat-title">이번 주 방문자</div><div class="stat-value">-</div><div class="stat-trend">GA 연동 필요</div></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon warning"><i class="fa fa-mobile-alt"></i></div>
+              <div class="stat-details"><div class="stat-title">모바일 비율</div><div class="stat-value">-</div><div class="stat-trend">GA 연동 필요</div></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">방문자 추이 차트</div></div>
+            <div class="chart-placeholder">
+              <div style="text-align:center;">
+                <i class="fa fa-chart-area" style="font-size:32px;margin-bottom:12px;display:block;"></i>
+                Google Analytics 4 연동 후 실시간 방문자 데이터가 표시됩니다.<br>
+                <a href="https://analytics.google.com" target="_blank" style="color:var(--accent-primary);margin-top:8px;display:inline-block;">GA4 설정 바로가기 →</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ====== 사용자 관리 ====== -->
+        <section id="page-users" class="page-section">
+          <div class="page-title">
+            <h2><i class="fa fa-user-shield" style="margin-right:10px;color:var(--accent-primary);"></i>사용자 관리</h2>
+            <p>이 대시보드에 접근 가능한 관리자 계정을 관리합니다.</p>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">관리자 계정 목록</div>
+              <button class="btn-primary-sm"><i class="fa fa-user-plus"></i> 계정 추가</button>
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr><th>이름</th><th>아이디</th><th>권한</th><th>최근 로그인</th><th>관리</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>최고 관리자</strong></td>
+                    <td>admin</td>
+                    <td><span class="status-badge" style="background:rgba(59,130,246,0.15);color:var(--accent-primary);">최고관리자</span></td>
+                    <td>방금 전</td>
+                    <td><button class="btn-icon-edit" onclick="alert('최고관리자 계정은 수정할 수 없습니다.')"><i class="fa fa-edit"></i></button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
