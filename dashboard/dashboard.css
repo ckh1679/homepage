@@ -614,3 +614,165 @@ ul { list-style: none; }
   opacity: 1;
 }
 
+/* ──────────────────────────────────────────
+   렌탈 견적서 에디터 레이아웃
+────────────────────────────────────────── */
+.quote-editor-wrap {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 24px;
+  align-items: flex-start;
+}
+@media (max-width: 1200px) {
+  .quote-editor-wrap { grid-template-columns: 1fr; }
+}
+
+/* 폼 패널 */
+.quote-form-panel {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.form-section-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--accent-primary);
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(59,130,246,0.2);
+}
+.form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.form-group label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.form-group input,
+.form-group select {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+  transition: var(--transition);
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+}
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+.form-group select option {
+  background: #1a1d29;
+}
+
+/* 기기 카드 (폼 안) */
+.device-form-card {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+  position: relative;
+}
+.device-form-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.device-form-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-primary);
+}
+.btn-remove-device {
+  background: rgba(239,68,68,0.1);
+  color: var(--accent-danger);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-remove-device:hover { background: var(--accent-danger); color:#fff; }
+
+/* 과금형 토글 */
+.billing-type-wrap {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.billing-type-btn {
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.billing-type-btn.active {
+  background: rgba(59,130,246,0.15);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+/* 미리보기 패널 */
+.quote-preview-panel {
+  position: sticky;
+  top: calc(var(--header-height) + 16px);
+}
+
+/* ──────────────────────────────────────────
+   견적서 종이 스타일 (화면용 + 인쇄용)
+────────────────────────────────────────── */
+.quote-preview-paper {
+  background: #fff;
+  color: #222;
+  width: 100%;
+  min-height: 600px;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 4px 40px rgba(0,0,0,0.4);
+  font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-x: auto;
+}
+
+/* 인쇄 시 전용 스타일 */
+@media print {
+  body > * { display: none !important; }
+  #printTarget {
+    display: block !important;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    background: white;
+    z-index: 99999;
+    padding: 20mm;
+    box-sizing: border-box;
+  }
+}
+
+

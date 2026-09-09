@@ -256,18 +256,123 @@
             <h2><i class="fa fa-file-signature" style="margin-right:10px;color:var(--accent-primary);"></i>렌탈 견적서 작성</h2>
             <p>고객 요구사항에 맞는 렌탈 견적서를 작성하고 PDF로 출력합니다.</p>
           </div>
-          <div class="panel">
-            <div class="panel-header">
-              <div class="panel-title">견적서 작성</div>
-              <button class="btn-primary-sm"><i class="fa fa-plus"></i> 새 견적서</button>
+
+          <!-- 상단 버튼 -->
+          <div style="display:flex;gap:10px;margin-bottom:24px;">
+            <button class="btn-primary-sm" onclick="addDevice()"><i class="fa fa-plus"></i> 기기 추가</button>
+            <button class="btn-primary-sm" style="background:linear-gradient(135deg,#10b981,#059669);" onclick="printQuote()"><i class="fa fa-print"></i> 인쇄 / PDF 출력</button>
+            <button class="btn-primary-sm" style="background:linear-gradient(135deg,#64748b,#475569);" onclick="resetQuote()"><i class="fa fa-redo"></i> 초기화</button>
+          </div>
+
+          <div class="quote-editor-wrap">
+
+            <!-- ======== 왼쪽: 입력 폼 ======== -->
+            <div class="quote-form-panel panel">
+              <div class="panel-title" style="margin-bottom:16px;">📝 견적 정보 입력</div>
+
+              <!-- 기본 정보 -->
+              <div class="form-section-label">기본 정보</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>견적번호</label>
+                  <input type="text" id="qNo" value="RQ-20260909-0001" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                  <label>견적일자</label>
+                  <input type="date" id="qDate" oninput="updatePreview()">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>수신 (거래처명)</label>
+                  <input type="text" id="qReceiver" placeholder="(주)○○ 귀중" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                  <label>견적 유효일</label>
+                  <input type="date" id="qExpiry" oninput="updatePreview()">
+                </div>
+              </div>
+
+              <!-- 계약 조건 -->
+              <div class="form-section-label" style="margin-top:16px;">계약 조건</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>계약기간 (개월)</label>
+                  <input type="number" id="qPeriod" value="36" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                  <label>부가세</label>
+                  <select id="qVat" onchange="updatePreview()">
+                    <option value="별도">부가세 별도</option>
+                    <option value="포함">부가세 포함</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group" style="flex:1;">
+                  <label>설치장소</label>
+                  <input type="text" id="qInstallPlace" value="거래처 지정 장소" oninput="updatePreview()">
+                </div>
+              </div>
+
+              <!-- 공급자 정보 -->
+              <div class="form-section-label" style="margin-top:16px;">공급자 정보 (우측 인감 영역)</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>상호</label>
+                  <input type="text" id="qSupName" value="렌탈사무기" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                  <label>대표자</label>
+                  <input type="text" id="qSupCeo" value="최○○" oninput="updatePreview()">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group" style="flex:1;">
+                  <label>주소</label>
+                  <input type="text" id="qSupAddr" value="서울 강동구 아리수로64길 11 1층 렌탈사무기" oninput="updatePreview()">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>전화</label>
+                  <input type="text" id="qSupTel" value="010-5922-3650" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                  <label>팩스</label>
+                  <input type="text" id="qSupFax" value="-" oninput="updatePreview()">
+                </div>
+              </div>
+
+              <!-- 기기 목록 입력 -->
+              <div class="form-section-label" style="margin-top:16px;">기기 목록</div>
+              <div id="deviceFormList"></div>
+
+              <!-- 요약 정보 -->
+              <div class="form-section-label" style="margin-top:16px;">합계 정보</div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>임대보증금 (원)</label>
+                  <input type="number" id="qDeposit" value="0" oninput="updatePreview()">
+                </div>
+              </div>
+              <div class="form-group" style="margin-top:8px;">
+                <label>유지보수 조건</label>
+                <textarea id="qMaintenance" rows="3" style="width:100%;background:rgba(0,0,0,0.2);border:1px solid var(--border-color);color:var(--text-primary);border-radius:8px;padding:10px;font-family:inherit;font-size:13px;resize:vertical;" oninput="updatePreview()">토너 부품 출장비 등 유지보수 비용 포함, 복사손지 제외</textarea>
+              </div>
             </div>
-            <div class="empty-state">
-              <i class="fa fa-file-signature"></i>
-              <p>작성된 렌탈 견적서가 없습니다.</p>
-              <span>'새 견적서' 버튼을 눌러 고객 맞춤 렌탈 견적서를 작성하세요.</span>
+
+            <!-- ======== 오른쪽: 미리보기 ======== -->
+            <div class="quote-preview-panel">
+              <div class="panel-title" style="margin-bottom:16px;">👁️ 견적서 미리보기</div>
+              <div id="quotePreview" class="quote-preview-paper">
+                <!-- JS로 렌더링 -->
+              </div>
             </div>
+
           </div>
         </section>
+
 
         <!-- ====== 임대 관리 ====== -->
         <section id="page-rental-mgmt" class="page-section">
