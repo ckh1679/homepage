@@ -1,17 +1,16 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>濡쒓렇??- ?꾨┛?곕え??/title>
-  <meta name="description" content="?꾨┛?곕え??濡쒓렇???섏씠吏">
+  <title>로그인 - 프린터모아</title>
+  <meta name="description" content="프린터모아 구글 로그인 페이지">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
-  <!-- Google Identity Services (Google 濡쒓렇??SDK) -->
+  <!-- Google Identity Services (Google 로그인 SDK) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <!-- auth.js??body ?댁뿉??濡쒕뱶 (DOM蹂대떎 癒쇱? ?ㅽ뻾?섏뼱???섎?濡? -->
   <script src="auth.js"></script>
 </head>
 <body class="auth-page">
@@ -22,10 +21,10 @@
       <div class="inner">
         <div></div>
         <a href="index.html" class="logo" id="loginLogo">
-          <div class="logo-text">?꾨┛??span>紐⑥븘</span></div>
+          <div class="logo-text">프린터<span>모아</span></div>
         </a>
         <div class="top-phone">
-          <div class="label">?곷떞 ?꾪솕</div>
+          <div class="label">상담 전화</div>
           <a href="tel:01059223650" class="number">010-5922-3650</a>
         </div>
       </div>
@@ -37,10 +36,10 @@
     <div class="container">
       <div class="gnb-menu">
         <ul>
-          <li><a href="index.html">??/a></li>
-          <li><a href="board/board.html?type=notice">怨듭??ы빆</a></li>
-          <li><a href="board/board.html?type=consult">?곷떞寃뚯떆??/a></li>
-          <li><a href="board/board.html?type=review">?ъ슜?꾧린</a></li>
+          <li><a href="index.html">홈</a></li>
+          <li><a href="board/board.html?type=notice">공지사항</a></li>
+          <li><a href="board/board.html?type=consult">상담게시판</a></li>
+          <li><a href="board/board.html?type=review">이용후기</a></li>
         </ul>
       </div>
     </div>
@@ -87,9 +86,9 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       margin-bottom: 28px;
-      padding: 24px;
+      padding: 28px 20px;
       background: #fafafa;
       border-radius: 14px;
       border: 1px solid #eee;
@@ -122,30 +121,37 @@
       margin-top: 8px;
     }
     .login-back-link:hover { color: var(--primary); }
+    #googleBtnWrapper {
+      min-height: 44px;
+      display: flex;
+      justify-content: center;
+    }
   </style>
 
-  <!-- 濡쒓렇??硫붿씤 -->
+  <!-- 로그인 메인 -->
   <div class="login-page-wrap">
     <div class="login-card">
 
-      <div class="login-brand">?뼥截?PRINTERMOA</div>
-      <h1 class="login-title">濡쒓렇??/h1>
+      <div class="login-brand">✨ PRINTERMOA</div>
+      <h1 class="login-title">로그인</h1>
       <p class="login-subtitle">
-        援ш? 怨꾩젙?쇰줈 媛꾪렪?섍쾶 濡쒓렇?명븯?몄슂.<br>
-        蹂꾨룄 ?뚯썝媛???놁씠 諛붾줈 ?댁슜 媛?ν빀?덈떎.
+        구글 계정으로 간편하게 로그인하세요.<br>
+        별도 회원가입 없이 바로 이용 가능합니다.
       </p>
 
       <div class="login-security-badge">
-        <i class="fa fa-shield-alt"></i> 援ш? 怨꾩젙 ?꾩슜 蹂댁븞 濡쒓렇??      </div>
+        <i class="fa fa-shield-alt"></i> 구글 계정 전용 보안 로그인
+      </div>
 
-      <!-- 援ш? 濡쒓렇??踰꾪듉 ?곸뿭 -->
+      <!-- 구글 로그인 버튼 영역 -->
       <div class="google-signin-area">
         <div id="googleBtnWrapper"></div>
-        <p class="google-signin-desc">援ш? 怨꾩젙?쇰줈 1珥?留뚯뿉 媛꾪렪 濡쒓렇??/p>
+        <p class="google-signin-desc">구글 계정으로 1초 만에 간편 로그인</p>
       </div>
 
       <a href="index.html" class="login-back-link" id="goHomeLink">
-        <i class="fa fa-arrow-left"></i> ?덉쑝濡??뚯븘媛湲?      </a>
+        <i class="fa fa-arrow-left"></i> 홈으로 돌아가기
+      </a>
 
     </div>
   </div>
@@ -154,52 +160,56 @@
   <footer class="footer" style="margin-top: 0;">
     <div class="container">
       <div class="footer-links">
-        <a href="index.html" class="bold">??/a>
-        <a href="board/board.html?type=notice">怨듭??ы빆</a>
-        <a href="board/board.html?type=consult">?곷떞寃뚯떆??/a>
+        <a href="index.html" class="bold">홈</a>
+        <a href="board/board.html?type=notice">공지사항</a>
+        <a href="board/board.html?type=consult">상담게시판</a>
       </div>
-      <p class="footer-company">?꾨┛?곕え??/p>
-      <div class="footer-copyright">Copyright 짤 ?꾨┛?곕え?? All Rights Reserved.</div>
+      <p class="footer-company">프린터모아</p>
+      <div class="footer-copyright">Copyright © 프린터모아. All Rights Reserved.</div>
     </div>
   </footer>
 
   <script>
-    // ?대? 濡쒓렇?몃맂 寃쎌슦 ?덉쑝濡??대룞
+    // 이미 로그인된 경우 홈 또는 직전 페이지로 이동
     if (Auth.isLoggedIn()) {
       const redirect = new URLSearchParams(window.location.search).get('redirect');
       window.location.href = redirect ? decodeURIComponent(redirect) : 'index.html';
     }
 
-    // ?? 援ш? 濡쒓렇??珥덇린??諛?踰꾪듉 ?뚮뜑留?????????????????
+    // ── 구글 로그인 초기화 및 버튼 렌더링 ───────────────────
     function initGoogleAuth() {
       if (window.google && google.accounts && google.accounts.id) {
-        google.accounts.id.initialize({
-          client_id: Auth.GOOGLE_CLIENT_ID,
-          callback: handleGoogleLoginResponse,
-          auto_select: false
-        });
-
-        const targetEl = document.getElementById('googleBtnWrapper');
-        if (targetEl) {
-          google.accounts.id.renderButton(targetEl, {
-            theme: 'outline',
-            size: 'large',
-            type: 'standard',
-            text: 'signin_with',
-            shape: 'rectangular',
-            logo_alignment: 'left',
-            width: 320
+        try {
+          google.accounts.id.initialize({
+            client_id: Auth.GOOGLE_CLIENT_ID,
+            callback: handleGoogleLoginResponse,
+            auto_select: false
           });
+
+          const targetEl = document.getElementById('googleBtnWrapper');
+          if (targetEl && !targetEl.hasChildNodes()) {
+            google.accounts.id.renderButton(targetEl, {
+              theme: 'outline',
+              size: 'large',
+              type: 'standard',
+              text: 'signin_with',
+              shape: 'rectangular',
+              logo_alignment: 'left',
+              width: 300
+            });
+          }
+        } catch (err) {
+          console.error('Google Auth 초기화 에러:', err);
         }
       } else {
-        setTimeout(initGoogleAuth, 100);
+        setTimeout(initGoogleAuth, 150);
       }
     }
 
-    // ?? 援ш? 濡쒓렇???묐떟 泥섎━ ??????????????????????????
+    // ── 구글 로그인 응답 처리 ─────────────────────────────
     function handleGoogleLoginResponse(response) {
       if (!response || !response.credential) {
-        alert('援ш? 濡쒓렇?몄뿉 ?ㅽ뙣?덉뒿?덈떎. ?ㅼ떆 ?쒕룄?댁＜?몄슂.');
+        alert('구글 로그인 응답이 올바르지 않습니다. 다시 시도해주세요.');
         return;
       }
 
@@ -208,11 +218,11 @@
         const redirect = new URLSearchParams(window.location.search).get('redirect');
         window.location.href = redirect ? decodeURIComponent(redirect) : 'index.html';
       } else {
-        alert(res.message || '援ш? 濡쒓렇??以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
+        alert(res.message || '구글 로그인 처리 중 오류가 발생했습니다.');
       }
     }
 
-    // 珥덇린???쒖옉
+    // 초기화 실행
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initGoogleAuth);
     } else {
