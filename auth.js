@@ -160,15 +160,19 @@ const Auth = (() => {
   // 각 페이지의 헤더 영역을 현재 로그인 상태에 맞게 변경
   function updateHeaderUI() {
     const user = getCurrentUser();
+    const googleShortcut = document.getElementById('headerGoogleShortcut');
     const loginLink = document.getElementById('headerLoginLink');
     const registerLink = document.getElementById('headerRegisterLink');
     const logoutBtn = document.getElementById('headerLogoutBtn');
     const userNameEl = document.getElementById('headerUserName');
 
+    // 일반 회원가입 및 일반 로그인 링크는 항상 숨김 처리
+    if (loginLink) loginLink.style.display = 'none';
+    if (registerLink) registerLink.style.display = 'none';
+
     if (user) {
-      // 로그인 상태
-      if (loginLink) loginLink.style.display = 'none';
-      if (registerLink) registerLink.style.display = 'none';
+      // 로그인 상태: 구글 로그인 버튼 숨기고 사용자 이름/로그아웃 표시
+      if (googleShortcut) googleShortcut.style.display = 'none';
       if (logoutBtn) logoutBtn.style.display = 'inline-block';
       if (userNameEl) {
         userNameEl.style.display = 'inline-flex';
@@ -181,9 +185,8 @@ const Auth = (() => {
         }
       }
     } else {
-      // 비로그인 상태
-      if (loginLink) loginLink.style.display = 'inline-block';
-      if (registerLink) registerLink.style.display = 'inline-block';
+      // 비로그인 상태: Google 로그인 단축 버튼만 표시
+      if (googleShortcut) googleShortcut.style.display = 'inline-flex';
       if (logoutBtn) logoutBtn.style.display = 'none';
       if (userNameEl) {
         userNameEl.style.display = 'none';

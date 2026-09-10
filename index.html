@@ -46,12 +46,10 @@
             <a href="dashboard/index.html" id="dashboardAccessBtn" title="관리자 대시보드">
               <i class="fa fa-tachometer-alt"></i> OP Board
             </a>
-            <!-- 구글 간편 로그인 아이콘 버튼 (비로그인 상태에서만 표시) -->
+            <!-- 구글 로그인 버튼 (비로그인 상태에서만 표시) -->
             <a href="login.html" class="header-google-btn" id="headerGoogleShortcut" style="display:none">
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"> Google로 로그인
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"> Google 로그인
             </a>
-            <a href="login.html" class="header-auth-btn" id="headerLoginLink">로그인</a>
-            <a href="register.html" class="header-auth-btn filled" id="headerRegisterLink">회원가입</a>
             <button class="header-auth-btn logout" id="headerLogoutBtn" style="display:none">로그아웃</button>
           </div>
           <div class="label">상담 전화</div>
@@ -792,7 +790,6 @@
       // 로그인 상태에 따른 대시보드 버튼 및 구글 로그인 단축 버튼 제어
       const dashBtn = document.getElementById('dashboardAccessBtn');
       const googleShortcut = document.getElementById('headerGoogleShortcut');
-      const loginLink = document.getElementById('headerLoginLink');
 
       if (Auth.isDashboardAdmin()) {
         // 특정 구글 이메일로 로그인 시 대시보드 버튼 표시
