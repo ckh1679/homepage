@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
+  <!-- Google Identity Services (Google 로그인 SDK) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <!-- auth.js는 body 내에서 로드 (DOM보다 먼저 실행되어야 하므로) -->
   <script src="auth.js"></script>
 </head>
@@ -88,6 +90,12 @@
 
       <div class="auth-divider">또는</div>
 
+      <!-- 구글 원클릭 간편 로그인 -->
+      <div class="social-login-wrap" style="display:flex; flex-direction:column; align-items:center; margin:14px 0 18px;">
+        <div id="googleBtnWrapper"></div>
+        <p style="font-size:12px; color:#888; margin-top:8px;">구글 계정으로 1초 만에 간편 로그인/가입</p>
+      </div>
+
       <!-- 하단 링크 -->
       <div class="auth-footer-links">
         아직 회원이 아니신가요?
@@ -164,6 +172,55 @@
     document.getElementById('loginPw').addEventListener('input', () => {
       document.getElementById('pwError').style.display = 'none';
     });
+
+    // ── 구글 로그인 초기화 및 버튼 렌더링 ────────────────
+    function initGoogleAuth() {
+      if (window.google && google.accounts && google.accounts.id) {
+        google.accounts.id.initialize({
+          client_id: Auth.GOOGLE_CLIENT_ID,
+          callback: handleGoogleLoginResponse,
+          auto_select: false
+        });
+
+        const targetEl = document.getElementById('googleBtnWrapper');
+        if (targetEl) {
+          google.accounts.id.renderButton(targetEl, {
+            theme: 'outline',
+            size: 'large',
+            type: 'standard',
+            text: 'signin_with',
+            shape: 'rectangular',
+            logo_alignment: 'left',
+            width: 320
+          });
+        }
+      } else {
+        // SDK 로딩 중일 경우 100ms 후 재시도
+        setTimeout(initGoogleAuth, 100);
+      }
+    }
+
+    function handleGoogleLoginResponse(response) {
+      if (!response || !response.credential) return;
+
+      const res = Auth.loginWithGoogle(response.credential);
+      if (res.success) {
+        // 로그인 성공 시 환영 메시지 후 이전 페이지/홈으로 이동
+        const redirect = new URLSearchParams(window.location.search).get('redirect');
+        window.location.href = redirect ? decodeURIComponent(redirect) : 'index.html';
+      } else {
+        const errEl = document.getElementById('loginError');
+        errEl.textContent = res.message || '구글 로그인 중 오류가 발생했습니다.';
+        errEl.style.display = 'block';
+      }
+    }
+
+    // 초기화 시작
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initGoogleAuth);
+    } else {
+      initGoogleAuth();
+    }
   </script>
 </body>
 </html>

@@ -101,6 +101,79 @@ const Auth = (() => {
     return { success: true, user: sessionData };
   }
 
+  // ── 구글 클라이언트 ID ──────────────────────────────
+  const GOOGLE_CLIENT_ID = '757534137046-7ldla468a72bno30t1g01f1qbq2etnjm.apps.googleusercontent.com';
+
+  // ── JWT 토큰 디코딩 헬퍼 ─────────────────────────────
+  function parseJwt(token) {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error('JWT 디코딩 실패:', e);
+      return null;
+    }
+  }
+
+  // ── 구글 소셜 로그인/간편가입 ────────────────────────
+  function loginWithGoogle(credential) {
+    const payload = parseJwt(credential);
+    if (!payload || !payload.sub) {
+      return { success: false, message: '유효하지 않은 구글 인증 정보입니다.' };
+    }
+
+    const { sub: googleId, email, name, picture } = payload;
+    const users = getUsers();
+
+    // 1. 기존 구글 연동 계정 또는 이메일 일치 계정 찾기
+    let user = users.find(u => u.googleId === googleId || (email && u.email === email));
+
+    if (!user) {
+      // 2. 신규 사용자면 자동 간편 회원가입 처리
+      const shortId = 'google_' + googleId.slice(-6);
+      user = {
+        id: shortId,
+        googleId: googleId,
+        password: '', // 소셜 로그인은 비밀번호 없음
+        name: name || '구글 사용자',
+        email: email || '',
+        phone: '',
+        picture: picture || '',
+        provider: 'google',
+        role: 'user',
+        createdAt: new Date().toISOString()
+      };
+      users.push(user);
+      saveUsers(users);
+    } else {
+      // 기존 계정에 구글 정보 업데이트 (프로필 사진, 구글 ID 등)
+      if (!user.googleId) user.googleId = googleId;
+      if (!user.picture && picture) user.picture = picture;
+      if (!user.provider) user.provider = 'google';
+      saveUsers(users);
+    }
+
+    // 3. 세션 저장 (로그인 활성화)
+    const sessionData = {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      email: user.email,
+      picture: user.picture || picture || '',
+      provider: 'google'
+    };
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+
+    return { success: true, user: sessionData };
+  }
+
   // ── 로그아웃 ────────────────────────────────────────
   function logout() {
     sessionStorage.removeItem(SESSION_KEY);
@@ -151,15 +224,24 @@ const Auth = (() => {
       if (registerLink) registerLink.style.display = 'none';
       if (logoutBtn) logoutBtn.style.display = 'inline-block';
       if (userNameEl) {
-        userNameEl.style.display = 'inline-block';
-        userNameEl.textContent = `${user.name}님`;
+        userNameEl.style.display = 'inline-flex';
+        userNameEl.style.alignItems = 'center';
+        userNameEl.style.gap = '6px';
+        if (user.picture) {
+          userNameEl.innerHTML = `<img src="${user.picture}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover;vertical-align:middle;"> <span>${user.name}님</span>`;
+        } else {
+          userNameEl.textContent = `${user.name}님`;
+        }
       }
     } else {
       // 비로그인 상태
       if (loginLink) loginLink.style.display = 'inline-block';
       if (registerLink) registerLink.style.display = 'inline-block';
       if (logoutBtn) logoutBtn.style.display = 'none';
-      if (userNameEl) userNameEl.style.display = 'none';
+      if (userNameEl) {
+        userNameEl.style.display = 'none';
+        userNameEl.innerHTML = '';
+      }
     }
 
     // 로그아웃 버튼 이벤트
@@ -192,8 +274,11 @@ const Auth = (() => {
 
   // 외부에 노출할 함수 목록
   return {
+    GOOGLE_CLIENT_ID,
+    parseJwt,
     register,
     login,
+    loginWithGoogle,
     logout,
     getCurrentUser,
     isLoggedIn,
