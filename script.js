@@ -236,7 +236,46 @@ function initStickyForm() {
       return;
     }
 
-    // 제출 성공 처리 (실제 서버 연동 전 임시 메시지)
+    // 5. 전화상담신청 게시판에 데이터 저장
+    const requestTitle = `[전화상담신청] ${name} 고객님 (${phone})`;
+    const requestContent = `■ 고객명: ${name}\n■ 연락처: ${phone}\n■ 접수일시: ${new Date().toLocaleString('ko-KR')}\n■ 상담상태: 접수대기\n\n위 고객님께서 메인페이지 하단 간편견적신청을 통해 상담을 요청하셨습니다.`;
+
+    if (typeof Board !== 'undefined' && Board.createPost) {
+      Board.createPost({
+        boardType: 'request',
+        title: requestTitle,
+        content: requestContent,
+        author: name,
+        userId: 'guest',
+        contactPhone: phone,
+        status: '접수대기'
+      });
+    } else {
+      try {
+        const raw = localStorage.getItem('pm_board_posts') || '[]';
+        const posts = JSON.parse(raw);
+        posts.unshift({
+          id: `request-${Date.now()}`,
+          boardType: 'request',
+          title: requestTitle,
+          content: requestContent,
+          author: name,
+          userId: 'guest',
+          authorEmail: '',
+          contactPhone: phone,
+          status: '접수대기',
+          createdAt: new Date().toISOString(),
+          updatedAt: null,
+          views: 0,
+          isPinned: false
+        });
+        localStorage.setItem('pm_board_posts', JSON.stringify(posts));
+      } catch (err) {
+        console.error('전화상담신청 데이터 저장 실패:', err);
+      }
+    }
+
+    // 제출 성공 알림 처리
     showSuccess();
 
     // 폼 초기화 및 새 캡차 발급

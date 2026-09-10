@@ -77,6 +77,9 @@
       <button class="board-tab" id="tabReview" data-type="review" onclick="switchTab('review')">
         ⭐ 사용후기
       </button>
+      <button class="board-tab" id="tabRequest" data-type="request" onclick="switchTab('request')" style="display:none; color:#4f46e5; font-weight:700;">
+        📞 전화상담신청 (관리자)
+      </button>
     </div>
 
     <!-- 게시판 헤더 -->
@@ -147,8 +150,15 @@
       // 대시보드 버튼 및 구글 간편 로그인 버튼 표시 제어
       const dashBtn = document.getElementById('dashboardAccessBtn');
       const googleShortcut = document.getElementById('headerGoogleShortcut');
+      const tabRequest = document.getElementById('tabRequest');
+
       if (Auth.isDashboardAdmin() && dashBtn) dashBtn.style.display = 'inline-flex';
       if (!Auth.isLoggedIn() && googleShortcut) googleShortcut.style.display = 'inline-flex';
+
+      // 관리자일 때만 전화상담신청 게시판 탭 노출
+      if (Auth.isAdmin() && tabRequest) {
+        tabRequest.style.display = 'inline-block';
+      }
 
       // URL 파라미터에서 게시판 타입 읽기
       const params = new URLSearchParams(window.location.search);
@@ -158,13 +168,19 @@
 
     // ── 탭 전환 ─────────────────────────────────────
     function switchTab(type) {
+      // 전화상담신청 게시판은 오직 관리자만 접근 가능
+      if (type === 'request' && !Auth.isAdmin()) {
+        alert('전화상담신청 내역은 관리자만 열람할 수 있습니다.');
+        type = 'notice';
+      }
+
       currentType = type;
       currentPage = 1;
 
       // 탭 활성화 스타일
-      ['notice', 'consult', 'review'].forEach(t => {
+      ['notice', 'consult', 'review', 'request'].forEach(t => {
         const tab = document.getElementById(`tab${capitalize(t)}`);
-        tab.classList.toggle('active', t === type);
+        if (tab) tab.classList.toggle('active', t === type);
       });
 
       // GNB 활성화
@@ -176,11 +192,16 @@
       // 게시판 제목 업데이트
       document.getElementById('boardTitle').textContent = Board.getBoardName(type);
 
-      // 공지사항 글쓰기 버튼 제어: 관리자만 글쓰기 버튼 표시
+      // 글쓰기 버튼 제어:
+      // - 공지사항: 관리자만 표시
+      // - 전화상담신청: 글쓰기 숨김 (메인페이지 하단 폼 접수용)
+      // - 상담/후기: 표시
       const writeBtn = document.getElementById('writeBtn');
       if (writeBtn) {
         if (type === 'notice') {
           writeBtn.style.display = Auth.isAdmin() ? 'inline-flex' : 'none';
+        } else if (type === 'request') {
+          writeBtn.style.display = 'none';
         } else {
           writeBtn.style.display = 'inline-flex';
         }
@@ -233,11 +254,20 @@
         const lockIcon = currentType === 'consult' ? `<i class="fa fa-lock" style="color:#0099cc; margin-right:5px; font-size:13px;" title="비밀글"></i>` : '';
         const authorDisplay = currentType === 'consult' ? maskAuthor(post.author) : escapeHtml(post.author);
 
+        // 전화상담신청 상태 배지 (접수대기 / 상담완료)
+        let statusBadge = '';
+        if (currentType === 'request') {
+          const st = post.status || '접수대기';
+          statusBadge = st === '상담완료'
+            ? `<span style="background:#dcfce7; color:#15803d; padding:3px 8px; border-radius:12px; font-size:11px; font-weight:700; margin-left:6px;">상담완료</span>`
+            : `<span style="background:#ffedd5; color:#c2410c; padding:3px 8px; border-radius:12px; font-size:11px; font-weight:700; margin-left:6px;">접수대기</span>`;
+        }
+
         return `
           <tr onclick="goView('${post.id}')" style="cursor:pointer;">
             <td>${post.isPinned ? '📌' : num}</td>
             <td class="title-col">
-              <span class="post-title-link">${badge}${lockIcon}${escapeHtml(post.title)}</span>
+              <span class="post-title-link">${badge}${lockIcon}${escapeHtml(post.title)}${statusBadge}</span>
             </td>
             <td>${authorDisplay}</td>
             <td>${Board.formatDate(post.createdAt)}</td>
@@ -276,21 +306,31 @@
         return;
       }
 
-      // 1. 공지사항: 누구나 열람 가능
-      if (currentType === 'notice') {
+      // 1. 공지사항 & 사용후기: 비회원도 누구나 본문 열람 가능
+      if (currentType === 'notice' || currentType === 'review') {
         window.location.href = `board-view.html?id=${id}&type=${currentType}`;
         return;
       }
 
-      // 2. 상담게시판 & 사용후기: 비회원은 로그인 필수 안내 후 구글 로그인 창으로 이동
-      if (!Auth.isLoggedIn()) {
-        alert('로그인이 필요한 서비스입니다.');
-        window.location.href = '../login.html?redirect=' + encodeURIComponent(`board/board-view.html?id=${id}&type=${currentType}`);
+      // 2. 전화상담신청: 오직 관리자 3명만 상세 열람 가능
+      if (currentType === 'request') {
+        if (!Auth.isAdmin()) {
+          alert('전화상담신청 내역은 관리자만 열람할 수 있습니다.');
+          return;
+        }
+        window.location.href = `board-view.html?id=${id}&type=${currentType}`;
         return;
       }
 
-      // 3. 상담게시판의 경우: 작성자 본인 또는 관리자 3명만 상세 열람 가능
+      // 3. 상담게시판: 비회원은 로그인 안내 후 구글 로그인 창으로 이동
       if (currentType === 'consult') {
+        if (!Auth.isLoggedIn()) {
+          alert('로그인이 필요한 서비스입니다.');
+          window.location.href = '../login.html?redirect=' + encodeURIComponent(`board/board-view.html?id=${id}&type=${currentType}`);
+          return;
+        }
+
+        // 로그인 회원 중 작성자 본인 또는 관리자 3명만 상세 열람 가능
         if (!Auth.canViewConsultPost(post)) {
           alert('비밀글은 작성자와 관리자만 열람할 수 있습니다.');
           return;
@@ -313,7 +353,13 @@
         return;
       }
 
-      // 2. 상담게시판 / 사용후기: 비로그인 시 로그인 안내 및 구글 로그인 창 이동
+      // 2. 전화상담신청: 메인페이지 하단 폼으로 자동 등록되므로 수동 글쓰기 없음
+      if (currentType === 'request') {
+        alert('전화상담신청은 메인페이지 하단 상담 신청란을 통해 자동으로 접수됩니다.');
+        return;
+      }
+
+      // 3. 상담게시판 / 사용후기: 비로그인 시 로그인 안내 및 구글 로그인 창 이동
       if (!Auth.isLoggedIn()) {
         alert('로그인이 필요한 서비스입니다.');
         window.location.href = '../login.html?redirect=' + encodeURIComponent(`board/board-write.html?type=${currentType}`);

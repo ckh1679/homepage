@@ -120,13 +120,13 @@
       }
 
       // ── 접근 권한 검사 ──
-      // 1. 공지사항: 누구나 열람 가능 (비회원 포함)
+      // 1. 공지사항 & 사용후기: 누구나 열람 가능 (비회원 포함)
 
-      // 2. 사용후기: 로그인한 회원만 열람 가능
-      if (currentPost.boardType === 'review') {
-        if (!Auth.isLoggedIn()) {
-          alert('로그인이 필요한 서비스입니다.');
-          window.location.href = '../login.html?redirect=' + encodeURIComponent(`board/board-view.html?id=${id}&type=${currentType}`);
+      // 2. 전화상담신청: 오직 관리자 3명만 열람 가능
+      if (currentPost.boardType === 'request') {
+        if (!Auth.isAdmin()) {
+          alert('전화상담신청 내역은 관리자만 열람할 수 있습니다.');
+          window.location.href = `board.html?type=notice`;
           return;
         }
       }
@@ -162,10 +162,10 @@
       const user = Auth.getCurrentUser();
       
       // 수정/삭제 버튼 노출 여부:
-      // - 공지사항: 오직 관리자 3명(Auth.isAdmin())만 가능
+      // - 공지사항 & 전화상담신청: 오직 관리자 3명(Auth.isAdmin())만 가능
       // - 상담/후기: 작성자 본인(ID 또는 이메일 일치) 또는 관리자 3명
       let canEdit = false;
-      if (currentPost.boardType === 'notice') {
+      if (currentPost.boardType === 'notice' || currentPost.boardType === 'request') {
         canEdit = Auth.isAdmin();
       } else {
         canEdit = user && (
@@ -179,8 +179,20 @@
         ? `<span> · 수정됨: ${Board.formatDate(currentPost.updatedAt)}</span>`
         : '';
 
+      // 상태 변경 버튼 (전화상담신청 게시글 전용)
+      let statusToggleBtn = '';
+      if (currentPost.boardType === 'request' && Auth.isAdmin()) {
+        const isDone = currentPost.status === '상담완료';
+        statusToggleBtn = `
+          <button class="post-btn" onclick="toggleRequestStatus()" style="background:${isDone ? '#f59e0b' : '#10b981'}; color:#fff; font-weight:700;">
+            <i class="fa ${isDone ? 'fa-undo' : 'fa-check'}"></i> ${isDone ? '접수대기로 변경' : '상담완료 처리'}
+          </button>
+        `;
+      }
+
       const actionBtns = canEdit ? `
         <div style="display:flex; gap:10px;">
+          ${statusToggleBtn}
           <button class="post-btn edit-btn" id="editBtn" onclick="goEdit()">
             <i class="fa fa-edit"></i> 수정
           </button>
@@ -216,11 +228,31 @@
       `;
     }
 
+    // ── 전화상담신청 상태 토글 (관리자 전용) ──────────────
+    function toggleRequestStatus() {
+      if (!Auth.isAdmin()) return;
+      const newStatus = currentPost.status === '상담완료' ? '접수대기' : '상담완료';
+      const all = Board.getAllPosts();
+      const idx = all.findIndex(p => p.id === currentPost.id);
+      if (idx !== -1) {
+        all[idx].status = newStatus;
+        if (!all[idx].content.includes('상태:')) {
+          all[idx].content += `\n상태: ${newStatus}`;
+        } else {
+          all[idx].content = all[idx].content.replace(/상태:.*/, `상태: ${newStatus}`);
+        }
+        all[idx].updatedAt = new Date().toISOString();
+        localStorage.setItem('pm_board_posts', JSON.stringify(all));
+        alert(`상태가 [${newStatus}]로 변경되었습니다.`);
+        location.reload();
+      }
+    }
+
     // ── 수정 페이지 이동 ───────────────────────────────
     function goEdit() {
-      // 공지사항은 관리자만 수정 가능
-      if (currentPost.boardType === 'notice' && !Auth.isAdmin()) {
-        alert('공지사항은 관리자만 수정할 수 있습니다.');
+      // 공지사항 및 전화상담신청은 관리자만 수정 가능
+      if ((currentPost.boardType === 'notice' || currentPost.boardType === 'request') && !Auth.isAdmin()) {
+        alert('관리자만 수정할 수 있습니다.');
         return;
       }
 
@@ -239,9 +271,9 @@
       const user = Auth.getCurrentUser();
       if (!user) { alert('로그인이 필요합니다.'); return; }
 
-      // 공지사항은 관리자만 삭제 가능
-      if (currentPost.boardType === 'notice' && !Auth.isAdmin()) {
-        alert('공지사항은 관리자만 삭제할 수 있습니다.');
+      // 공지사항 및 전화상담신청은 관리자만 삭제 가능
+      if ((currentPost.boardType === 'notice' || currentPost.boardType === 'request') && !Auth.isAdmin()) {
+        alert('관리자만 삭제할 수 있습니다.');
         return;
       }
 

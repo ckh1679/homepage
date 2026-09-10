@@ -124,10 +124,22 @@ const Auth = (() => {
   // ── 로그아웃 ────────────────────────────────────────
   function logout() {
     sessionStorage.removeItem(SESSION_KEY);
-    // 현재 경로 depth 계산 (루트=0, board/shop=1)
-    const depth = window.location.pathname.split('/').filter(Boolean).length - 1;
-    const prefix = depth > 0 ? '../'.repeat(depth) : '';
-    window.location.href = prefix + 'index.html';
+    try {
+      if (window.google && google.accounts && google.accounts.id) {
+        google.accounts.id.disableAutoSelect();
+      }
+    } catch (e) {}
+
+    // GitHub Pages(/homepage/) 및 로컬 환경 모두에서 안전한 메인페이지 경로 계산
+    const origin = window.location.origin;
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    if (pathParts.length > 0 && pathParts[0] === 'homepage') {
+      window.location.href = origin + '/homepage/index.html';
+    } else {
+      const depth = pathParts.filter(p => !p.endsWith('.html') && p !== '').length;
+      const prefix = depth > 0 ? '../'.repeat(depth) : './';
+      window.location.href = prefix + 'index.html';
+    }
   }
 
   // ── 현재 로그인 유저 조회 ────────────────────────────

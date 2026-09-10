@@ -116,8 +116,8 @@ const Board = (() => {
   }
 
   // ── 게시글 작성 ────────────────────────────────────
-  // authorEmail을 함께 저장하여 추후 열람 권한 확인에 사용
-  function createPost({ boardType, title, content, author, userId, authorEmail }) {
+  // authorEmail, contactPhone, status 등을 함께 저장
+  function createPost({ boardType, title, content, author, userId, authorEmail, contactPhone, status }) {
     if (!title || !title.trim()) return { success: false, message: '제목을 입력해주세요.' };
     if (!content || !content.trim()) return { success: false, message: '내용을 입력해주세요.' };
 
@@ -127,9 +127,11 @@ const Board = (() => {
       boardType,
       title: title.trim(),
       content: content.trim(),
-      author,
-      userId,
-      authorEmail: authorEmail || '',  // 구글 이메일 저장 (열람 권한 확인용)
+      author: author || '익명',
+      userId: userId || 'guest',
+      authorEmail: authorEmail || '',  // 구글 이메일 저장
+      contactPhone: contactPhone || '', // 전화상담 연락처
+      status: status || (boardType === 'request' ? '접수대기' : ''), // 상담 처리 상태
       createdAt: new Date().toISOString(),
       updatedAt: null,
       views: 0,
@@ -154,10 +156,10 @@ const Board = (() => {
                     currentUser.role === 'admin' ||
                     (typeof Auth !== 'undefined' && Auth.DASHBOARD_ADMIN_EMAILS && Auth.DASHBOARD_ADMIN_EMAILS.includes(currentUser.email));
 
-    // 공지사항은 오직 관리자만 수정 가능
-    if (post.boardType === 'notice') {
+    // 공지사항 및 전화상담신청은 오직 관리자만 수정 가능
+    if (post.boardType === 'notice' || post.boardType === 'request') {
       if (!isAdmin) {
-        return { success: false, message: '공지사항은 관리자만 수정할 수 있습니다.' };
+        return { success: false, message: '관리자만 수정할 수 있습니다.' };
       }
     } else {
       // 상담/사용후기: 작성자 본인 또는 관리자
@@ -195,10 +197,10 @@ const Board = (() => {
                     currentUser.role === 'admin' ||
                     (typeof Auth !== 'undefined' && Auth.DASHBOARD_ADMIN_EMAILS && Auth.DASHBOARD_ADMIN_EMAILS.includes(currentUser.email));
 
-    // 공지사항은 오직 관리자만 삭제 가능
-    if (post.boardType === 'notice') {
+    // 공지사항 및 전화상담신청은 오직 관리자만 삭제 가능
+    if (post.boardType === 'notice' || post.boardType === 'request') {
       if (!isAdmin) {
-        return { success: false, message: '공지사항은 관리자만 삭제할 수 있습니다.' };
+        return { success: false, message: '관리자만 삭제할 수 있습니다.' };
       }
     } else {
       // 상담/사용후기: 작성자 본인 또는 관리자
@@ -224,7 +226,12 @@ const Board = (() => {
 
   // ── 게시판 이름 반환 헬퍼 ───────────────────────────
   function getBoardName(boardType) {
-    const names = { notice: '공지사항', consult: '상담게시판', review: '사용후기' };
+    const names = {
+      notice: '공지사항',
+      consult: '상담게시판',
+      review: '사용후기',
+      request: '전화상담신청'
+    };
     return names[boardType] || '게시판';
   }
 
