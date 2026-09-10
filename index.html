@@ -38,22 +38,27 @@
           <div class="logo-text">프린터<span>모아</span></div>
         </a>
 
-        <!-- 우측: 전화번호 + 로그인/회원가입 -->
+        <!-- 우측: 전화번호 + 우측 구글 로그인 -->
         <div class="top-phone">
+          <div class="phone-info-block">
+            <div class="label">상담 전화</div>
+            <a href="tel:01059223650" class="number">010-5922-3650</a>
+          </div>
           <div class="auth-nav-area">
-            <span class="header-user-name" id="headerUserName" style="display:none"></span>
-            <!-- ᮋ 대시보드 진입 버튼 (특정 구글 이메일 로그인 시만 표시) -->
+            <!-- OP Board 관리자 버튼 (특정 구글 계정 전용) -->
             <a href="dashboard/index.html" id="dashboardAccessBtn" title="관리자 대시보드">
               <i class="fa fa-tachometer-alt"></i> OP Board
             </a>
+            <!-- 로그인 시 사용자명 표시 -->
+            <span class="header-user-name" id="headerUserName" style="display:none"></span>
             <!-- 구글 로그인 버튼 (비로그인 상태에서만 표시) -->
             <a href="login.html" class="header-google-btn" id="headerGoogleShortcut" style="display:none">
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"> Google 로그인
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+              <span>Google 로그인</span>
             </a>
+            <!-- 로그아웃 버튼 -->
             <button class="header-auth-btn logout" id="headerLogoutBtn" style="display:none">로그아웃</button>
           </div>
-          <div class="label">상담 전화</div>
-          <a href="tel:01059223650" class="number">010-5922-3650</a>
         </div>
 
       </div>
@@ -764,10 +769,11 @@
         <div class="sticky-form">
           <input type="text" id="stickyName" placeholder="이름" aria-label="이름 입력">
           <input type="tel" id="stickyPhone" placeholder="연락처" aria-label="연락처 입력">
-          <div class="captcha-area" id="captchaArea">
-            <span style="font-size:14px; font-weight:700; color:#333; letter-spacing:2px;">A7K2</span>
+          <div class="captcha-area" id="captchaArea" title="클릭하면 새로운 문자로 바뀝니다">
+            <span class="captcha-text" id="captchaText">A7K2X</span>
+            <i class="fa fa-sync-alt captcha-refresh-btn" id="captchaRefreshBtn" title="새로고침"></i>
           </div>
-          <input type="text" id="captchaInput" placeholder="자동입력방지" aria-label="자동입력방지 문자 입력" style="width:120px;">
+          <input type="text" id="captchaInput" placeholder="자동입력방지" aria-label="자동입력방지 문자 5자리 입력" maxlength="5" style="width:120px; text-transform:uppercase;">
         </div>
 
         <div class="sticky-agree">

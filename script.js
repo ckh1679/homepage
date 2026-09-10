@@ -153,12 +153,42 @@ function initGNBScroll() {
 // =============================================
 // 4. 하단 스티키 폼 - 간편견적신청
 // =============================================
+// =============================================
 function initStickyForm() {
   const submitBtn = document.getElementById('stickySubmitBtn');
   const nameInput = document.getElementById('stickyName');
   const phoneInput = document.getElementById('stickyPhone');
   const captchaInput = document.getElementById('captchaInput');
+  const captchaArea = document.getElementById('captchaArea');
+  const captchaTextEl = document.getElementById('captchaText');
+  const captchaRefreshBtn = document.getElementById('captchaRefreshBtn');
   const agreeCheck = document.getElementById('agreeCheck');
+
+  let currentCaptcha = '';
+
+  // ── 랜덤 5자리 보안 문자 생성 (알파벳 대문자 + 숫자) ──
+  function generateCaptcha() {
+    // 헷갈리기 쉬운 0, O, 1, I를 제외한 가독성 높은 영문+숫자 5자리
+    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    let code = '';
+    for (let i = 0; i < 5; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    currentCaptcha = code;
+    if (captchaTextEl) {
+      captchaTextEl.textContent = code;
+    }
+  }
+
+  // 캡차 초기 생성
+  generateCaptcha();
+
+  // 캡차 영역 또는 새로고침 아이콘 클릭 시 재발급
+  if (captchaArea) {
+    captchaArea.addEventListener('click', () => {
+      generateCaptcha();
+    });
+  }
 
   // 전화번호 자동 포매팅 (000-0000-0000)
   phoneInput.addEventListener('input', () => {
@@ -176,20 +206,31 @@ function initStickyForm() {
   submitBtn.addEventListener('click', () => {
     const name = nameInput.value.trim();
     const phone = phoneInput.value.trim();
-    const captcha = captchaInput.value.trim();
+    const inputCaptcha = captchaInput.value.trim();
     const agreed = agreeCheck.checked;
 
-    // 유효성 검사
+    // 1. 이름 검사
     if (!name) {
       showAlert('이름을 입력해주세요.', nameInput);
       return;
     }
 
+    // 2. 연락처 검사
     if (!phone || phone.length < 12) {
       showAlert('올바른 연락처를 입력해주세요.', phoneInput);
       return;
     }
 
+    // 3. 자동입력방지 5자리 문자 검사
+    if (!inputCaptcha || inputCaptcha.toUpperCase() !== currentCaptcha.toUpperCase()) {
+      showAlert('자동입력방지 문자를 확인해주세요.', captchaInput);
+      generateCaptcha(); // 불일치 시 보안을 위해 새로운 5자리 생성
+      captchaInput.value = '';
+      captchaInput.focus();
+      return;
+    }
+
+    // 4. 개인정보 수집 동의 검사
     if (!agreed) {
       showAlert('개인정보 수집·이용에 동의해주세요.');
       return;
@@ -198,11 +239,12 @@ function initStickyForm() {
     // 제출 성공 처리 (실제 서버 연동 전 임시 메시지)
     showSuccess();
 
-    // 폼 초기화
+    // 폼 초기화 및 새 캡차 발급
     nameInput.value = '';
     phoneInput.value = '';
     captchaInput.value = '';
     agreeCheck.checked = false;
+    generateCaptcha();
   });
 }
 
