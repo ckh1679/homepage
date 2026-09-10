@@ -828,7 +828,7 @@
           <!-- 모달 하단 액션 버튼 -->
           <div class="modal-footer" style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;">
             <button type="button" class="btn-secondary" onclick="ClientManager.closeModal()">취소</button>
-            <button type="submit" class="btn-primary-sm" style="padding:10px 24px;font-size:14px;">
+            <button type="button" class="btn-primary-sm" style="padding:10px 24px;font-size:14px;" onclick="ClientManager.saveClient(event)">
               <i class="fa fa-save"></i> 저장하기
             </button>
           </div>
@@ -837,6 +837,6 @@
     </div>
   </div>
 
-  <script src="dashboard.js"></script>
+  <script src="dashboard.js?v=2"></script>
 </body>
 </html>

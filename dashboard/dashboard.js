@@ -802,7 +802,8 @@ document.addEventListener('DOMContentLoaded', () => {
           {
             id: 'dev_101',
             name: '캐논 iR-ADV C3922 컬러복합기',
-            serial: 'CN-3922-8812 / 7층 본사실',
+            location: '7층 본사 기획실',
+            serial: 'CN-3922-8812',
             baseRent: 85000,
             bwBase: 1000,
             bwUnit: 10,
@@ -828,7 +829,8 @@ document.addEventListener('DOMContentLoaded', () => {
           {
             id: 'dev_201',
             name: '신도리코 D420 고속컬러복합기',
-            serial: 'SND-420-1092 / 교무실',
+            location: '본관 3층 교무실',
+            serial: 'SND-420-1092',
             baseRent: 110000,
             bwBase: 2500,
             bwUnit: 8,
@@ -840,7 +842,8 @@ document.addEventListener('DOMContentLoaded', () => {
           {
             id: 'dev_202',
             name: 'HP OfficeJet Pro 9010 잉크젯',
-            serial: 'HP-9010-4491 / 상담데스크',
+            location: '1층 상담데스크',
+            serial: 'HP-9010-4491',
             baseRent: 35000,
             bwBase: 800,
             bwUnit: 12,
@@ -866,7 +869,8 @@ document.addEventListener('DOMContentLoaded', () => {
           {
             id: 'dev_301',
             name: '후지제록스 ApeosPort C3060',
-            serial: 'FX-3060-771 / 메인 사무실',
+            location: '5층 메인 사무실',
+            serial: 'FX-3060-771',
             baseRent: 95000,
             bwBase: 1500,
             bwUnit: 10,
@@ -986,7 +990,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const candPhone = this.normalizeStr(candidate.phone);
 
       return clients.find(c => {
-        if (excludeId && c.id === excludeId) return false;
+        if (excludeId && String(c.id) === String(excludeId)) return false;
         const cName  = this.normalizeStr(c.name);
         const cBiz   = this.normalizeStr(c.bizNum);
         const cPhone = this.normalizeStr(c.phone);
@@ -1118,32 +1122,40 @@ document.addEventListener('DOMContentLoaded', () => {
                     <tr>
                       <th style="width:30px;">#</th>
                       <th>장비명 (모델)</th>
-                      <th>시리얼 / 설치위치</th>
+                      <th>설치장소</th>
+                      <th>시리얼 (S/N)</th>
                       <th>기본임대료</th>
-                      <th>흑백 기준/초과단가</th>
+                      <th>흑백 기준/단가</th>
                       <th>흑백 사용량(초과)</th>
-                      <th>흑백 추가금</th>
-                      <th>컬러 기준/초과단가</th>
+                      <th>흑백 추가사용료</th>
+                      <th>컬러 기준/단가</th>
                       <th>컬러 사용량(초과)</th>
-                      <th>컬러 추가금</th>
+                      <th>컬러 추가사용료</th>
                       <th>장비별 월합계</th>
                     </tr>
                   </thead>
                   <tbody>
                     ${devices.map((d, dIdx) => {
                       const dc = this.calcDevice(d);
+                      const loc = d.location || (d.serial && d.serial.includes('/') ? d.serial.split('/')[1].trim() : '') || '메인 사무실';
+                      const sn = d.serial && d.serial.includes('/') ? d.serial.split('/')[0].trim() : (d.serial || '-');
                       return `
                         <tr>
                           <td>${dIdx + 1}</td>
                           <td><strong style="color:#e2e8f0;">${this.escapeHtml(d.name || '-')}</strong></td>
-                          <td><span style="color:#94a3b8;">${this.escapeHtml(d.serial || '-')}</span></td>
+                          <td><span style="color:#60a5fa;font-weight:500;">${this.escapeHtml(loc)}</span></td>
+                          <td><span style="color:#94a3b8;font-size:11px;">${this.escapeHtml(sn)}</span></td>
                           <td>${dc.baseRent.toLocaleString()}원</td>
                           <td>${dc.bwBase.toLocaleString()}장 / ${dc.bwUnit}원</td>
                           <td>${dc.bwUsed.toLocaleString()}장 <span style="color:#f59e0b;">(${dc.bwOver > 0 ? '+' + dc.bwOver.toLocaleString() : '0'})</span></td>
-                          <td style="color:${dc.bwExtra > 0 ? '#f59e0b' : 'inherit'};">${dc.bwExtra.toLocaleString()}원</td>
+                          <td style="color:${dc.bwExtra > 0 ? '#f59e0b' : 'inherit'};font-weight:${dc.bwExtra > 0 ? '600' : 'normal'};">
+                            ${dc.bwExtra > 0 ? '+' : ''}${dc.bwExtra.toLocaleString()}원
+                          </td>
                           <td>${dc.colorBase.toLocaleString()}장 / ${dc.colorUnit}원</td>
                           <td>${dc.colorUsed.toLocaleString()}장 <span style="color:#f59e0b;">(${dc.colorOver > 0 ? '+' + dc.colorOver.toLocaleString() : '0'})</span></td>
-                          <td style="color:${dc.colorExtra > 0 ? '#f59e0b' : 'inherit'};">${dc.colorExtra.toLocaleString()}원</td>
+                          <td style="color:${dc.colorExtra > 0 ? '#f59e0b' : 'inherit'};font-weight:${dc.colorExtra > 0 ? '600' : 'normal'};">
+                            ${dc.colorExtra > 0 ? '+' : ''}${dc.colorExtra.toLocaleString()}원
+                          </td>
                           <td><strong style="color:#60a5fa;">${dc.total.toLocaleString()}원</strong> <span style="font-size:10px;color:var(--text-muted);">(VAT포함)</span></td>
                         </tr>
                       `;
@@ -1217,7 +1229,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!modal) return;
 
       const clients = this.getClients();
-      const client = clients.find(c => c.id === clientId);
+      const client = clients.find(c => String(c.id) === String(clientId));
       if (!client) {
         alert('해당 거래처 정보를 찾을 수 없습니다.');
         return;
@@ -1229,7 +1241,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       const setVal = (id, val) => {
         const el = document.getElementById(id);
-        if (el) el.value = val !== undefined ? val : '';
+        if (el) el.value = (val !== undefined && val !== null) ? val : '';
       };
 
       setVal('clName', client.name);
@@ -1247,7 +1259,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const devList = document.getElementById('deviceFormList');
       if (devList) devList.innerHTML = '';
 
-      const devices = client.devices && client.devices.length > 0 ? client.devices : [{}];
+      const devices = (client.devices && client.devices.length > 0) ? client.devices : [{}];
       devices.forEach(dev => this.addDeviceRow(dev));
 
       modal.style.display = 'flex';
@@ -1260,7 +1272,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (modal) modal.style.display = 'none';
     },
 
-    // 장비 폼 행 추가
+    // 장비 폼 행 추가 (장비명, 설치장소, 기본임대료, 흑백/컬러 추가사용료 세부내역)
     addDeviceRow(dev = {}) {
       const devList = document.getElementById('deviceFormList');
       if (!devList) return;
@@ -1270,21 +1282,35 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = 'device-form-card';
       card.dataset.deviceId = dev.id || ('dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5));
 
+      const location = dev.location || (dev.serial && dev.serial.includes('/') ? dev.serial.split('/')[1].trim() : '') || '';
+      const serial = dev.serial && dev.serial.includes('/') ? dev.serial.split('/')[0].trim() : (dev.serial || '');
+
       card.innerHTML = `
         <div class="device-card-header">
-          <div class="device-badge-index"><i class="fa fa-print"></i> 장비 #${idx}</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div class="device-badge-index"><i class="fa fa-print"></i> 장비 #${idx}</div>
+            <span style="font-size:12px;color:var(--text-secondary);">
+              추가사용료: <strong class="dev-card-extra" style="color:#f59e0b;">0원</strong> | 
+              장비 월 청구: <strong class="dev-card-total" style="color:#60a5fa;">0원</strong>
+            </span>
+          </div>
           <button type="button" class="btn-remove-device" onclick="ClientManager.removeDeviceRow(this)">
             <i class="fa fa-trash"></i> 장비 삭제
           </button>
         </div>
-        <div class="form-grid-3">
+
+        <div class="form-grid-4">
           <div class="form-group">
             <label>장비명 (모델명) <span class="req">*</span></label>
             <input type="text" class="dev-name" value="${this.escapeHtml(dev.name || '')}" placeholder="예: 캐논 iR-ADV C3922" required oninput="ClientManager.updateCalcPreview()">
           </div>
           <div class="form-group">
-            <label>시리얼 번호 / 설치위치</label>
-            <input type="text" class="dev-serial" value="${this.escapeHtml(dev.serial || '')}" placeholder="예: SN12345 / 2층 디자인실">
+            <label>설치장소 <span class="req">*</span></label>
+            <input type="text" class="dev-location" value="${this.escapeHtml(location)}" placeholder="예: 7층 본사 기획실, 교무실 등" required oninput="ClientManager.updateCalcPreview()">
+          </div>
+          <div class="form-group">
+            <label>시리얼 번호 (S/N)</label>
+            <input type="text" class="dev-serial" value="${this.escapeHtml(serial)}" placeholder="예: CN-3922-8812">
           </div>
           <div class="form-group">
             <label>기본 임대료 (원) <span class="req">*</span></label>
@@ -1292,35 +1318,37 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
 
-        <!-- 흑백 설정 & 이번달 사용량 -->
-        <div class="form-grid-3" style="margin-top:10px;background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;">
+        <!-- 흑백 추가사용료 설정 & 이번달 사용량 -->
+        <div class="form-grid-3" style="margin-top:10px;background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
           <div class="form-group">
             <label>흑백 기준 매수 (기본제공)</label>
             <input type="number" class="dev-bwBase" value="${dev.bwBase !== undefined ? dev.bwBase : 1000}" min="0" oninput="ClientManager.updateCalcPreview()">
           </div>
           <div class="form-group">
-            <label>흑백 추가 장당 단가 (원)</label>
+            <label>흑백 초과 단가 (원/장)</label>
             <input type="number" class="dev-bwUnit" value="${dev.bwUnit !== undefined ? dev.bwUnit : 10}" min="0" oninput="ClientManager.updateCalcPreview()">
           </div>
           <div class="form-group">
             <label style="color:#60a5fa;font-weight:600;">이번달 흑백 사용량 (장)</label>
             <input type="number" class="dev-bwUsed" value="${dev.bwUsed !== undefined ? dev.bwUsed : 1000}" min="0" oninput="ClientManager.updateCalcPreview()">
+            <div class="dev-bw-calc-tag" style="font-size:11px;color:#f59e0b;margin-top:4px;">흑백 추가사용료: 0원</div>
           </div>
         </div>
 
-        <!-- 컬러 설정 & 이번달 사용량 -->
-        <div class="form-grid-3" style="margin-top:10px;background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;">
+        <!-- 컬러 추가사용료 설정 & 이번달 사용량 -->
+        <div class="form-grid-3" style="margin-top:10px;background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
           <div class="form-group">
             <label>컬러 기준 매수 (기본제공)</label>
             <input type="number" class="dev-colorBase" value="${dev.colorBase !== undefined ? dev.colorBase : 300}" min="0" oninput="ClientManager.updateCalcPreview()">
           </div>
           <div class="form-group">
-            <label>컬러 추가 장당 단가 (원)</label>
+            <label>컬러 초과 단가 (원/장)</label>
             <input type="number" class="dev-colorUnit" value="${dev.colorUnit !== undefined ? dev.colorUnit : 100}" min="0" oninput="ClientManager.updateCalcPreview()">
           </div>
           <div class="form-group">
             <label style="color:#60a5fa;font-weight:600;">이번달 컬러 사용량 (장)</label>
             <input type="number" class="dev-colorUsed" value="${dev.colorUsed !== undefined ? dev.colorUsed : 300}" min="0" oninput="ClientManager.updateCalcPreview()">
+            <div class="dev-color-calc-tag" style="font-size:11px;color:#f59e0b;margin-top:4px;">컬러 추가사용료: 0원</div>
           </div>
         </div>
       `;
@@ -1377,11 +1405,38 @@ document.addEventListener('DOMContentLoaded', () => {
         const colorUsed = Number(card.querySelector('.dev-colorUsed')?.value) || 0;
 
         const bwOver = Math.max(0, bwUsed - bwBase);
+        const bwExtra = bwOver * bwUnit;
         const colorOver = Math.max(0, colorUsed - colorBase);
+        const colorExtra = colorOver * colorUnit;
+
+        const devExtraTotal = bwExtra + colorExtra;
+        const devSupply = baseRent + devExtraTotal;
+        const devTotal = Math.round(devSupply * 1.1);
+
+        // 카드 내 실시간 텍스트 반영
+        const bwTag = card.querySelector('.dev-bw-calc-tag');
+        if (bwTag) {
+          bwTag.textContent = bwOver > 0 
+            ? `흑백 추가사용료: +${bwExtra.toLocaleString()}원 (초과 ${bwOver.toLocaleString()}장 × ${bwUnit}원)`
+            : '흑백 추가사용료: 0원 (기준 내 사용)';
+        }
+
+        const colorTag = card.querySelector('.dev-color-calc-tag');
+        if (colorTag) {
+          colorTag.textContent = colorOver > 0
+            ? `컬러 추가사용료: +${colorExtra.toLocaleString()}원 (초과 ${colorOver.toLocaleString()}장 × ${colorUnit}원)`
+            : '컬러 추가사용료: 0원 (기준 내 사용)';
+        }
+
+        const extraBadge = card.querySelector('.dev-card-extra');
+        if (extraBadge) extraBadge.textContent = devExtraTotal.toLocaleString() + '원';
+
+        const totalBadge = card.querySelector('.dev-card-total');
+        if (totalBadge) totalBadge.textContent = `${devSupply.toLocaleString()}원 (VAT포함 ${devTotal.toLocaleString()}원)`;
 
         sumBaseRent   += baseRent;
-        sumBwExtra    += bwOver * bwUnit;
-        sumColorExtra += colorOver * colorUnit;
+        sumBwExtra    += bwExtra;
+        sumColorExtra += colorExtra;
       });
 
       const sumSupply = sumBaseRent + sumBwExtra + sumColorExtra;
@@ -1403,36 +1458,58 @@ document.addEventListener('DOMContentLoaded', () => {
       if (elTotal) elTotal.textContent = sumTotal.toLocaleString() + '원';
     },
 
-    // 거래처 저장 (신규 등록 및 수정, 중복 체크 후 업데이트 확인)
+    // 거래처 및 임대 장비 저장 (신규 등록 및 수정 완벽 지원)
     saveClient(e) {
-      if (e) e.preventDefault();
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
 
-      const id           = document.getElementById('clientId').value.trim();
-      const name         = document.getElementById('clName').value.trim();
-      const bizNum       = document.getElementById('clBizNum').value.trim();
-      const ceo          = document.getElementById('clCeo').value.trim();
-      const phone        = document.getElementById('clPhone').value.trim();
-      const email        = document.getElementById('clEmail').value.trim();
-      const contractDate = document.getElementById('clContractDate').value;
-      const address      = document.getElementById('clAddress').value.trim();
-      const totalPaid    = Number(document.getElementById('clTotalPaid').value) || 0;
-      const memo         = document.getElementById('clMemo').value.trim();
+      const idInput = document.getElementById('clientId') || document.getElementById('editClientId');
+      const id = idInput ? idInput.value.trim() : '';
+
+      const nameInput = document.getElementById('clName');
+      const name = nameInput ? nameInput.value.trim() : '';
+
+      const bizNumInput = document.getElementById('clBizNum');
+      const bizNum = bizNumInput ? bizNumInput.value.trim() : '';
+
+      const ceoInput = document.getElementById('clCeo');
+      const ceo = ceoInput ? ceoInput.value.trim() : '';
+
+      const phoneInput = document.getElementById('clPhone');
+      const phone = phoneInput ? phoneInput.value.trim() : '';
+
+      const emailInput = document.getElementById('clEmail');
+      const email = emailInput ? emailInput.value.trim() : '';
+
+      const contractDateInput = document.getElementById('clContractDate');
+      const contractDate = contractDateInput ? contractDateInput.value : '';
+
+      const addressInput = document.getElementById('clAddress');
+      const address = addressInput ? addressInput.value.trim() : '';
+
+      const totalPaidInput = document.getElementById('clTotalPaid');
+      const totalPaid = totalPaidInput ? (Number(totalPaidInput.value) || 0) : 0;
+
+      const memoInput = document.getElementById('clMemo');
+      const memo = memoInput ? memoInput.value.trim() : '';
 
       if (!name) {
         alert('거래처명을 입력해주세요.');
-        document.getElementById('clName').focus();
+        if (nameInput) nameInput.focus();
         return;
       }
       if (!phone) {
         alert('연락처(전화번호)를 입력해주세요.');
-        document.getElementById('clPhone').focus();
+        if (phoneInput) phoneInput.focus();
         return;
       }
 
       // 장비 목록 수집
       const devList = document.getElementById('deviceFormList');
-      const cards = devList.querySelectorAll('.device-form-card');
-      if (cards.length === 0) {
+      const cards = devList ? devList.querySelectorAll('.device-form-card') : [];
+      if (!cards || cards.length === 0) {
         alert('최소 1대 이상의 임대 장비를 추가해주세요.');
         return;
       }
@@ -1441,6 +1518,9 @@ document.addEventListener('DOMContentLoaded', () => {
       for (let i = 0; i < cards.length; i++) {
         const card = cards[i];
         const devName = card.querySelector('.dev-name')?.value.trim();
+        const devLocation = card.querySelector('.dev-location')?.value.trim() || '기본 설치장소';
+        const devSerial = card.querySelector('.dev-serial')?.value.trim() || '';
+        
         if (!devName) {
           alert(`장비 #${i + 1}의 장비명(모델명)을 입력해주세요.`);
           card.querySelector('.dev-name')?.focus();
@@ -1450,7 +1530,8 @@ document.addEventListener('DOMContentLoaded', () => {
         devices.push({
           id: card.dataset.deviceId || ('dev_' + Date.now() + '_' + i),
           name: devName,
-          serial: card.querySelector('.dev-serial')?.value.trim() || '',
+          location: devLocation,
+          serial: devSerial,
           baseRent: Number(card.querySelector('.dev-baseRent')?.value) || 0,
           bwBase: Number(card.querySelector('.dev-bwBase')?.value) || 0,
           bwUnit: Number(card.querySelector('.dev-bwUnit')?.value) || 0,
@@ -1467,9 +1548,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const clients = this.getClients();
 
-      // 중복 체크: 이름, 사업자번호, 전화번호 중 하나라도 일치하는 거래처 확인
-      const duplicate = this.findDuplicate(candidateData, id || null);
+      // [1] 기존 거래처 수정인 경우
+      if (id) {
+        const targetIdx = clients.findIndex(c => String(c.id) === String(id));
+        if (targetIdx !== -1) {
+          // 다른 거래처와의 중복 여부만 체크 (자신은 제외)
+          const otherDuplicate = this.findDuplicate(candidateData, id);
+          if (otherDuplicate) {
+            const msg = `[중복 주의]\n입력하신 정보 중 다른 거래처와 일치하는 항목이 있습니다.\n\n` +
+              `• 일치 거래처: ${otherDuplicate.name}\n` +
+              `• 사업자등록번호: ${otherDuplicate.bizNum || '없음'}\n` +
+              `• 연락처: ${otherDuplicate.phone || '없음'}\n\n` +
+              `그래도 현재 거래처 [${clients[targetIdx].name}] 정보를 이 내용으로 수정하시겠습니까?`;
+            if (!confirm(msg)) return;
+          }
 
+          clients[targetIdx] = {
+            ...clients[targetIdx],
+            ...candidateData,
+            id: clients[targetIdx].id // 기존 고유 ID 유지
+          };
+
+          this.saveClients(clients);
+          this.closeModal();
+          alert(`[${name}] 거래처 및 임대 장비 정보가 성공적으로 수정·저장되었습니다.`);
+          return;
+        }
+      }
+
+      // [2] 신규 등록인 경우
+      const duplicate = this.findDuplicate(candidateData, null);
       if (duplicate) {
         const msg = `[중복 거래처 안내]\n이미 동일한 정보가 등록된 거래처가 존재합니다.\n\n` +
           `• 기존 거래처명: ${duplicate.name}\n` +
@@ -1477,17 +1585,14 @@ document.addEventListener('DOMContentLoaded', () => {
           `• 대표 연락처: ${duplicate.phone || '없음'}\n\n` +
           `기존 거래처 [${duplicate.name}]의 정보를 현재 입력한 내용으로 업데이트(덮어쓰기)하시겠습니까?`;
 
-        if (!confirm(msg)) {
-          return; // 사용자가 취소를 누르면 중단
-        }
+        if (!confirm(msg)) return;
 
-        // 기존 거래처 업데이트
-        const targetIdx = clients.findIndex(c => c.id === duplicate.id);
+        const targetIdx = clients.findIndex(c => String(c.id) === String(duplicate.id));
         if (targetIdx !== -1) {
           clients[targetIdx] = {
             ...duplicate,
             ...candidateData,
-            id: duplicate.id // 기존 ID 유지
+            id: duplicate.id
           };
           this.saveClients(clients);
           this.closeModal();
@@ -1496,31 +1601,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // 신규 등록 또는 일반 수정 처리
-      if (id) {
-        // 기존 수정
-        const targetIdx = clients.findIndex(c => c.id === id);
-        if (targetIdx !== -1) {
-          clients[targetIdx] = {
-            id,
-            ...candidateData
-          };
-        } else {
-          clients.push({ id, ...candidateData });
-        }
-        alert(`[${name}] 거래처 정보가 수정되었습니다.`);
-      } else {
-        // 신규 추가
-        const newClient = {
-          id: 'cli_' + Date.now(),
-          ...candidateData
-        };
-        clients.unshift(newClient);
-        alert(`[${name}] 거래처가 신규 등록되었습니다.`);
-      }
-
+      // 신규 추가
+      const newClient = {
+        id: 'cli_' + Date.now(),
+        ...candidateData
+      };
+      clients.unshift(newClient);
       this.saveClients(clients);
       this.closeModal();
+      alert(`[${name}] 거래처 및 임대 장비가 성공적으로 등록되었습니다.`);
     },
 
     // 거래처 삭제
@@ -1569,16 +1658,17 @@ document.addEventListener('DOMContentLoaded', () => {
             '비고': client.memo || '',
             '장비순번': dIdx + 1,
             '장비명': dev.name || '',
-            '시리얼_위치': dev.serial || '',
+            '설치장소': dev.location || '',
+            '시리얼(S/N)': dev.serial || '',
             '기본임대료': dc.baseRent,
             '흑백기준매수': dc.bwBase,
             '흑백초과단가': dc.bwUnit,
             '흑백이번달사용량': dc.bwUsed,
-            '흑백추가금': dc.bwExtra,
+            '흑백추가사용료': dc.bwExtra,
             '컬러기준매수': dc.colorBase,
             '컬러초과단가': dc.colorUnit,
             '컬러이번달사용량': dc.colorUsed,
-            '컬러추가금': dc.colorExtra,
+            '컬러추가사용료': dc.colorExtra,
             '합계금액(공급가)': dc.supply,
             'VAT': dc.vat,
             '이번달총임대료': dc.total
@@ -1592,9 +1682,9 @@ document.addEventListener('DOMContentLoaded', () => {
       ws['!cols'] = [
         { wch: 18 }, { wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 20 },
         { wch: 12 }, { wch: 30 }, { wch: 14 }, { wch: 20 }, { wch: 8 },
-        { wch: 25 }, { wch: 20 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
-        { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 },
-        { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 14 }
+        { wch: 25 }, { wch: 18 }, { wch: 16 }, { wch: 12 }, { wch: 12 },
+        { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 },
+        { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 14 }
       ];
 
       const wb = XLSX.utils.book_new();
@@ -1623,7 +1713,8 @@ document.addEventListener('DOMContentLoaded', () => {
           '누적총결제액': 1200000,
           '비고': '매월 10일 세금계산서 청구',
           '장비명': '캐논 C3922 컬러복합기',
-          '시리얼_위치': 'CN-3922-01 / 3층 본사',
+          '설치장소': '3층 본사 기획실',
+          '시리얼': 'CN-3922-01',
           '기본임대료': 85000,
           '흑백기준매수': 1000,
           '흑백초과단가': 10,
@@ -1643,7 +1734,8 @@ document.addEventListener('DOMContentLoaded', () => {
           '누적총결제액': 1200000,
           '비고': '2대째 장비 등록 예시',
           '장비명': 'HP OfficeJet Pro 9010',
-          '시리얼_위치': 'HP-9010-02 / 3층 상담실',
+          '설치장소': '3층 상담실',
+          '시리얼': 'HP-9010-02',
           '기본임대료': 35000,
           '흑백기준매수': 500,
           '흑백초과단가': 12,
@@ -1663,7 +1755,8 @@ document.addEventListener('DOMContentLoaded', () => {
           '누적총결제액': 600000,
           '비고': '단일 장비 등록 예시',
           '장비명': '신도리코 D420',
-          '시리얼_위치': 'SND-420-99 / 교무실',
+          '설치장소': '교무실',
+          '시리얼': 'SND-420-99',
           '기본임대료': 110000,
           '흑백기준매수': 3000,
           '흑백초과단가': 8,
@@ -1678,7 +1771,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ws['!cols'] = [
         { wch: 18 }, { wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 20 },
         { wch: 12 }, { wch: 30 }, { wch: 14 }, { wch: 20 },
-        { wch: 25 }, { wch: 20 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
+        { wch: 25 }, { wch: 18 }, { wch: 16 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
         { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 }
       ];
 
@@ -1748,10 +1841,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // 장비 정보 추출
             const devName = (row['장비명'] || row['기기명'] || row['모델명'] || '').toString().trim();
             if (devName) {
+              const location = (row['설치장소'] || row['설치위치'] || row['위치'] || '').toString().trim() || '메인 사무실';
+              const serial = (row['시리얼'] || row['시리얼(S/N)'] || row['시리얼_위치'] || '').toString().trim();
+
               clientGroup.devices.push({
                 id: 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
                 name: devName,
-                serial: (row['시리얼_위치'] || row['시리얼'] || row['설치위치'] || '').toString().trim(),
+                location: location,
+                serial: serial,
                 baseRent: Number(row['기본임대료'] || row['기본료'] || 0),
                 bwBase: Number(row['흑백기준매수'] || row['흑백기본'] || 0),
                 bwUnit: Number(row['흑백초과단가'] || row['흑백단가'] || 0),
