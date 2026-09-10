@@ -6,6 +6,8 @@
   <title>프린터모아 - 관리자 대시보드</title>
   <link rel="stylesheet" href="dashboard.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SheetJS (Excel xlsx 업로드/다운로드 라이브러리) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -201,17 +203,114 @@
         <section id="page-clients" class="page-section">
           <div class="page-title">
             <h2><i class="fa fa-building" style="margin-right:10px;color:var(--accent-primary);"></i>거래처 관리</h2>
-            <p>렌탈/임대 계약이 진행 중이거나 완료된 거래처를 통합 관리합니다.</p>
+            <p>복합기/프린터 렌탈 거래처와 다중 임대 장비, 이번달 사용량 및 정산 금액을 통합 관리합니다.</p>
           </div>
-          <div class="panel">
-            <div class="panel-header">
-              <div class="panel-title">거래처 목록</div>
-              <button class="btn-primary-sm"><i class="fa fa-plus"></i> 거래처 추가</button>
+
+          <!-- 통계 지표 카드 4종 -->
+          <div class="stats-grid client-stats-grid" style="margin-bottom:20px;">
+            <div class="stat-card">
+              <div class="stat-icon primary"><i class="fa fa-building"></i></div>
+              <div class="stat-details">
+                <div class="stat-title">총 관리 거래처</div>
+                <div class="stat-value" id="clientStatTotal">0</div>
+                <div class="stat-trend trend-up">현재 계약 유지 업체</div>
+              </div>
             </div>
-            <div class="empty-state">
+            <div class="stat-card">
+              <div class="stat-icon info" style="background:rgba(14,165,233,0.15);color:#0284c7;"><i class="fa fa-print"></i></div>
+              <div class="stat-details">
+                <div class="stat-title">총 임대 장비 대수</div>
+                <div class="stat-value" id="clientStatDevices">0</div>
+                <div class="stat-trend trend-up">등록된 복합기/프린터</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon success"><i class="fa fa-won-sign"></i></div>
+              <div class="stat-details">
+                <div class="stat-title">이번달 총 청구예정액</div>
+                <div class="stat-value" id="clientStatMonthBill">0원</div>
+                <div class="stat-trend trend-up">공급가액 + V.A.T 포함</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon warning"><i class="fa fa-receipt"></i></div>
+              <div class="stat-details">
+                <div class="stat-title">총 누적 결제금액</div>
+                <div class="stat-value" id="clientStatTotalPaid">0원</div>
+                <div class="stat-trend">거래처 전체 누적 입금합계</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header" style="flex-wrap:wrap;gap:12px;">
+              <div class="panel-title" style="display:flex;align-items:center;gap:8px;">
+                <span>거래처 및 임대 현황 목록</span>
+                <span class="badge" id="clientCountBadge" style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:12px;font-size:12px;">0개사</span>
+              </div>
+              
+              <!-- 툴바 버튼 그룹 -->
+              <div class="client-toolbar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <!-- 검색창 -->
+                <div style="position:relative;">
+                  <input type="text" id="clientSearchInput" placeholder="거래처명, 사업자번호, 대표자, 연락처..." style="padding:8px 12px 8px 30px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:240px;" oninput="ClientManager.searchClients()">
+                  <i class="fa fa-search" style="position:absolute;left:10px;top:10px;color:#94a3b8;font-size:12px;"></i>
+                </div>
+
+                <button class="btn-primary-sm" onclick="ClientManager.openAddModal()">
+                  <i class="fa fa-plus"></i> 거래처 신규 등록
+                </button>
+
+                <!-- 엑셀 일괄 등록 버튼 & 숨겨진 input -->
+                <input type="file" id="clientExcelInput" accept=".xlsx, .xls" style="display:none;" onchange="ClientManager.handleExcelUpload(event)">
+                <button class="btn-primary-sm" style="background:linear-gradient(135deg,#10b981,#059669);" onclick="document.getElementById('clientExcelInput').click()">
+                  <i class="fa fa-file-excel"></i> 엑셀 일괄 등록
+                </button>
+
+                <!-- 엑셀 다운로드 버튼 -->
+                <button class="btn-primary-sm" style="background:linear-gradient(135deg,#0284c7,#0369a1);" onclick="ClientManager.exportToExcel()">
+                  <i class="fa fa-download"></i> 엑셀 목록 다운로드
+                </button>
+
+                <!-- 엑셀 양식 다운로드 버튼 -->
+                <button class="btn-primary-sm" style="background:linear-gradient(135deg,#64748b,#475569);" onclick="ClientManager.downloadTemplate()">
+                  <i class="fa fa-file-alt"></i> 엑셀 양식 받기
+                </button>
+              </div>
+            </div>
+
+            <!-- 거래처 목록 테이블 -->
+            <div class="table-wrapper" id="clientTableWrapper">
+              <table class="data-table client-table" id="clientTable">
+                <thead>
+                  <tr>
+                    <th style="width:40px;"></th>
+                    <th style="width:50px;">번호</th>
+                    <th>거래처명 (상호)</th>
+                    <th>사업자번호</th>
+                    <th>대표자 / 연락처</th>
+                    <th>계약시작일</th>
+                    <th>임대장비</th>
+                    <th>기본임대료</th>
+                    <th>추가금액</th>
+                    <th>합계(공급가)</th>
+                    <th>V.A.T</th>
+                    <th style="color:#2563eb;">이번달 임대료</th>
+                    <th>총 누적결제액</th>
+                    <th style="width:140px;">관리</th>
+                  </tr>
+                </thead>
+                <tbody id="clientTbody">
+                  <!-- JS로 동적 렌더링 -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- 데이터 없을 때 빈 화면 -->
+            <div class="empty-state" id="clientEmpty" style="display:none;">
               <i class="fa fa-building"></i>
               <p>등록된 거래처가 없습니다.</p>
-              <span>상단 '거래처 추가' 버튼을 클릭하여 첫 거래처를 등록해 보세요.</span>
+              <span>상단의 '+ 거래처 신규 등록' 또는 '엑셀 일괄 등록' 버튼을 이용해 거래처를 등록하세요.</span>
             </div>
           </div>
         </section>
@@ -616,6 +715,125 @@
         </section>
 
       </main>
+    </div>
+  </div>
+
+  <!-- ==================== 거래처 등록/수정 모달 ==================== -->
+  <div class="modal-backdrop" id="clientModal" style="display:none;">
+    <div class="modal-container modal-lg">
+      <div class="modal-header">
+        <h3 id="clientModalTitle"><i class="fa fa-building"></i> 거래처 및 임대 장비 등록</h3>
+        <button class="modal-close" onclick="ClientManager.closeModal()">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <form id="clientForm" onsubmit="ClientManager.saveClient(event);">
+          <input type="hidden" id="clientId">
+
+          <!-- 1. 거래처 기본 정보 섹션 -->
+          <div class="form-section-card">
+            <div class="form-section-title"><i class="fa fa-id-card"></i> 거래처 기본 정보</div>
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label>거래처명 (상호) <span class="req">*</span></label>
+                <input type="text" id="clName" placeholder="예: (주)프린터솔루션" required>
+              </div>
+              <div class="form-group">
+                <label>사업자등록번호</label>
+                <input type="text" id="clBizNum" placeholder="000-00-00000">
+              </div>
+              <div class="form-group">
+                <label>대표자명</label>
+                <input type="text" id="clCeo" placeholder="대표자 성명">
+              </div>
+            </div>
+
+            <div class="form-grid-3" style="margin-top:10px;">
+              <div class="form-group">
+                <label>연락처 (전화번호) <span class="req">*</span></label>
+                <input type="text" id="clPhone" placeholder="010-0000-0000 또는 02-..." required>
+              </div>
+              <div class="form-group">
+                <label>이메일</label>
+                <input type="email" id="clEmail" placeholder="example@domain.com">
+              </div>
+              <div class="form-group">
+                <label>계약 시작 일시</label>
+                <input type="date" id="clContractDate">
+              </div>
+            </div>
+
+            <div class="form-grid-2" style="margin-top:10px;">
+              <div class="form-group">
+                <label>사업장 주소</label>
+                <input type="text" id="clAddress" placeholder="설치 및 사업장 소재지 주소">
+              </div>
+              <div class="form-group">
+                <label>지금까지 총 결제한 금액 (원)</label>
+                <input type="number" id="clTotalPaid" placeholder="0" min="0" value="0">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top:10px;">
+              <label>비고 / 특이사항</label>
+              <input type="text" id="clMemo" placeholder="정기점검 주기, 청구서 발송 조건, 담당자 등">
+            </div>
+          </div>
+
+          <!-- 2. 임대 장비 목록 섹션 (1:N 다중 등록 지원) -->
+          <div class="form-section-card" style="margin-top:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <div class="form-section-title" style="margin-bottom:0;"><i class="fa fa-print"></i> 임대 장비 정보 및 요금 기준</div>
+              <button type="button" class="btn-primary-sm" style="background:#0284c7;" onclick="ClientManager.addDeviceRow()">
+                <i class="fa fa-plus"></i> + 장비 추가
+              </button>
+            </div>
+
+            <div id="deviceFormList">
+              <!-- 장비 카드들이 동적으로 추가됨 -->
+            </div>
+          </div>
+
+          <!-- 3. 실시간 자동 정산 미리보기 섹션 -->
+          <div class="form-section-card summary-calc-box" style="margin-top:16px;background:#f8fafc;border:1.5px solid #cbd5e1;">
+            <div class="form-section-title" style="color:#0f172a;"><i class="fa fa-calculator"></i> 이번 달 청구 금액 실시간 정산</div>
+            <div class="calc-preview-grid">
+              <div class="calc-item">
+                <span class="calc-label">기본 임대료 합계</span>
+                <span class="calc-val" id="prevBaseRent">0원</span>
+              </div>
+              <div class="calc-item">
+                <span class="calc-label">흑백 추가금액</span>
+                <span class="calc-val" id="prevBwExtra">0원</span>
+              </div>
+              <div class="calc-item">
+                <span class="calc-label">컬러 추가금액</span>
+                <span class="calc-val" id="prevColorExtra">0원</span>
+              </div>
+              <div class="calc-item">
+                <span class="calc-label">합계금액 (공급가)</span>
+                <span class="calc-val bold" id="prevSupply">0원</span>
+              </div>
+              <div class="calc-item">
+                <span class="calc-label">V.A.T (10%)</span>
+                <span class="calc-val" id="prevVat">0원</span>
+              </div>
+              <div class="calc-item total">
+                <span class="calc-label">이번달 총 임대료</span>
+                <span class="calc-val highlight" id="prevTotalBill">0원</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 모달 하단 액션 버튼 -->
+          <div class="modal-footer" style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;">
+            <button type="button" class="btn-secondary" onclick="ClientManager.closeModal()">취소</button>
+            <button type="submit" class="btn-primary-sm" style="padding:10px 24px;font-size:14px;">
+              <i class="fa fa-save"></i> 저장하기
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
