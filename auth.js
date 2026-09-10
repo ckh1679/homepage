@@ -1,11 +1,9 @@
 /**
- * auth.js - 프린터모아 회원 인증 모듈
+ * auth.js - 프린터모아 회원 인증 모듈 (Google 전용 로그인)
  *
- * localStorage에 회원 데이터를 저장하고 관리합니다.
- * 모든 페이지에서 공통으로 사용합니다.
- *
+ * 인증 방식: 구글 OAuth2.0 전용
  * 저장 구조:
- *   localStorage['pm_users']   = JSON 배열 (회원 목록)
+ *   localStorage['pm_users']    = JSON 배열 (회원 목록)
  *   sessionStorage['pm_session'] = JSON 객체 (현재 로그인 유저)
  */
 
@@ -13,22 +11,9 @@ const Auth = (() => {
   const USERS_KEY = 'pm_users';
   const SESSION_KEY = 'pm_session';
 
-  // ── 초기화: 기본 관리자 계정 생성 ──────────────────
+  // ── 초기화: 특별한 작업 없음 (구글 로그인 전용으로 변경) ──
   function init() {
-    const users = getUsers();
-    // admin 계정이 없으면 생성
-    if (!users.find(u => u.id === 'admin')) {
-      users.push({
-        id: 'admin',
-        password: 'admin1234',
-        name: '관리자',
-        phone: '010-5922-3650',
-        email: 'admin@printermoa.kr',
-        role: 'admin',        // 관리자 권한
-        createdAt: new Date().toISOString()
-      });
-      saveUsers(users);
-    }
+    // 일반 아이디 로그인 방식을 사용하지 않으므로 init 작업 없음
   }
 
   // ── 회원 목록 조회 ──────────────────────────────────
@@ -45,69 +30,25 @@ const Auth = (() => {
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
   }
 
-  // ── 회원가입 ────────────────────────────────────────
-  // 반환값: { success: bool, message: string }
+  // ── 회원가입 (내부 함수 유지, 구글 사용시 호출하지 않음) ──
   function register({ id, password, name, phone, email }) {
-    const users = getUsers();
-
-    // 아이디 중복 확인
-    if (users.find(u => u.id === id)) {
-      return { success: false, message: '이미 사용 중인 아이디입니다.' };
-    }
-
-    // 유효성 검사
-    if (!id || id.length < 4) {
-      return { success: false, message: '아이디는 4자 이상이어야 합니다.' };
-    }
-    if (!password || password.length < 6) {
-      return { success: false, message: '비밀번호는 6자 이상이어야 합니다.' };
-    }
-    if (!name || name.trim() === '') {
-      return { success: false, message: '이름을 입력해주세요.' };
-    }
-
-    const newUser = {
-      id,
-      password,       // ⚠️ 실제 서비스에서는 반드시 해싱 필요
-      name: name.trim(),
-      phone: phone || '',
-      email: email || '',
-      role: 'user',
-      createdAt: new Date().toISOString()
-    };
-
-    users.push(newUser);
-    saveUsers(users);
-    return { success: true, message: '회원가입이 완료되었습니다.' };
+    return { success: false, message: '구글 계정으로만 가입할 수 있습니다.' };
   }
 
-  // ── 로그인 ──────────────────────────────────────────
+  // ── 일반 아이디/비밀번호 로그인 (고의로 비활성화 — 구글 전용) ──
   function login(id, password) {
-    const users = getUsers();
-    const user = users.find(u => u.id === id && u.password === password);
-
-    if (!user) {
-      return { success: false, message: '아이디 또는 비밀번호가 올바르지 않습니다.' };
-    }
-
-    // 세션에 저장 (비밀번호 제외)
-    const sessionData = {
-      id: user.id,
-      name: user.name,
-      role: user.role,
-      email: user.email
-    };
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
-    return { success: true, user: sessionData };
+    return { success: false, message: '구글 계정으로만 로그인할 수 있습니다.\n[Google로 로그인] 버튼을 이용해 주세요.' };
   }
 
   // ── 구글 클라이언트 ID ──────────────────────────────
   const GOOGLE_CLIENT_ID = '757534137046-7ldla468a72bno30t1g01f1qbq2etnjm.apps.googleusercontent.com';
 
   // ── 대시보드 진입 허용 구글 이메일 목록 ────────────────
-  // ⚠️ 여기에 대시보드에 접근할 수 있는 구글 이메일 주소를 입력하세요.
+  // 이 3개 이메일은 홈페이지 관리자 계정으로, 대시보드 + 상담게시판 전체 열람 권한 보유
   const DASHBOARD_ADMIN_EMAILS = [
-    '여기에이메일입력@gmail.com'  // 예: 'printermoa@gmail.com'
+    'ckh1679@gmail.com',
+    'printer.moa@gmail.com',
+    'rental.oa.kor@gmail.com'
   ];
 
   // ── JWT 토큰 디코딩 헬퍼 ─────────────────────────────
@@ -290,6 +231,22 @@ const Auth = (() => {
     return DASHBOARD_ADMIN_EMAILS.includes(user.email);
   }
 
+  // ── 상담게시판 게시글 열람 권한 확인 ─────────────────────
+  // 열람 가능한 경우: 관리자 3명 OR 해당 글의 작성자 본인
+  function canViewConsultPost(post) {
+    const user = getCurrentUser();
+    if (!user) return false;
+
+    // 관리자 3명은 모든 게시글 열람 가능
+    if (isDashboardAdmin()) return true;
+
+    // 작성자 본인 확인 (구글 userId 또는 email로 비교)
+    if (post.userId && user.id && post.userId === user.id) return true;
+    if (post.authorEmail && user.email && post.authorEmail === user.email) return true;
+
+    return false;
+  }
+
   // 초기화 실행
   init();
 
@@ -307,6 +264,7 @@ const Auth = (() => {
     isAdmin,
     isGoogleUser,
     isDashboardAdmin,
+    canViewConsultPost,
     checkIdDuplicate,
     updateHeaderUI,
     requireLogin

@@ -213,8 +213,11 @@
         return;
       }
 
-      // 권한 확인
-      if (post.userId !== user.id && user.role !== 'admin') {
+      // 권한 확인: 본인(아이디 또는 이메일) 또는 관리자
+      const isOwner = post.userId === user.id ||
+                      (post.authorEmail && user.email && post.authorEmail === user.email);
+      const isAdminUser = user.role === 'admin' || Auth.isDashboardAdmin();
+      if (!isOwner && !isAdminUser) {
         alert('수정 권한이 없습니다.');
         window.location.href = `board-view.html?id=${id}&type=${post.boardType}`;
         return;
@@ -289,7 +292,8 @@
           title,
           content,
           author: user.name,
-          userId: user.id
+          userId: user.id,
+          authorEmail: user.email || ''  // 구글 이메일 함께 저장
         });
 
         if (result.success) {

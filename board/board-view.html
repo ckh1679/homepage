@@ -120,6 +120,21 @@
         return;
       }
 
+      // 상담게시판/사용후기: 작성자 본인 + 관리자 3명만 열람 가능
+      if (currentPost.boardType === 'consult' || currentPost.boardType === 'review') {
+        if (!Auth.canViewConsultPost(currentPost)) {
+          document.getElementById('postDetail').innerHTML = `
+            <div class="board-empty">
+              <i class="fa fa-lock" style="font-size:36px; margin-bottom:12px; color:#0099cc;"></i>
+              <p style="font-weight:600; margin-bottom:8px;">접근 권한이 없습니다</p>
+              <p style="color:#888; font-size:13px; margin-bottom:16px;">이 게시글은 작성자 본인과 관리자만 열람할 수 있습니다.</p>
+              <a href="board.html?type=${currentPost.boardType}" class="post-btn list-btn" style="margin-top:8px; display:inline-flex;">목록으로</a>
+            </div>
+          `;
+          return;
+        }
+      }
+
       // 페이지 타이틀 업데이트
       document.title = `${currentPost.title} - 프린터모아`;
 

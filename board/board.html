@@ -184,13 +184,40 @@
 
     // ── 게시글 목록 렌더링 ──────────────────────────
     function renderPosts() {
-      const posts = Board.getPostsByType(currentType);
+      let posts = Board.getPostsByType(currentType);
       const tbody = document.getElementById('boardTbody');
       const emptyEl = document.getElementById('boardEmpty');
       const tableWrap = document.querySelector('.board-table-wrap');
 
+      // 상담게시판: 작성자 본인 + 관리자 3명만 열람 가능
+      if (currentType === 'consult' || currentType === 'review') {
+        const user = Auth.getCurrentUser();
+        if (!user) {
+          // 비로그인 → 목록 없음, 안내 메시지
+          tableWrap.style.display = 'none';
+          emptyEl.innerHTML = `
+            <i class="fa fa-lock" style="font-size:36px; margin-bottom:12px; color:#0099cc;"></i>
+            <p style="font-weight:600; margin-bottom:8px;">로그인이 필요합니다</p>
+            <p style="color:#888; font-size:13px; margin-bottom:16px;">상담게시판은 구글 계정으로 로그인한 회원만 이용할 수 있습니다.</p>
+            <a href="../login.html" style="display:inline-block; padding:8px 20px; background:var(--primary); color:#fff; border-radius:20px; font-size:13px; text-decoration:none;">Google로 로그인</a>
+          `;
+          emptyEl.style.display = 'block';
+          document.getElementById('pagination').innerHTML = '';
+          return;
+        }
+        if (!Auth.isDashboardAdmin()) {
+          // 관리자가 아니면 본인 게시글만 표시
+          posts = posts.filter(p => Auth.canViewConsultPost(p));
+        }
+        // 관리자면 전체 목록 표시
+      }
+
       if (posts.length === 0) {
         tableWrap.style.display = 'none';
+        emptyEl.innerHTML = `
+          <i class="fa fa-inbox" style="font-size:36px; margin-bottom:12px; color:#ccc;"></i>
+          <p>등록된 게시글이 없습니다.</p>
+        `;
         emptyEl.style.display = 'block';
         document.getElementById('pagination').innerHTML = '';
         return;

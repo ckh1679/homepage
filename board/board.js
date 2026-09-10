@@ -115,8 +115,9 @@ const Board = (() => {
     return all[idx];
   }
 
-  // ── 게시글 작성 ──────────────────────────────────────
-  function createPost({ boardType, title, content, author, userId }) {
+  // ── 게시글 작성 ────────────────────────────────────
+  // authorEmail을 함께 저장하여 추후 열람 권한 확인에 사용
+  function createPost({ boardType, title, content, author, userId, authorEmail }) {
     if (!title || !title.trim()) return { success: false, message: '제목을 입력해주세요.' };
     if (!content || !content.trim()) return { success: false, message: '내용을 입력해주세요.' };
 
@@ -128,6 +129,7 @@ const Board = (() => {
       content: content.trim(),
       author,
       userId,
+      authorEmail: authorEmail || '',  // 구글 이메일 저장 (열람 권한 확인용)
       createdAt: new Date().toISOString(),
       updatedAt: null,
       views: 0,
@@ -139,7 +141,7 @@ const Board = (() => {
     return { success: true, post: newPost };
   }
 
-  // ── 게시글 수정 ──────────────────────────────────────
+  // ── 게시글 수정 ────────────────────────────────────
   function updatePost(id, { title, content }, currentUser) {
     const all = getAllPosts();
     const idx = all.findIndex(p => p.id === id);
@@ -147,8 +149,12 @@ const Board = (() => {
 
     const post = all[idx];
 
-    // 권한 확인: 본인 또는 관리자만 수정 가능
-    if (post.userId !== currentUser.id && currentUser.role !== 'admin') {
+    // 권한 확인: 본인(아이디 또는 이메일 일치) 또는 관리자
+    const isOwner = post.userId === currentUser.id ||
+                    (post.authorEmail && currentUser.email && post.authorEmail === currentUser.email);
+    const isAdmin = currentUser.role === 'admin' ||
+                    (typeof Auth !== 'undefined' && Auth.DASHBOARD_ADMIN_EMAILS && Auth.DASHBOARD_ADMIN_EMAILS.includes(currentUser.email));
+    if (!isOwner && !isAdmin) {
       return { success: false, message: '수정 권한이 없습니다.' };
     }
 
@@ -166,7 +172,7 @@ const Board = (() => {
     return { success: true, post: all[idx] };
   }
 
-  // ── 게시글 삭제 ──────────────────────────────────────
+  // ── 게시글 삭제 ────────────────────────────────────
   function deletePost(id, currentUser) {
     const all = getAllPosts();
     const idx = all.findIndex(p => p.id === id);
@@ -174,8 +180,12 @@ const Board = (() => {
 
     const post = all[idx];
 
-    // 권한 확인
-    if (post.userId !== currentUser.id && currentUser.role !== 'admin') {
+    // 권한 확인: 본인(아이디 또는 이메일 일치) 또는 관리자
+    const isOwner = post.userId === currentUser.id ||
+                    (post.authorEmail && currentUser.email && post.authorEmail === currentUser.email);
+    const isAdmin = currentUser.role === 'admin' ||
+                    (typeof Auth !== 'undefined' && Auth.DASHBOARD_ADMIN_EMAILS && Auth.DASHBOARD_ADMIN_EMAILS.includes(currentUser.email));
+    if (!isOwner && !isAdmin) {
       return { success: false, message: '삭제 권한이 없습니다.' };
     }
 
