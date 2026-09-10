@@ -149,13 +149,23 @@ const Board = (() => {
 
     const post = all[idx];
 
-    // 권한 확인: 본인(아이디 또는 이메일 일치) 또는 관리자
-    const isOwner = post.userId === currentUser.id ||
-                    (post.authorEmail && currentUser.email && post.authorEmail === currentUser.email);
-    const isAdmin = currentUser.role === 'admin' ||
+    // 관리자 확인 (Auth.isAdmin 또는 3개 관리자 이메일)
+    const isAdmin = (typeof Auth !== 'undefined' && Auth.isAdmin && Auth.isAdmin()) ||
+                    currentUser.role === 'admin' ||
                     (typeof Auth !== 'undefined' && Auth.DASHBOARD_ADMIN_EMAILS && Auth.DASHBOARD_ADMIN_EMAILS.includes(currentUser.email));
-    if (!isOwner && !isAdmin) {
-      return { success: false, message: '수정 권한이 없습니다.' };
+
+    // 공지사항은 오직 관리자만 수정 가능
+    if (post.boardType === 'notice') {
+      if (!isAdmin) {
+        return { success: false, message: '공지사항은 관리자만 수정할 수 있습니다.' };
+      }
+    } else {
+      // 상담/사용후기: 작성자 본인 또는 관리자
+      const isOwner = post.userId === currentUser.id ||
+                      (post.authorEmail && currentUser.email && post.authorEmail === currentUser.email);
+      if (!isOwner && !isAdmin) {
+        return { success: false, message: '수정 권한이 없습니다.' };
+      }
     }
 
     if (!title || !title.trim()) return { success: false, message: '제목을 입력해주세요.' };
@@ -180,13 +190,23 @@ const Board = (() => {
 
     const post = all[idx];
 
-    // 권한 확인: 본인(아이디 또는 이메일 일치) 또는 관리자
-    const isOwner = post.userId === currentUser.id ||
-                    (post.authorEmail && currentUser.email && post.authorEmail === currentUser.email);
-    const isAdmin = currentUser.role === 'admin' ||
+    // 관리자 확인
+    const isAdmin = (typeof Auth !== 'undefined' && Auth.isAdmin && Auth.isAdmin()) ||
+                    currentUser.role === 'admin' ||
                     (typeof Auth !== 'undefined' && Auth.DASHBOARD_ADMIN_EMAILS && Auth.DASHBOARD_ADMIN_EMAILS.includes(currentUser.email));
-    if (!isOwner && !isAdmin) {
-      return { success: false, message: '삭제 권한이 없습니다.' };
+
+    // 공지사항은 오직 관리자만 삭제 가능
+    if (post.boardType === 'notice') {
+      if (!isAdmin) {
+        return { success: false, message: '공지사항은 관리자만 삭제할 수 있습니다.' };
+      }
+    } else {
+      // 상담/사용후기: 작성자 본인 또는 관리자
+      const isOwner = post.userId === currentUser.id ||
+                      (post.authorEmail && currentUser.email && post.authorEmail === currentUser.email);
+      if (!isOwner && !isAdmin) {
+        return { success: false, message: '삭제 권한이 없습니다.' };
+      }
     }
 
     all.splice(idx, 1);

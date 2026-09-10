@@ -151,13 +151,17 @@
       const id = params.get('id');        // 수정 시 게시글 ID
       currentType = params.get('type') || 'consult';
 
-      // 상담게시판/사용후기 글쓰기는 구글 로그인 사용자만 가능
-      if ((currentType === 'consult' || currentType === 'review') && !Auth.isGoogleUser()) {
-        if (confirm('상담게시판 글쓰기는 구글 계정으로 로그인해야 이용할 수 있습니다.\n구글 로그인 페이지로 이동하시겠습니까?')) {
-          window.location.href = '../login.html?redirect=' + encodeURIComponent('../board/board.html?type=' + currentType);
-        } else {
-          window.location.href = `board.html?type=${currentType}`;
-        }
+      // 공지사항은 관리자만 작성 가능
+      if (currentType === 'notice' && !Auth.isAdmin()) {
+        alert('공지사항은 관리자만 작성할 수 있습니다.');
+        window.location.href = `board.html?type=notice`;
+        return;
+      }
+
+      // 상담게시판/사용후기 글쓰기는 로그인 사용자만 가능
+      if ((currentType === 'consult' || currentType === 'review') && !Auth.isLoggedIn()) {
+        alert('로그인이 필요한 서비스입니다.');
+        window.location.href = '../login.html?redirect=' + encodeURIComponent('../board/board-write.html?type=' + currentType);
         return;
       }
 
@@ -281,7 +285,7 @@
       } else {
         // ── 새 글 등록 ──
         // 공지사항 권한 체크
-        if (type === 'notice' && user.role !== 'admin') {
+        if (type === 'notice' && !Auth.isAdmin()) {
           alert('공지사항은 관리자만 작성할 수 있습니다.');
           return;
         }

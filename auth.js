@@ -145,9 +145,11 @@ const Auth = (() => {
   }
 
   // ── 관리자 여부 확인 ─────────────────────────────────
+  // 3개 관리자 구글 이메일(isDashboardAdmin) 또는 role === 'admin'
   function isAdmin() {
     const user = getCurrentUser();
-    return user && user.role === 'admin';
+    if (!user) return false;
+    return isDashboardAdmin() || user.role === 'admin';
   }
 
   // ── 아이디 중복 확인 ─────────────────────────────────

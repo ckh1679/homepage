@@ -176,6 +176,16 @@
       // 게시판 제목 업데이트
       document.getElementById('boardTitle').textContent = Board.getBoardName(type);
 
+      // 공지사항 글쓰기 버튼 제어: 관리자만 글쓰기 버튼 표시
+      const writeBtn = document.getElementById('writeBtn');
+      if (writeBtn) {
+        if (type === 'notice') {
+          writeBtn.style.display = Auth.isAdmin() ? 'inline-flex' : 'none';
+        } else {
+          writeBtn.style.display = 'inline-flex';
+        }
+      }
+
       // URL 업데이트 (새로고침 없이)
       history.replaceState(null, '', `?type=${type}`);
 
@@ -185,33 +195,12 @@
 
     // ── 게시글 목록 렌더링 ──────────────────────────
     function renderPosts() {
-      let posts = Board.getPostsByType(currentType);
+      const posts = Board.getPostsByType(currentType);
       const tbody = document.getElementById('boardTbody');
       const emptyEl = document.getElementById('boardEmpty');
       const tableWrap = document.querySelector('.board-table-wrap');
 
-      // 상담게시판: 작성자 본인 + 관리자 3명만 열람 가능
-      if (currentType === 'consult' || currentType === 'review') {
-        const user = Auth.getCurrentUser();
-        if (!user) {
-          // 비로그인 → 목록 없음, 안내 메시지
-          tableWrap.style.display = 'none';
-          emptyEl.innerHTML = `
-            <i class="fa fa-lock" style="font-size:36px; margin-bottom:12px; color:#0099cc;"></i>
-            <p style="font-weight:600; margin-bottom:8px;">로그인이 필요합니다</p>
-            <p style="color:#888; font-size:13px; margin-bottom:16px;">상담게시판은 구글 계정으로 로그인한 회원만 이용할 수 있습니다.</p>
-            <a href="../login.html" style="display:inline-block; padding:8px 20px; background:var(--primary); color:#fff; border-radius:20px; font-size:13px; text-decoration:none;">Google로 로그인</a>
-          `;
-          emptyEl.style.display = 'block';
-          document.getElementById('pagination').innerHTML = '';
-          return;
-        }
-        if (!Auth.isDashboardAdmin()) {
-          // 관리자가 아니면 본인 게시글만 표시
-          posts = posts.filter(p => Auth.canViewConsultPost(p));
-        }
-        // 관리자면 전체 목록 표시
-      }
+      // 비회원도 목록(게시글 리스트)은 모두 볼 수 있도록 허용
 
       if (posts.length === 0) {
         tableWrap.style.display = 'none';
@@ -239,13 +228,18 @@
         const badge = post.isPinned
           ? `<span class="pinned-badge">공지</span>`
           : (currentType !== 'notice' ? '' : `<span class="notice-badge">${num}</span>`);
+        
+        // 상담게시판은 비밀글 아이콘 및 작성자 마스킹 적용
+        const lockIcon = currentType === 'consult' ? `<i class="fa fa-lock" style="color:#0099cc; margin-right:5px; font-size:13px;" title="비밀글"></i>` : '';
+        const authorDisplay = currentType === 'consult' ? maskAuthor(post.author) : escapeHtml(post.author);
+
         return `
           <tr onclick="goView('${post.id}')" style="cursor:pointer;">
             <td>${post.isPinned ? '📌' : num}</td>
             <td class="title-col">
-              <span class="post-title-link">${badge}${escapeHtml(post.title)}</span>
+              <span class="post-title-link">${badge}${lockIcon}${escapeHtml(post.title)}</span>
             </td>
-            <td>${escapeHtml(post.author)}</td>
+            <td>${authorDisplay}</td>
             <td>${Board.formatDate(post.createdAt)}</td>
             <td>${post.views || 0}</td>
           </tr>
@@ -274,31 +268,67 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // ── 게시글 상세 이동 ────────────────────────────
+    // ── 게시글 상세 이동 (권한 검사) ────────────────────
     function goView(id) {
+      const post = Board.getPost(id);
+      if (!post) {
+        alert('게시글을 찾을 수 없습니다.');
+        return;
+      }
+
+      // 1. 공지사항: 누구나 열람 가능
+      if (currentType === 'notice') {
+        window.location.href = `board-view.html?id=${id}&type=${currentType}`;
+        return;
+      }
+
+      // 2. 상담게시판 & 사용후기: 비회원은 로그인 필수 안내 후 구글 로그인 창으로 이동
+      if (!Auth.isLoggedIn()) {
+        alert('로그인이 필요한 서비스입니다.');
+        window.location.href = '../login.html?redirect=' + encodeURIComponent(`board/board-view.html?id=${id}&type=${currentType}`);
+        return;
+      }
+
+      // 3. 상담게시판의 경우: 작성자 본인 또는 관리자 3명만 상세 열람 가능
+      if (currentType === 'consult') {
+        if (!Auth.canViewConsultPost(post)) {
+          alert('비밀글은 작성자와 관리자만 열람할 수 있습니다.');
+          return;
+        }
+      }
+
+      // 권한 통과 시 상세 페이지로 이동
       window.location.href = `board-view.html?id=${id}&type=${currentType}`;
     }
 
     // ── 글쓰기 이동 ─────────────────────────────────
     function goWrite() {
-      // 1단계: 로그인 여부 체크
-      if (!Auth.requireLogin('../login.html')) return;
-
-      // 2단계: 공지사항은 관리자만 작성 가능
-      if (currentType === 'notice' && !Auth.isAdmin()) {
-        alert('공지사항은 관리자만 작성할 수 있습니다.');
+      // 1. 공지사항: 오직 관리자 3개 아이디만 작성 가능
+      if (currentType === 'notice') {
+        if (!Auth.isAdmin()) {
+          alert('공지사항은 관리자만 작성할 수 있습니다.');
+          return;
+        }
+        window.location.href = `board-write.html?type=notice`;
         return;
       }
 
-      // 3단계: 상담게시판/사용후기는 구글 계정 로그인 사용자만 작성 가능
-      if ((currentType === 'consult' || currentType === 'review') && !Auth.isGoogleUser()) {
-        if (confirm('상담게시판 글쓰기는 구글 계정으로 로그인해야 이용할 수 있습니다.\n\n구글 로그인 페이지로 이동하시겠습니까?')) {
-          window.location.href = '../login.html?redirect=' + encodeURIComponent(window.location.href);
-        }
+      // 2. 상담게시판 / 사용후기: 비로그인 시 로그인 안내 및 구글 로그인 창 이동
+      if (!Auth.isLoggedIn()) {
+        alert('로그인이 필요한 서비스입니다.');
+        window.location.href = '../login.html?redirect=' + encodeURIComponent(`board/board-write.html?type=${currentType}`);
         return;
       }
 
       window.location.href = `board-write.html?type=${currentType}`;
+    }
+
+    // ── 작성자 마스킹 (홍길동 -> 홍*동) ─────────────
+    function maskAuthor(name) {
+      if (!name) return '익명';
+      if (name.length <= 1) return name;
+      if (name.length === 2) return name[0] + '*';
+      return name[0] + '*'.repeat(name.length - 2) + name[name.length - 1];
     }
 
     // ── 유틸: 첫 글자 대문자 ────────────────────────
