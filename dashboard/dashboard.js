@@ -1213,7 +1213,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (dtInput) dtInput.value = today;
 
       // 장비 목록 초기화 및 1개 기본 추가
-      const devList = document.getElementById('deviceFormList');
+      const devList = document.getElementById('clientDeviceFormList');
       if (devList) devList.innerHTML = '';
       this.addDeviceRow();
 
@@ -1256,7 +1256,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (title) title.innerHTML = `<i class="fa fa-edit"></i> 거래처 정보 수정 - [${this.escapeHtml(client.name)}]`;
 
-      const devList = document.getElementById('deviceFormList');
+      const devList = document.getElementById('clientDeviceFormList');
       if (devList) devList.innerHTML = '';
 
       const devices = (client.devices && client.devices.length > 0) ? client.devices : [{}];
@@ -1274,7 +1274,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 장비 폼 행 추가 (장비명, 설치장소, 기본임대료, 흑백/컬러 추가사용료 세부내역)
     addDeviceRow(dev = {}) {
-      const devList = document.getElementById('deviceFormList');
+      const devList = document.getElementById('clientDeviceFormList');
       if (!devList) return;
 
       const idx = devList.querySelectorAll('.device-form-card').length + 1;
@@ -1360,8 +1360,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 장비 폼 행 삭제
     removeDeviceRow(btn) {
-      const devList = document.getElementById('deviceFormList');
-      const cards = devList.querySelectorAll('.device-form-card');
+      const devList = document.getElementById('clientDeviceFormList');
+      const cards = devList ? devList.querySelectorAll('.device-form-card') : [];
       if (cards.length <= 1) {
         alert('최소 1대 이상의 임대 장비 정보가 등록되어야 합니다.');
         return;
@@ -1376,7 +1376,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 장비 카드 번호 재부여
     renumberDeviceCards() {
-      const devList = document.getElementById('deviceFormList');
+      const devList = document.getElementById('clientDeviceFormList');
       if (!devList) return;
       const cards = devList.querySelectorAll('.device-form-card');
       cards.forEach((c, i) => {
@@ -1387,7 +1387,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 모달 내 실시간 정산 미리보기 업데이트
     updateCalcPreview() {
-      const devList = document.getElementById('deviceFormList');
+      const devList = document.getElementById('clientDeviceFormList');
       if (!devList) return;
 
       const cards = devList.querySelectorAll('.device-form-card');
@@ -1507,7 +1507,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // 장비 목록 수집
-      const devList = document.getElementById('deviceFormList');
+      const devList = document.getElementById('clientDeviceFormList');
       const cards = devList ? devList.querySelectorAll('.device-form-card') : [];
       if (!cards || cards.length === 0) {
         alert('최소 1대 이상의 임대 장비를 추가해주세요.');
