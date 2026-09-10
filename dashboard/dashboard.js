@@ -807,9 +807,13 @@ document.addEventListener('DOMContentLoaded', () => {
             baseRent: 85000,
             bwBase: 1000,
             bwUnit: 10,
+            bwPrev: 27050,
+            bwTotal: 28500,
             bwUsed: 1450,
             colorBase: 300,
             colorUnit: 100,
+            colorPrev: 8980,
+            colorTotal: 9400,
             colorUsed: 420
           }
         ]
@@ -834,9 +838,13 @@ document.addEventListener('DOMContentLoaded', () => {
             baseRent: 110000,
             bwBase: 2500,
             bwUnit: 8,
+            bwPrev: 60400,
+            bwTotal: 64200,
             bwUsed: 3800,
             colorBase: 500,
             colorUnit: 80,
+            colorPrev: 14650,
+            colorTotal: 15300,
             colorUsed: 650
           },
           {
@@ -847,9 +855,13 @@ document.addEventListener('DOMContentLoaded', () => {
             baseRent: 35000,
             bwBase: 800,
             bwUnit: 12,
+            bwPrev: 11650,
+            bwTotal: 12400,
             bwUsed: 750,
             colorBase: 200,
             colorUnit: 90,
+            colorPrev: 4570,
+            colorTotal: 4800,
             colorUsed: 230
           }
         ]
@@ -874,9 +886,13 @@ document.addEventListener('DOMContentLoaded', () => {
             baseRent: 95000,
             bwBase: 1500,
             bwUnit: 10,
+            bwPrev: 41400,
+            bwTotal: 43500,
             bwUsed: 2100,
             colorBase: 400,
             colorUnit: 100,
+            colorPrev: 10820,
+            colorTotal: 11200,
             colorUsed: 380
           }
         ]
@@ -910,14 +926,30 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     },
 
-    // 장비별 계산 (초과금액, 공급가, VAT, 월임대료)
+    // 장비별 계산 (전월누적/당월누적 -> 이번달 사용량 자동 계산, 초과금액, 공급가, VAT, 월임대료)
     calcDevice(dev) {
       const bwBase    = Number(dev.bwBase) || 0;
       const bwUnit    = Number(dev.bwUnit) || 0;
-      const bwUsed    = Number(dev.bwUsed) || 0;
+      const bwPrev    = Number(dev.bwPrev) || 0;
+      const bwTotal   = Number(dev.bwTotal) || 0;
+
+      // 당월 누적 - 전월 누적으로 이번달 흑백 사용량 자동 계산
+      let bwUsed = Number(dev.bwUsed) || 0;
+      if (bwTotal > 0 && bwPrev > 0 && bwTotal >= bwPrev) {
+        bwUsed = bwTotal - bwPrev;
+      }
+
       const colorBase = Number(dev.colorBase) || 0;
       const colorUnit = Number(dev.colorUnit) || 0;
-      const colorUsed = Number(dev.colorUsed) || 0;
+      const colorPrev = Number(dev.colorPrev) || 0;
+      const colorTotal= Number(dev.colorTotal) || 0;
+
+      // 당월 누적 - 전월 누적으로 이번달 컬러 사용량 자동 계산
+      let colorUsed = Number(dev.colorUsed) || 0;
+      if (colorTotal > 0 && colorPrev > 0 && colorTotal >= colorPrev) {
+        colorUsed = colorTotal - colorPrev;
+      }
+
       const baseRent  = Number(dev.baseRent) || 0;
 
       const bwOver    = Math.max(0, bwUsed - bwBase);
@@ -926,6 +958,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const colorOver  = Math.max(0, colorUsed - colorBase);
       const colorExtra = colorOver * colorUnit;
 
+      const totalUsage = bwTotal + colorTotal; // 기기 총 누적 인쇄 매수
+
       const extraTotal = bwExtra + colorExtra;
       const supply     = baseRent + extraTotal;
       const vat        = Math.round(supply * 0.1);
@@ -933,8 +967,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       return {
         baseRent,
-        bwBase, bwUnit, bwUsed, bwOver, bwExtra,
-        colorBase, colorUnit, colorUsed, colorOver, colorExtra,
+        bwBase, bwUnit, bwPrev, bwTotal, bwUsed, bwOver, bwExtra,
+        colorBase, colorUnit, colorPrev, colorTotal, colorUsed, colorOver, colorExtra,
+        totalUsage,
         extraTotal,
         supply,
         vat,
@@ -952,6 +987,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let totalSupply     = 0;
       let totalVat        = 0;
       let totalMonthBill  = 0;
+      let totalCumulativeUsage = 0;
 
       devices.forEach(dev => {
         const c = this.calcDevice(dev);
@@ -962,6 +998,7 @@ document.addEventListener('DOMContentLoaded', () => {
         totalSupply     += c.supply;
         totalVat        += c.vat;
         totalMonthBill  += c.total;
+        totalCumulativeUsage += c.totalUsage;
       });
 
       return {
@@ -973,6 +1010,7 @@ document.addEventListener('DOMContentLoaded', () => {
         totalSupply,
         totalVat,
         totalMonthBill,
+        totalCumulativeUsage,
         totalPaid: Number(client.totalPaid) || 0
       };
     },
@@ -1126,11 +1164,12 @@ document.addEventListener('DOMContentLoaded', () => {
                       <th>시리얼 (S/N)</th>
                       <th>기본임대료</th>
                       <th>흑백 기준/단가</th>
-                      <th>흑백 사용량(초과)</th>
-                      <th>흑백 추가사용료</th>
+                      <th>흑백 검침 (전월→당월 / 사용량)</th>
+                      <th>흑백 추가요금</th>
                       <th>컬러 기준/단가</th>
-                      <th>컬러 사용량(초과)</th>
-                      <th>컬러 추가사용료</th>
+                      <th>컬러 검침 (전월→당월 / 사용량)</th>
+                      <th>컬러 추가요금</th>
+                      <th style="background:rgba(56,189,248,0.1);color:#38bdf8;">기기 총누적(카운터)</th>
                       <th>장비별 월합계</th>
                     </tr>
                   </thead>
@@ -1147,14 +1186,24 @@ document.addEventListener('DOMContentLoaded', () => {
                           <td><span style="color:#94a3b8;font-size:11px;">${this.escapeHtml(sn)}</span></td>
                           <td>${dc.baseRent.toLocaleString()}원</td>
                           <td>${dc.bwBase.toLocaleString()}장 / ${dc.bwUnit}원</td>
-                          <td>${dc.bwUsed.toLocaleString()}장 <span style="color:#f59e0b;">(${dc.bwOver > 0 ? '+' + dc.bwOver.toLocaleString() : '0'})</span></td>
+                          <td>
+                            <div><strong>${dc.bwUsed.toLocaleString()}장</strong> <span style="color:#f59e0b;font-size:11px;">(${dc.bwOver > 0 ? '+' + dc.bwOver.toLocaleString() : '0'})</span></div>
+                            <div style="font-size:10px;color:var(--text-muted);">${dc.bwPrev.toLocaleString()} → ${dc.bwTotal.toLocaleString()}</div>
+                          </td>
                           <td style="color:${dc.bwExtra > 0 ? '#f59e0b' : 'inherit'};font-weight:${dc.bwExtra > 0 ? '600' : 'normal'};">
                             ${dc.bwExtra > 0 ? '+' : ''}${dc.bwExtra.toLocaleString()}원
                           </td>
                           <td>${dc.colorBase.toLocaleString()}장 / ${dc.colorUnit}원</td>
-                          <td>${dc.colorUsed.toLocaleString()}장 <span style="color:#f59e0b;">(${dc.colorOver > 0 ? '+' + dc.colorOver.toLocaleString() : '0'})</span></td>
+                          <td>
+                            <div><strong>${dc.colorUsed.toLocaleString()}장</strong> <span style="color:#f59e0b;font-size:11px;">(${dc.colorOver > 0 ? '+' + dc.colorOver.toLocaleString() : '0'})</span></div>
+                            <div style="font-size:10px;color:var(--text-muted);">${dc.colorPrev.toLocaleString()} → ${dc.colorTotal.toLocaleString()}</div>
+                          </td>
                           <td style="color:${dc.colorExtra > 0 ? '#f59e0b' : 'inherit'};font-weight:${dc.colorExtra > 0 ? '600' : 'normal'};">
                             ${dc.colorExtra > 0 ? '+' : ''}${dc.colorExtra.toLocaleString()}원
+                          </td>
+                          <td style="background:rgba(56,189,248,0.03);">
+                            <div style="font-weight:700;color:#38bdf8;font-size:13px;">${dc.totalUsage.toLocaleString()}장</div>
+                            <div style="font-size:10px;color:var(--text-muted);">흑백 ${dc.bwTotal.toLocaleString()} | 컬러 ${dc.colorTotal.toLocaleString()}</div>
                           </td>
                           <td><strong style="color:#60a5fa;">${dc.total.toLocaleString()}원</strong> <span style="font-size:10px;color:var(--text-muted);">(VAT포함)</span></td>
                         </tr>
@@ -1290,6 +1339,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <div class="device-badge-index"><i class="fa fa-print"></i> 장비 #${idx}</div>
             <span style="font-size:12px;color:var(--text-secondary);">
+              총 누적: <strong class="dev-card-total-usage" style="color:#38bdf8;">0장</strong> | 
               추가사용료: <strong class="dev-card-extra" style="color:#f59e0b;">0원</strong> | 
               장비 월 청구: <strong class="dev-card-total" style="color:#60a5fa;">0원</strong>
             </span>
@@ -1318,43 +1368,103 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
 
-        <!-- 흑백 추가사용료 설정 & 이번달 사용량 -->
-        <div class="form-grid-3" style="margin-top:10px;background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
-          <div class="form-group">
-            <label>흑백 기준 매수 (기본제공)</label>
-            <input type="number" class="dev-bwBase" value="${dev.bwBase !== undefined ? dev.bwBase : 1000}" min="0" oninput="ClientManager.updateCalcPreview()">
+        <!-- 흑백 추가사용료 설정 & 검침 카운터(전월/당월) & 이번달 사용량 자동계산 -->
+        <div style="margin-top:12px;background:rgba(255,255,255,0.02);padding:14px;border-radius:8px;border:1px solid rgba(255,255,255,0.07);">
+          <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+            <i class="fa fa-print" style="color:#94a3b8;"></i> 흑백 요금 기준 및 카운터 검침
           </div>
-          <div class="form-group">
-            <label>흑백 초과 단가 (원/장)</label>
-            <input type="number" class="dev-bwUnit" value="${dev.bwUnit !== undefined ? dev.bwUnit : 10}" min="0" oninput="ClientManager.updateCalcPreview()">
+          <div class="form-grid-2" style="margin-bottom:10px;">
+            <div class="form-group">
+              <label>흑백 기준 매수 (기본제공)</label>
+              <input type="number" class="dev-bwBase" value="${dev.bwBase !== undefined ? dev.bwBase : 1000}" min="0" oninput="ClientManager.updateCalcPreview()">
+            </div>
+            <div class="form-group">
+              <label>흑백 초과 단가 (원/장)</label>
+              <input type="number" class="dev-bwUnit" value="${dev.bwUnit !== undefined ? dev.bwUnit : 10}" min="0" oninput="ClientManager.updateCalcPreview()">
+            </div>
           </div>
-          <div class="form-group">
-            <label style="color:#60a5fa;font-weight:600;">이번달 흑백 사용량 (장)</label>
-            <input type="number" class="dev-bwUsed" value="${dev.bwUsed !== undefined ? dev.bwUsed : 1000}" min="0" oninput="ClientManager.updateCalcPreview()">
-            <div class="dev-bw-calc-tag" style="font-size:11px;color:#f59e0b;margin-top:4px;">흑백 추가사용료: 0원</div>
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label style="color:#94a3b8;"><i class="fa fa-history"></i> 전월 흑백 누적 (장)</label>
+              <input type="number" class="dev-bwPrev" value="${dev.bwPrev !== undefined ? dev.bwPrev : 0}" min="0" placeholder="전월 누적 카운터" oninput="ClientManager.updateUsageFromCounters(this, 'bw')">
+            </div>
+            <div class="form-group">
+              <label style="color:#38bdf8;font-weight:600;"><i class="fa fa-tachometer-alt"></i> 당월 흑백 누적 (장)</label>
+              <input type="number" class="dev-bwTotal" value="${dev.bwTotal !== undefined ? dev.bwTotal : 0}" min="0" placeholder="현재 복합기 계수기" oninput="ClientManager.updateUsageFromCounters(this, 'bw')">
+            </div>
+            <div class="form-group">
+              <label style="color:#f59e0b;font-weight:700;"><i class="fa fa-calculator"></i> 이번달 흑백 사용량 (장)</label>
+              <input type="number" class="dev-bwUsed" value="${dev.bwUsed !== undefined ? dev.bwUsed : 1000}" min="0" oninput="ClientManager.updateCalcPreview()">
+            </div>
+          </div>
+          <div class="dev-bw-calc-tag" style="font-size:11px;color:#f59e0b;margin-top:6px;padding:4px 8px;background:rgba(245,158,11,0.08);border-radius:4px;">
+            흑백 이번달: 0장 | 추가사용료: 0원
           </div>
         </div>
 
-        <!-- 컬러 추가사용료 설정 & 이번달 사용량 -->
-        <div class="form-grid-3" style="margin-top:10px;background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);">
-          <div class="form-group">
-            <label>컬러 기준 매수 (기본제공)</label>
-            <input type="number" class="dev-colorBase" value="${dev.colorBase !== undefined ? dev.colorBase : 300}" min="0" oninput="ClientManager.updateCalcPreview()">
+        <!-- 컬러 추가사용료 설정 & 검침 카운터(전월/당월) & 이번달 사용량 자동계산 -->
+        <div style="margin-top:12px;background:rgba(255,255,255,0.02);padding:14px;border-radius:8px;border:1px solid rgba(255,255,255,0.07);">
+          <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+            <i class="fa fa-palette" style="color:#ec4899;"></i> 컬러 요금 기준 및 카운터 검침
           </div>
-          <div class="form-group">
-            <label>컬러 초과 단가 (원/장)</label>
-            <input type="number" class="dev-colorUnit" value="${dev.colorUnit !== undefined ? dev.colorUnit : 100}" min="0" oninput="ClientManager.updateCalcPreview()">
+          <div class="form-grid-2" style="margin-bottom:10px;">
+            <div class="form-group">
+              <label>컬러 기준 매수 (기본제공)</label>
+              <input type="number" class="dev-colorBase" value="${dev.colorBase !== undefined ? dev.colorBase : 300}" min="0" oninput="ClientManager.updateCalcPreview()">
+            </div>
+            <div class="form-group">
+              <label>컬러 초과 단가 (원/장)</label>
+              <input type="number" class="dev-colorUnit" value="${dev.colorUnit !== undefined ? dev.colorUnit : 100}" min="0" oninput="ClientManager.updateCalcPreview()">
+            </div>
           </div>
-          <div class="form-group">
-            <label style="color:#60a5fa;font-weight:600;">이번달 컬러 사용량 (장)</label>
-            <input type="number" class="dev-colorUsed" value="${dev.colorUsed !== undefined ? dev.colorUsed : 300}" min="0" oninput="ClientManager.updateCalcPreview()">
-            <div class="dev-color-calc-tag" style="font-size:11px;color:#f59e0b;margin-top:4px;">컬러 추가사용료: 0원</div>
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label style="color:#94a3b8;"><i class="fa fa-history"></i> 전월 컬러 누적 (장)</label>
+              <input type="number" class="dev-colorPrev" value="${dev.colorPrev !== undefined ? dev.colorPrev : 0}" min="0" placeholder="전월 누적 카운터" oninput="ClientManager.updateUsageFromCounters(this, 'color')">
+            </div>
+            <div class="form-group">
+              <label style="color:#38bdf8;font-weight:600;"><i class="fa fa-tachometer-alt"></i> 당월 컬러 누적 (장)</label>
+              <input type="number" class="dev-colorTotal" value="${dev.colorTotal !== undefined ? dev.colorTotal : 0}" min="0" placeholder="현재 복합기 계수기" oninput="ClientManager.updateUsageFromCounters(this, 'color')">
+            </div>
+            <div class="form-group">
+              <label style="color:#f59e0b;font-weight:700;"><i class="fa fa-calculator"></i> 이번달 컬러 사용량 (장)</label>
+              <input type="number" class="dev-colorUsed" value="${dev.colorUsed !== undefined ? dev.colorUsed : 300}" min="0" oninput="ClientManager.updateCalcPreview()">
+            </div>
+          </div>
+          <div class="dev-color-calc-tag" style="font-size:11px;color:#f59e0b;margin-top:6px;padding:4px 8px;background:rgba(245,158,11,0.08);border-radius:4px;">
+            컬러 이번달: 0장 | 추가사용료: 0원
           </div>
         </div>
       `;
 
       devList.appendChild(card);
       this.renumberDeviceCards();
+      this.updateCalcPreview();
+    },
+
+    // 전월 누적 - 당월 누적으로 이번달 사용량 자동 계산
+    updateUsageFromCounters(inputEl, type) {
+      const card = inputEl ? inputEl.closest('.device-form-card') : null;
+      if (!card) return;
+
+      if (type === 'bw') {
+        const prev = Number(card.querySelector('.dev-bwPrev')?.value) || 0;
+        const total = Number(card.querySelector('.dev-bwTotal')?.value) || 0;
+        const usedEl = card.querySelector('.dev-bwUsed');
+        if (total > 0 || prev > 0) {
+          const diff = Math.max(0, total - prev);
+          if (usedEl) usedEl.value = diff;
+        }
+      } else if (type === 'color') {
+        const prev = Number(card.querySelector('.dev-colorPrev')?.value) || 0;
+        const total = Number(card.querySelector('.dev-colorTotal')?.value) || 0;
+        const usedEl = card.querySelector('.dev-colorUsed');
+        if (total > 0 || prev > 0) {
+          const diff = Math.max(0, total - prev);
+          if (usedEl) usedEl.value = diff;
+        }
+      }
+
       this.updateCalcPreview();
     },
 
@@ -1399,10 +1509,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const baseRent  = Number(card.querySelector('.dev-baseRent')?.value) || 0;
         const bwBase    = Number(card.querySelector('.dev-bwBase')?.value) || 0;
         const bwUnit    = Number(card.querySelector('.dev-bwUnit')?.value) || 0;
-        const bwUsed    = Number(card.querySelector('.dev-bwUsed')?.value) || 0;
+        const bwPrev    = Number(card.querySelector('.dev-bwPrev')?.value) || 0;
+        const bwTotal   = Number(card.querySelector('.dev-bwTotal')?.value) || 0;
+        let bwUsed      = Number(card.querySelector('.dev-bwUsed')?.value) || 0;
+
         const colorBase = Number(card.querySelector('.dev-colorBase')?.value) || 0;
         const colorUnit = Number(card.querySelector('.dev-colorUnit')?.value) || 0;
-        const colorUsed = Number(card.querySelector('.dev-colorUsed')?.value) || 0;
+        const colorPrev = Number(card.querySelector('.dev-colorPrev')?.value) || 0;
+        const colorTotal= Number(card.querySelector('.dev-colorTotal')?.value) || 0;
+        let colorUsed   = Number(card.querySelector('.dev-colorUsed')?.value) || 0;
 
         const bwOver = Math.max(0, bwUsed - bwBase);
         const bwExtra = bwOver * bwUnit;
@@ -1413,20 +1528,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const devSupply = baseRent + devExtraTotal;
         const devTotal = Math.round(devSupply * 1.1);
 
+        const devTotalUsage = bwTotal + colorTotal;
+
         // 카드 내 실시간 텍스트 반영
         const bwTag = card.querySelector('.dev-bw-calc-tag');
         if (bwTag) {
-          bwTag.textContent = bwOver > 0 
-            ? `흑백 추가사용료: +${bwExtra.toLocaleString()}원 (초과 ${bwOver.toLocaleString()}장 × ${bwUnit}원)`
-            : '흑백 추가사용료: 0원 (기준 내 사용)';
+          if (bwTotal > 0 && bwPrev > 0 && bwTotal < bwPrev) {
+            bwTag.innerHTML = `<span style="color:#ef4444;"><i class="fa fa-exclamation-triangle"></i> 경고: 당월 누적(${bwTotal.toLocaleString()})이 전월 누적(${bwPrev.toLocaleString()})보다 작습니다!</span>`;
+          } else {
+            bwTag.innerHTML = `흑백 이번달: <strong>${bwUsed.toLocaleString()}장</strong> (당월 ${bwTotal.toLocaleString()} - 전월 ${bwPrev.toLocaleString()}) | 기준초과: <strong>${bwOver.toLocaleString()}장</strong> | 추가요금: <strong style="color:#f59e0b;">+${bwExtra.toLocaleString()}원</strong>`;
+          }
         }
 
         const colorTag = card.querySelector('.dev-color-calc-tag');
         if (colorTag) {
-          colorTag.textContent = colorOver > 0
-            ? `컬러 추가사용료: +${colorExtra.toLocaleString()}원 (초과 ${colorOver.toLocaleString()}장 × ${colorUnit}원)`
-            : '컬러 추가사용료: 0원 (기준 내 사용)';
+          if (colorTotal > 0 && colorPrev > 0 && colorTotal < colorPrev) {
+            colorTag.innerHTML = `<span style="color:#ef4444;"><i class="fa fa-exclamation-triangle"></i> 경고: 당월 누적(${colorTotal.toLocaleString()})이 전월 누적(${colorPrev.toLocaleString()})보다 작습니다!</span>`;
+          } else {
+            colorTag.innerHTML = `컬러 이번달: <strong>${colorUsed.toLocaleString()}장</strong> (당월 ${colorTotal.toLocaleString()} - 전월 ${colorPrev.toLocaleString()}) | 기준초과: <strong>${colorOver.toLocaleString()}장</strong> | 추가요금: <strong style="color:#f59e0b;">+${colorExtra.toLocaleString()}원</strong>`;
+          }
         }
+
+        const usageBadge = card.querySelector('.dev-card-total-usage');
+        if (usageBadge) usageBadge.textContent = devTotalUsage.toLocaleString() + '장';
 
         const extraBadge = card.querySelector('.dev-card-extra');
         if (extraBadge) extraBadge.textContent = devExtraTotal.toLocaleString() + '원';
@@ -1535,9 +1659,13 @@ document.addEventListener('DOMContentLoaded', () => {
           baseRent: Number(card.querySelector('.dev-baseRent')?.value) || 0,
           bwBase: Number(card.querySelector('.dev-bwBase')?.value) || 0,
           bwUnit: Number(card.querySelector('.dev-bwUnit')?.value) || 0,
+          bwPrev: Number(card.querySelector('.dev-bwPrev')?.value) || 0,
+          bwTotal: Number(card.querySelector('.dev-bwTotal')?.value) || 0,
           bwUsed: Number(card.querySelector('.dev-bwUsed')?.value) || 0,
           colorBase: Number(card.querySelector('.dev-colorBase')?.value) || 0,
           colorUnit: Number(card.querySelector('.dev-colorUnit')?.value) || 0,
+          colorPrev: Number(card.querySelector('.dev-colorPrev')?.value) || 0,
+          colorTotal: Number(card.querySelector('.dev-colorTotal')?.value) || 0,
           colorUsed: Number(card.querySelector('.dev-colorUsed')?.value) || 0
         });
       }
@@ -1663,12 +1791,17 @@ document.addEventListener('DOMContentLoaded', () => {
             '기본임대료': dc.baseRent,
             '흑백기준매수': dc.bwBase,
             '흑백초과단가': dc.bwUnit,
+            '흑백전월누적': dc.bwPrev,
+            '흑백당월누적': dc.bwTotal,
             '흑백이번달사용량': dc.bwUsed,
             '흑백추가사용료': dc.bwExtra,
             '컬러기준매수': dc.colorBase,
             '컬러초과단가': dc.colorUnit,
+            '컬러전월누적': dc.colorPrev,
+            '컬러당월누적': dc.colorTotal,
             '컬러이번달사용량': dc.colorUsed,
             '컬러추가사용료': dc.colorExtra,
+            '기기총누적사용량': dc.totalUsage,
             '합계금액(공급가)': dc.supply,
             'VAT': dc.vat,
             '이번달총임대료': dc.total
@@ -1683,8 +1816,9 @@ document.addEventListener('DOMContentLoaded', () => {
         { wch: 18 }, { wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 20 },
         { wch: 12 }, { wch: 30 }, { wch: 14 }, { wch: 20 }, { wch: 8 },
         { wch: 25 }, { wch: 18 }, { wch: 16 }, { wch: 12 }, { wch: 12 },
-        { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 },
-        { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 14 }
+        { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 },
+        { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 },
+        { wch: 14 }, { wch: 10 }, { wch: 14 }
       ];
 
       const wb = XLSX.utils.book_new();
@@ -1718,10 +1852,14 @@ document.addEventListener('DOMContentLoaded', () => {
           '기본임대료': 85000,
           '흑백기준매수': 1000,
           '흑백초과단가': 10,
-          '흑백이번달사용량': 1200,
+          '흑백전월누적': 27050,
+          '흑백당월누적': 28500,
+          '흑백이번달사용량': 1450,
           '컬러기준매수': 300,
           '컬러초과단가': 100,
-          '컬러이번달사용량': 350
+          '컬러전월누적': 8980,
+          '컬러당월누적': 9400,
+          '컬러이번달사용량': 420
         },
         {
           '거래처명': '(주)한국상사',
@@ -1739,10 +1877,14 @@ document.addEventListener('DOMContentLoaded', () => {
           '기본임대료': 35000,
           '흑백기준매수': 500,
           '흑백초과단가': 12,
-          '흑백이번달사용량': 480,
+          '흑백전월누적': 11650,
+          '흑백당월누적': 12400,
+          '흑백이번달사용량': 750,
           '컬러기준매수': 200,
           '컬러초과단가': 90,
-          '컬러이번달사용량': 220
+          '컬러전월누적': 4570,
+          '컬러당월누적': 4800,
+          '컬러이번달사용량': 230
         },
         {
           '거래처명': '새한학원',
@@ -1760,10 +1902,14 @@ document.addEventListener('DOMContentLoaded', () => {
           '기본임대료': 110000,
           '흑백기준매수': 3000,
           '흑백초과단가': 8,
-          '흑백이번달사용량': 3500,
+          '흑백전월누적': 60400,
+          '흑백당월누적': 64200,
+          '흑백이번달사용량': 3800,
           '컬러기준매수': 500,
           '컬러초과단가': 80,
-          '컬러이번달사용량': 400
+          '컬러전월누적': 14650,
+          '컬러당월누적': 15300,
+          '컬러이번달사용량': 650
         }
       ];
 
@@ -1772,7 +1918,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { wch: 18 }, { wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 20 },
         { wch: 12 }, { wch: 30 }, { wch: 14 }, { wch: 20 },
         { wch: 25 }, { wch: 18 }, { wch: 16 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
-        { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 }
+        { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 },
+        { wch: 14 }, { wch: 14 }
       ];
 
       const wb = XLSX.utils.book_new();
@@ -1844,6 +1991,20 @@ document.addEventListener('DOMContentLoaded', () => {
               const location = (row['설치장소'] || row['설치위치'] || row['위치'] || '').toString().trim() || '메인 사무실';
               const serial = (row['시리얼'] || row['시리얼(S/N)'] || row['시리얼_위치'] || '').toString().trim();
 
+              const bwPrev = Number(row['흑백전월누적'] || row['흑백전월카운터'] || 0);
+              const bwTotal = Number(row['흑백당월누적'] || row['흑백누적사용량'] || row['흑백현재카운터'] || 0);
+              let bwUsed = Number(row['흑백이번달사용량'] || row['흑백사용량'] || 0);
+              if (bwTotal > 0 && bwPrev > 0 && bwTotal >= bwPrev && !row['흑백이번달사용량']) {
+                bwUsed = bwTotal - bwPrev;
+              }
+
+              const colorPrev = Number(row['컬러전월누적'] || row['컬러전월카운터'] || 0);
+              const colorTotal = Number(row['컬러당월누적'] || row['컬러누적사용량'] || row['컬러현재카운터'] || 0);
+              let colorUsed = Number(row['컬러이번달사용량'] || row['컬러사용량'] || 0);
+              if (colorTotal > 0 && colorPrev > 0 && colorTotal >= colorPrev && !row['컬러이번달사용량']) {
+                colorUsed = colorTotal - colorPrev;
+              }
+
               clientGroup.devices.push({
                 id: 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
                 name: devName,
@@ -1852,10 +2013,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 baseRent: Number(row['기본임대료'] || row['기본료'] || 0),
                 bwBase: Number(row['흑백기준매수'] || row['흑백기본'] || 0),
                 bwUnit: Number(row['흑백초과단가'] || row['흑백단가'] || 0),
-                bwUsed: Number(row['흑백이번달사용량'] || row['흑백사용량'] || 0),
+                bwPrev: bwPrev,
+                bwTotal: bwTotal,
+                bwUsed: bwUsed,
                 colorBase: Number(row['컬러기준매수'] || row['컬러기본'] || 0),
                 colorUnit: Number(row['컬러초과단가'] || row['컬러단가'] || 0),
-                colorUsed: Number(row['컬러이번달사용량'] || row['컬러사용량'] || 0)
+                colorPrev: colorPrev,
+                colorTotal: colorTotal,
+                colorUsed: colorUsed
               });
             }
           });
