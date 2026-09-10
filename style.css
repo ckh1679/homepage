@@ -1940,18 +1940,61 @@ body {
   border-color: var(--gray-dark);
 }
 /* =========================================================
-   선오픈 임시 숨김 처리 (추후 정식 오픈 시 아래 블록 삭제)
-   - 로그인, 회원가입, 상담게시판, 사용후기 기능 비활성화
+   구글 간편 로그인 헤더 버튼 스타일
    ========================================================= */
-.auth-buttons,
-.auth-nav-area,
-a[href*="login.html"],
-a[href*="register.html"],
-a[href*="type=consult"],
-a[href*="type=review"],
-.tab[data-type="consult"],
-.tab[data-type="review"],
-option[value="consult"],
-option[value="review"] {
-    display: none !important;
+.header-google-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid #dadce0;
+  border-radius: 20px;
+  background: #fff;
+  color: #3c4043;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  cursor: pointer;
+  line-height: 1;
 }
+.header-google-btn:hover {
+  background: #f8f9fa;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  text-decoration: none;
+  color: #3c4043;
+}
+.header-google-btn img {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   대시보드 진입 버튼 (특정 구글 계정 전용)
+   ========================================================= */
+#dashboardAccessBtn {
+  display: none; /* JS에서 조건 만족 시 표시 */
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+#dashboardAccessBtn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102,126,234,0.5);
+  color: #fff;
+  text-decoration: none;
+}
+

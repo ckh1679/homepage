@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -8,6 +8,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="../style.css">
+  <!-- Google Identity Services SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="../auth.js"></script>
   <script src="board.js"></script>
 </head>
@@ -24,6 +26,14 @@
         <div class="top-phone">
           <div class="auth-nav-area">
             <span class="header-user-name" id="headerUserName" style="display:none"></span>
+            <!-- 대시보드 진입 버튼 -->
+            <a href="../dashboard/index.html" id="dashboardAccessBtn" title="관리자 대시보드">
+              <i class="fa fa-tachometer-alt"></i> OP Board
+            </a>
+            <!-- 구글 간편 로그인 버튼 -->
+            <a href="../login.html" class="header-google-btn" id="headerGoogleShortcut" style="display:none">
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"> Google로 로그인
+            </a>
             <a href="../login.html" class="header-auth-btn" id="headerLoginLink">로그인</a>
             <a href="../register.html" class="header-auth-btn filled" id="headerRegisterLink">회원가입</a>
             <button class="header-auth-btn logout" id="headerLogoutBtn" style="display:none">로그아웃</button>
@@ -79,6 +89,12 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       Auth.updateHeaderUI();
+
+      // 대시보드 버튼 및 구글 로그인 단축 버튼 표시
+      const dashBtn = document.getElementById('dashboardAccessBtn');
+      const googleShortcut = document.getElementById('headerGoogleShortcut');
+      if (Auth.isDashboardAdmin() && dashBtn) dashBtn.style.display = 'inline-flex';
+      if (!Auth.isLoggedIn() && googleShortcut) googleShortcut.style.display = 'inline-flex';
 
       const params = new URLSearchParams(window.location.search);
       const id = params.get('id');
@@ -157,15 +173,30 @@
       `;
     }
 
-    // ── 수정 페이지 이동 ─────────────────────────────
+    // ── 수정 페이지 이동 ───────────────────────────────
     function goEdit() {
+      // 상담게시판/사용후기는 구글 실제 수정 작업도 구글 로그인 필수
+      if ((currentPost.boardType === 'consult' || currentPost.boardType === 'review') && !Auth.isGoogleUser()) {
+        if (confirm('수정하려면 구글 계정으로 로그인이 필요합니다.\n구글 로그인 페이지로 이동하시겠습니까?')) {
+          window.location.href = '../login.html?redirect=' + encodeURIComponent(window.location.href);
+        }
+        return;
+      }
       window.location.href = `board-write.html?id=${currentPost.id}&type=${currentPost.boardType}`;
     }
 
-    // ── 삭제 처리 ────────────────────────────────────
+    // ── 삭제 처리 ──────────────────────────────────
     function doDelete() {
       const user = Auth.getCurrentUser();
       if (!user) { alert('로그인이 필요합니다.'); return; }
+
+      // 상담게시판/사용후기는 구글 로그인 사용자만 삭제 가능
+      if ((currentPost.boardType === 'consult' || currentPost.boardType === 'review') && !Auth.isGoogleUser()) {
+        if (confirm('삭제하려면 구글 계정으로 로그인이 필요합니다.\n구글 로그인 페이지로 이동하시겠습니까?')) {
+          window.location.href = '../login.html?redirect=' + encodeURIComponent(window.location.href);
+        }
+        return;
+      }
 
       if (!confirm('정말 이 게시글을 삭제하시겠습니까?')) return;
 

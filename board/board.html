@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="../style.css">
+  <!-- Google Identity Services SDK -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="../auth.js"></script>
   <script src="board.js"></script>
 </head>
@@ -27,6 +29,14 @@
         <div class="top-phone">
           <div class="auth-nav-area">
             <span class="header-user-name" id="headerUserName" style="display:none"></span>
+            <!-- 대시보드 진입 버튼 (특정 구글 이메일 로그인 시만 표시) -->
+            <a href="../dashboard/index.html" id="dashboardAccessBtn" title="관리자 대시보드">
+              <i class="fa fa-tachometer-alt"></i> OP Board
+            </a>
+            <!-- 구글 간편 로그인 아이콘 버튼 (비로그인 상태에서만 표시) -->
+            <a href="../login.html" class="header-google-btn" id="headerGoogleShortcut" style="display:none">
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"> Google로 로그인
+            </a>
             <a href="../login.html" class="header-auth-btn" id="headerLoginLink">로그인</a>
             <a href="../register.html" class="header-auth-btn filled" id="headerRegisterLink">회원가입</a>
             <button class="header-auth-btn logout" id="headerLogoutBtn" style="display:none">로그아웃</button>
@@ -133,6 +143,12 @@
     document.addEventListener('DOMContentLoaded', () => {
       Auth.updateHeaderUI();
 
+      // 대시보드 버튼 및 구글 간편 로그인 버튼 표시 제어
+      const dashBtn = document.getElementById('dashboardAccessBtn');
+      const googleShortcut = document.getElementById('headerGoogleShortcut');
+      if (Auth.isDashboardAdmin() && dashBtn) dashBtn.style.display = 'inline-flex';
+      if (!Auth.isLoggedIn() && googleShortcut) googleShortcut.style.display = 'inline-flex';
+
       // URL 파라미터에서 게시판 타입 읽기
       const params = new URLSearchParams(window.location.search);
       const type = params.get('type') || 'notice';
@@ -237,12 +253,23 @@
 
     // ── 글쓰기 이동 ─────────────────────────────────
     function goWrite() {
+      // 1단계: 로그인 여부 체크
       if (!Auth.requireLogin('../login.html')) return;
-      // 공지사항은 관리자만 작성 가능
+
+      // 2단계: 공지사항은 관리자만 작성 가능
       if (currentType === 'notice' && !Auth.isAdmin()) {
         alert('공지사항은 관리자만 작성할 수 있습니다.');
         return;
       }
+
+      // 3단계: 상담게시판/사용후기는 구글 계정 로그인 사용자만 작성 가능
+      if ((currentType === 'consult' || currentType === 'review') && !Auth.isGoogleUser()) {
+        if (confirm('상담게시판 글쓰기는 구글 계정으로 로그인해야 이용할 수 있습니다.\n\n구글 로그인 페이지로 이동하시겠습니까?')) {
+          window.location.href = '../login.html?redirect=' + encodeURIComponent(window.location.href);
+        }
+        return;
+      }
+
       window.location.href = `board-write.html?type=${currentType}`;
     }
 

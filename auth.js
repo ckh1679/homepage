@@ -104,6 +104,12 @@ const Auth = (() => {
   // ── 구글 클라이언트 ID ──────────────────────────────
   const GOOGLE_CLIENT_ID = '757534137046-7ldla468a72bno30t1g01f1qbq2etnjm.apps.googleusercontent.com';
 
+  // ── 대시보드 진입 허용 구글 이메일 목록 ────────────────
+  // ⚠️ 여기에 대시보드에 접근할 수 있는 구글 이메일 주소를 입력하세요.
+  const DASHBOARD_ADMIN_EMAILS = [
+    '여기에이메일입력@gmail.com'  // 예: 'printermoa@gmail.com'
+  ];
+
   // ── JWT 토큰 디코딩 헬퍼 ─────────────────────────────
   function parseJwt(token) {
     try {
@@ -269,12 +275,28 @@ const Auth = (() => {
     return true;
   }
 
+  // ── 구글 소셜 로그인 사용자 여부 확인 ─────────────────
+  // 상담게시판 글쓰기/수정/삭제는 구글 로그인 사용자만 가능하도록 체크
+  function isGoogleUser() {
+    const user = getCurrentUser();
+    return user !== null && user.provider === 'google';
+  }
+
+  // ── 대시보드 관리자 여부 확인 ────────────────────────
+  // 허용된 구글 이메일로 로그인한 경우에만 true 반환
+  function isDashboardAdmin() {
+    const user = getCurrentUser();
+    if (!user || user.provider !== 'google') return false;
+    return DASHBOARD_ADMIN_EMAILS.includes(user.email);
+  }
+
   // 초기화 실행
   init();
 
   // 외부에 노출할 함수 목록
   return {
     GOOGLE_CLIENT_ID,
+    DASHBOARD_ADMIN_EMAILS,
     parseJwt,
     register,
     login,
@@ -283,6 +305,8 @@ const Auth = (() => {
     getCurrentUser,
     isLoggedIn,
     isAdmin,
+    isGoogleUser,
+    isDashboardAdmin,
     checkIdDuplicate,
     updateHeaderUI,
     requireLogin
