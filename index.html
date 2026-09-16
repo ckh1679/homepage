@@ -778,7 +778,7 @@
 
         <div class="sticky-agree">
           <input type="checkbox" id="agreeCheck">
-          <label for="agreeCheck">개인정보 수집이용동의 <a href="#">[확인보기]</a></label>
+          <label for="agreeCheck">개인정보 수집이용동의 <a href="#" id="privacyViewBtn" onclick="openPrivacyModal(event)">[확인보기]</a></label>
         </div>
 
         <button class="sticky-submit-btn" id="stickySubmitBtn">간편견적신청</button>
@@ -787,9 +787,97 @@
     </div>
   </div>
 
+  <!-- 개인정보 수집 및 이용 동의 모달 -->
+  <div id="privacyModal" class="privacy-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="privacyModalTitle">
+    <div class="privacy-modal-backdrop" onclick="closePrivacyModal()"></div>
+    <div class="privacy-modal-content">
+      <div class="privacy-modal-header">
+        <h3 id="privacyModalTitle"><i class="fa fa-shield-alt" style="color:var(--primary); margin-right:8px;"></i>개인정보 수집 및 이용 동의</h3>
+        <button type="button" class="privacy-modal-close" onclick="closePrivacyModal()" aria-label="닫기">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+      <div class="privacy-modal-body">
+        <div class="privacy-clause-card">
+          <div class="privacy-clause-title">1. 개인정보의 수집 및 이용 목적</div>
+          <div class="privacy-clause-desc">
+            - 상담 신청 내용 확인, 문의에 대한 원활한 의사소통 및 답변 안내
+          </div>
+        </div>
+
+        <div class="privacy-clause-card">
+          <div class="privacy-clause-title">2. 수집하는 개인정보의 항목</div>
+          <div class="privacy-clause-desc">
+            - <strong>필수항목:</strong> 이름, 전화번호, 상담내용
+          </div>
+        </div>
+
+        <div class="privacy-clause-card">
+          <div class="privacy-clause-title">3. 개인정보의 보유 및 이용 기간</div>
+          <div class="privacy-clause-desc">
+            - <strong>상담 처리 완료 후 6개월 보관 후 지체 없이 파기</strong><br>
+            <span class="privacy-clause-note">(※ 단, 관계 법령에 의해 보존할 필요가 있는 경우 해당 법령에서 정한 기간 동안 보관합니다. 보관 기간은 내부 규정에 따라 1년 등으로 수정하여 사용하실 수 있습니다.)</span>
+          </div>
+        </div>
+
+        <div class="privacy-clause-card">
+          <div class="privacy-clause-title">4. 동의를 거부할 권리 및 불이익 안내</div>
+          <div class="privacy-clause-desc">
+            - 귀하는 개인정보 수집 및 이용에 대한 동의를 거부할 권리가 있습니다. 단, 필수항목 동의 거부 시 원활한 상담 신청 및 답변 수신이 제한될 수 있습니다.
+          </div>
+        </div>
+      </div>
+      <div class="privacy-modal-footer">
+        <button type="button" class="privacy-btn-cancel" onclick="closePrivacyModal()">닫기</button>
+        <button type="button" class="privacy-btn-agree" onclick="agreeAndClosePrivacyModal()">
+          <i class="fa fa-check" style="margin-right:6px;"></i>내용 확인 및 동의
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="board/board.js"></script>
   <script src="script.js"></script>
   <script>
+    // 개인정보 동의 모달 열기/닫기 제어
+    function openPrivacyModal(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      const modal = document.getElementById('privacyModal');
+      if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
+      }
+    }
+
+    function closePrivacyModal() {
+      const modal = document.getElementById('privacyModal');
+      if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+      }
+    }
+
+    function agreeAndClosePrivacyModal() {
+      const agreeCheck = document.getElementById('agreeCheck');
+      if (agreeCheck) {
+        agreeCheck.checked = true;
+      }
+      closePrivacyModal();
+    }
+
+    // ESC 키로 모달 닫기
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('privacyModal');
+        if (modal && modal.style.display === 'flex') {
+          closePrivacyModal();
+        }
+      }
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
       // 헤더 로그인 상태 UI 업데이트
       Auth.updateHeaderUI();
