@@ -235,6 +235,509 @@ const Board = (() => {
     return names[boardType] || '게시판';
   }
 
+  // =======================================================
+  // ── 전화상담신청 관리자 읽음 추적 및 알림 팝업 모듈 ───
+  // =======================================================
+  const READ_REQUESTS_KEY = 'pm_admin_read_requests';
+
+  // 관리자가 확인한 전화상담 ID 목록 조회
+  function getReadRequestIds() {
+    try {
+      return JSON.parse(localStorage.getItem(READ_REQUESTS_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  // 관리자 미확인(새 글) 전화상담 신청 목록 조회
+  function getUnreadRequests() {
+    const all = getAllPosts();
+    const readIds = getReadRequestIds();
+    return all
+      .filter(p => p.boardType === 'request' && !readIds.includes(p.id))
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  // 전화상담 신청 읽음 처리 (단일 ID 지정 또는 전체)
+  function markRequestsAsRead(postIds) {
+    const readIds = new Set(getReadRequestIds());
+    if (postIds) {
+      const ids = Array.isArray(postIds) ? postIds : [postIds];
+      ids.forEach(id => readIds.add(id));
+    } else {
+      // 인자 생략 시 현재 등록된 모든 전화상담신청 글을 일괄 읽음 처리
+      const all = getAllPosts();
+      all.filter(p => p.boardType === 'request').forEach(p => readIds.add(p.id));
+    }
+    localStorage.setItem(READ_REQUESTS_KEY, JSON.stringify(Array.from(readIds)));
+  }
+
+  // 특정 글 읽음 여부 확인
+  function isRequestRead(postId) {
+    const readIds = getReadRequestIds();
+    return readIds.includes(postId);
+  }
+
+  // 게시판 경로 헬퍼
+  function getBoardRequestUrl() {
+    const path = window.location.pathname.replace(/\\/g, '/');
+    if (path.includes('/dashboard/') || path.includes('/shop/')) {
+      return '../board/board.html?type=request';
+    } else if (path.includes('/board/')) {
+      return 'board.html?type=request';
+    } else {
+      return 'board/board.html?type=request';
+    }
+  }
+
+  function getBoardViewUrl(postId) {
+    const path = window.location.pathname.replace(/\\/g, '/');
+    if (path.includes('/dashboard/') || path.includes('/shop/')) {
+      return `../board/board-view.html?id=${encodeURIComponent(postId)}`;
+    } else if (path.includes('/board/')) {
+      return `board-view.html?id=${encodeURIComponent(postId)}`;
+    } else {
+      return `board/board-view.html?id=${encodeURIComponent(postId)}`;
+    }
+  }
+
+  // 알림창 스타일 자동 주입
+  function injectAdminAlertStyles() {
+    if (document.getElementById('pmAdminAlertStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'pmAdminAlertStyles';
+    style.textContent = `
+      .admin-req-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 100000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .admin-req-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.72);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+      }
+      .admin-req-box {
+        position: relative;
+        width: 100%;
+        max-width: 520px;
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+        overflow: hidden;
+        animation: adminReqPop 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        display: flex;
+        flex-direction: column;
+        z-index: 1;
+        font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
+      }
+      @keyframes adminReqPop {
+        from { opacity: 0; transform: scale(0.92) translateY(16px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+      }
+      .admin-req-header {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        padding: 22px 24px;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .admin-req-header-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .admin-req-icon-wrap {
+        position: relative;
+        width: 44px;
+        height: 44px;
+        background: rgba(249, 115, 22, 0.18);
+        border: 2px solid rgba(249, 115, 22, 0.45);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fb923c;
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+      .admin-req-icon-wrap .req-pulse-dot {
+        position: absolute;
+        top: -1px;
+        right: -1px;
+        width: 12px;
+        height: 12px;
+        background: #ef4444;
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        animation: reqPulse 1.8s infinite;
+      }
+      @keyframes reqPulse {
+        0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        70% { transform: scale(1.15); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+        100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+      }
+      .admin-req-title {
+        font-size: 17px;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        color: #ffffff;
+        letter-spacing: -0.3px;
+      }
+      .admin-req-subtitle {
+        font-size: 13px;
+        margin: 0;
+        color: #cbd5e1;
+        line-height: 1.4;
+      }
+      .admin-req-subtitle strong {
+        color: #fbbf24;
+        font-weight: 700;
+      }
+      .admin-req-close-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: #94a3b8;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+      .admin-req-close-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+      }
+      .admin-req-body {
+        padding: 18px 22px;
+        max-height: 330px;
+        overflow-y: auto;
+        background: #f8fafc;
+      }
+      .admin-req-body::-webkit-scrollbar {
+        width: 6px;
+      }
+      .admin-req-body::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      .admin-req-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .admin-req-item {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 13px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .admin-req-item:hover {
+        border-color: #0284c7;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(2, 132, 199, 0.12);
+        background: #f0f9ff;
+      }
+      .req-item-left {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .req-item-top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .req-badge-wait {
+        background: #ffedd5;
+        color: #c2410c;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 10px;
+        border: 1px solid #fed7aa;
+      }
+      .req-badge-done {
+        background: #dcfce7;
+        color: #15803d;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 10px;
+        border: 1px solid #bbf7d0;
+      }
+      .req-item-name {
+        font-size: 14.5px;
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .req-item-phone {
+        font-size: 13px;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .req-item-phone i {
+        color: #0284c7;
+        font-size: 12px;
+      }
+      .req-item-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .req-item-time {
+        font-size: 12px;
+        color: #94a3b8;
+      }
+      .req-item-arrow {
+        color: #cbd5e1;
+        font-size: 13px;
+        transition: transform 0.2s;
+      }
+      .admin-req-item:hover .req-item-arrow {
+        color: #0284c7;
+        transform: translateX(3px);
+      }
+      .req-more-notice {
+        text-align: center;
+        font-size: 12.5px;
+        color: #64748b;
+        margin: 12px 0 2px 0;
+      }
+      .admin-req-footer {
+        padding: 14px 20px;
+        background: #ffffff;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      .admin-req-btn-dismiss {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 9px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .admin-req-btn-dismiss:hover {
+        background: #e2e8f0;
+        color: #1e293b;
+      }
+      .admin-req-btn-action {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        padding: 9px 18px;
+        font-size: 13.5px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 10px rgba(2, 132, 199, 0.28);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .admin-req-btn-action:hover {
+        background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+        box-shadow: 0 6px 14px rgba(2, 132, 199, 0.38);
+        transform: translateY(-1px);
+      }
+      @media (max-width: 480px) {
+        .admin-req-footer {
+          flex-direction: column-reverse;
+          gap: 8px;
+        }
+        .admin-req-btn-dismiss,
+        .admin-req-btn-action {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // 알림창 닫기 (markAsRead가 true면 읽음 처리)
+  function closeAdminRequestAlert(markAsRead = true) {
+    if (markAsRead) {
+      markRequestsAsRead();
+    }
+    const modal = document.getElementById('adminRequestAlertModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.remove();
+    }
+    document.body.style.overflow = '';
+  }
+
+  // 알림창 모달 생성 및 표출
+  function showAdminRequestAlertModal(unreadList) {
+    if (!unreadList || unreadList.length === 0) return;
+    if (document.getElementById('adminRequestAlertModal')) return;
+
+    injectAdminAlertStyles();
+
+    const displayList = unreadList.slice(0, 5);
+    const count = unreadList.length;
+
+    const listHtml = displayList.map(post => {
+      const isWait = (post.status || '접수대기') === '접수대기';
+      const badgeHtml = isWait
+        ? `<span class="req-badge-wait">접수대기</span>`
+        : `<span class="req-badge-done">상담완료</span>`;
+
+      let timeText = '-';
+      if (post.createdAt) {
+        const d = new Date(post.createdAt);
+        const pad = n => String(n).padStart(2, '0');
+        timeText = `${d.getMonth() + 1}.${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+
+      const viewUrl = getBoardViewUrl(post.id);
+
+      return `
+        <div class="admin-req-item" onclick="Board.goToRequestPost('${post.id}', '${viewUrl}')">
+          <div class="req-item-left">
+            <div class="req-item-top">
+              ${badgeHtml}
+              <span class="req-item-name">${post.author || '고객'} 고객님</span>
+            </div>
+            <div class="req-item-phone">
+              <i class="fa fa-phone-alt"></i>
+              <span>${post.contactPhone || '연락처 없음'}</span>
+            </div>
+          </div>
+          <div class="req-item-right">
+            <span class="req-item-time">${timeText}</span>
+            <i class="fa fa-chevron-right req-item-arrow"></i>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const moreHtml = count > 5 ? `<p class="req-more-notice">외 <strong>${count - 5}건</strong>의 신규 전화상담 신청이 더 있습니다.</p>` : '';
+    const boardUrl = getBoardRequestUrl();
+
+    const modalHtml = `
+      <div id="adminRequestAlertModal" class="admin-req-modal" role="dialog" aria-modal="true" aria-labelledby="adminReqTitle">
+        <div class="admin-req-backdrop" onclick="Board.closeAdminRequestAlert(true)"></div>
+        <div class="admin-req-box">
+          <div class="admin-req-header">
+            <div class="admin-req-header-left">
+              <div class="admin-req-icon-wrap">
+                <i class="fa fa-bell"></i>
+                <span class="req-pulse-dot"></span>
+              </div>
+              <div>
+                <h3 class="admin-req-title" id="adminReqTitle">새로운 전화상담 신청 알림</h3>
+                <p class="admin-req-subtitle">미확인 전화상담 신청이 <strong>${count}건</strong> 접수되었습니다.</p>
+              </div>
+            </div>
+            <button type="button" class="admin-req-close-btn" onclick="Board.closeAdminRequestAlert(true)" aria-label="닫기">
+              <i class="fa fa-times"></i>
+            </button>
+          </div>
+          <div class="admin-req-body">
+            <div class="admin-req-list">
+              ${listHtml}
+            </div>
+            ${moreHtml}
+          </div>
+          <div class="admin-req-footer">
+            <button type="button" class="admin-req-btn-dismiss" onclick="Board.closeAdminRequestAlert(true)">
+              <i class="fa fa-check"></i> 확인 완료 (창 닫기)
+            </button>
+            <button type="button" class="admin-req-btn-action" onclick="Board.goToRequestBoard('${boardUrl}')">
+              전화상담 게시판으로 이동 <i class="fa fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const div = document.createElement('div');
+    div.innerHTML = modalHtml;
+    document.body.appendChild(div.firstElementChild);
+    document.body.style.overflow = 'hidden';
+
+    // ESC 키로 닫기
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        Board.closeAdminRequestAlert(true);
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+  }
+
+  // 개별 글 이동
+  function goToRequestPost(postId, viewUrl) {
+    markRequestsAsRead(postId);
+    closeAdminRequestAlert(false);
+    window.location.href = viewUrl;
+  }
+
+  // 전화상담 게시판으로 이동
+  function goToRequestBoard(boardUrl) {
+    markRequestsAsRead();
+    closeAdminRequestAlert(false);
+    window.location.href = boardUrl;
+  }
+
+  // 관리자 신규 글 확인 및 알림 트리거
+  function checkAndNotifyAdmin() {
+    // 관리자가 아니면 무시
+    if (typeof Auth === 'undefined' || !Auth.isAdmin || !Auth.isAdmin()) {
+      return;
+    }
+
+    // 현재 페이지가 이미 전화상담 게시판 화면이면 자동 읽음 처리하고 팝업 띄우지 않음
+    const isRequestBoard = window.location.pathname.includes('board.html') &&
+      new URLSearchParams(window.location.search).get('type') === 'request';
+    if (isRequestBoard) {
+      markRequestsAsRead();
+      return;
+    }
+
+    // 미확인 전화상담 신청 목록 조회
+    const unread = getUnreadRequests();
+    if (unread.length > 0) {
+      setTimeout(() => {
+        showAdminRequestAlertModal(unread);
+      }, 350);
+    }
+  }
+
   return {
     getAllPosts,
     getPostsByType,
@@ -243,6 +746,16 @@ const Board = (() => {
     updatePost,
     deletePost,
     formatDate,
-    getBoardName
+    getBoardName,
+    getReadRequestIds,
+    getUnreadRequests,
+    markRequestsAsRead,
+    isRequestRead,
+    checkAndNotifyAdmin,
+    showAdminRequestAlertModal,
+    closeAdminRequestAlert,
+    goToRequestPost,
+    goToRequestBoard
   };
 })();
+

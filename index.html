@@ -890,6 +890,13 @@
         // 비로그인 상태에서 Google 간편 로그인 아이콘 버튼 표시
         if (googleShortcut) googleShortcut.style.display = 'inline-flex';
       }
+
+      // 관리자 로그인 시 전화상담신청 새 글 알림 확인
+      if (Auth.isAdmin()) {
+        if (typeof Board !== 'undefined' && Board.checkAndNotifyAdmin) {
+          Board.checkAndNotifyAdmin();
+        }
+      }
     });
   </script>
 </body>

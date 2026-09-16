@@ -2169,6 +2169,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // ClientManager 초기화 실행
   ClientManager.init();
 
+  // 관리자 로그인 시 전화상담신청 새 글 알림 확인
+  if (typeof Auth !== 'undefined' && Auth.isAdmin && Auth.isAdmin()) {
+    if (typeof Board !== 'undefined' && Board.checkAndNotifyAdmin) {
+      Board.checkAndNotifyAdmin();
+    }
+  }
+
 }); // END DOMContentLoaded
 
 

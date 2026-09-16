@@ -129,6 +129,10 @@
           window.location.href = `board.html?type=notice`;
           return;
         }
+        // 관리자가 게시글을 확인했으므로 읽음 처리
+        if (typeof Board !== 'undefined' && Board.markRequestsAsRead) {
+          Board.markRequestsAsRead(currentPost.id);
+        }
       }
 
       // 3. 상담게시판: 비로그인은 로그인창 이동, 일반회원은 작성자 본인 또는 관리자 3명만 열람

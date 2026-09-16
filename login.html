@@ -147,6 +147,16 @@
       <div class="google-signin-area">
         <div id="googleBtnWrapper"></div>
         <p class="google-signin-desc">구글 계정으로 1초 만에 간편 로그인</p>
+
+        <!-- 로컬 file:// 환경 전용 안내 및 원클릭 테스트 로그인 -->
+        <div id="localFileNotice" style="display:none; margin-top:14px; padding:12px 14px; background:#fef3c7; border:1px solid #fde047; border-radius:10px; font-size:12px; color:#92400e; text-align:left; line-height:1.5;">
+          <strong>💡 로컬 파일 열기(file://) 환경 안내</strong><br>
+          구글 보안 정책상 브라우저의 파일 직접 열기(<code>file://</code>)에서는 구글 공식 로그인이 차단됩니다.<br>
+          (실제 구글 로그인은 <strong>GitHub Pages(https://)</strong> 또는 <strong>로컬 웹서버(http://localhost)</strong>에서 정상 작동합니다.)<br>
+          <button type="button" onclick="devAdminLogin()" style="margin-top:10px; width:100%; padding:10px; background:#4f46e5; color:#fff; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+            <i class="fa fa-user-shield"></i> [로컬 테스트] 관리자 계정으로 바로 로그인
+          </button>
+        </div>
       </div>
 
       <a href="index.html" class="login-back-link" id="goHomeLink">
@@ -220,6 +230,27 @@
       } else {
         alert(res.message || '구글 로그인 처리 중 오류가 발생했습니다.');
       }
+    }
+
+    // ── 로컬 테스트용 관리자 즉시 로그인 ───────────────
+    function devAdminLogin() {
+      const adminUser = {
+        id: 'admin_local',
+        name: '최고관리자 (테스트)',
+        email: 'ckh1679@gmail.com',
+        role: 'admin',
+        picture: '',
+        provider: 'google'
+      };
+      sessionStorage.setItem('pm_session', JSON.stringify(adminUser));
+      const redirect = new URLSearchParams(window.location.search).get('redirect');
+      window.location.href = redirect ? decodeURIComponent(redirect) : 'index.html';
+    }
+
+    // file:// 환경일 경우 로컬 테스트 안내 박스 노출
+    if (window.location.protocol === 'file:') {
+      const notice = document.getElementById('localFileNotice');
+      if (notice) notice.style.display = 'block';
     }
 
     // 초기화 실행
