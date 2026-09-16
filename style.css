@@ -906,7 +906,7 @@ button {
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 24px;
 }
 
@@ -937,6 +937,12 @@ button {
   font-weight: 700;
   color: var(--white);
   margin-bottom: 10px;
+  min-height: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  line-height: 1.35;
 }
 
 .feature-title em {
@@ -1300,7 +1306,7 @@ body {
   }
 
   .features-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
   .products-row {
