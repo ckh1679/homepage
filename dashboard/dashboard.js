@@ -1,3 +1,15 @@
+// 범용 HTML 이스케이프 유틸리티 (전역 스코프)
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.toString()
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+window.escapeHtml = escapeHtml;
+
 document.addEventListener('DOMContentLoaded', () => {
 
   // ──────────────────────────────────────────────────────
@@ -791,6 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ══════════════════════════════════════════════════════
   const ClientManager = {
     STORAGE_KEY: 'pm_clients',
+    escapeHtml: escapeHtml,
 
     // 초기 샘플 데이터
     defaultClients: [
@@ -1219,9 +1232,43 @@ document.addEventListener('DOMContentLoaded', () => {
       if (tableWrapper) tableWrapper.style.display = 'block';
 
       let html = '';
+      const curMonth = this.getCurrentMonthStr();
       filtered.forEach((client, idx) => {
         const totals = this.calcClientTotals(client);
         const devices = client.devices || [];
+
+        // 당월 검침 및 정산 레코드 조회
+        const curRecord = this.getMeterRecord(client.id, curMonth);
+        const curBill = (curRecord && curRecord.summary) ? (curRecord.summary.totalBill || totals.totalMonthBill) : totals.totalMonthBill;
+        const st = (curRecord && curRecord.settlement) ? curRecord.settlement : {
+          paidAmount: 0,
+          unpaidAmount: curBill,
+          taxStatus: 'unissued',
+          paidDate: '',
+          taxDate: ''
+        };
+
+        // 세금계산서 배지
+        let taxBadge = '';
+        if (st.taxStatus === 'issued') {
+          taxBadge = `<span class="badge-tax issued" onclick="ClientManager.toggleTaxStatus('${client.id}', event)" title="발행일: ${st.taxDate || '-'} (클릭 시 미발행 전환)"><i class="fa fa-check-circle"></i> 발행완료</span>`;
+        } else if (st.taxStatus === 'cashReceipt') {
+          taxBadge = `<span class="badge-tax issued" onclick="ClientManager.toggleTaxStatus('${client.id}', event)" title="현금영수증 (클릭 시 미발행 전환)"><i class="fa fa-receipt"></i> 현금영수증</span>`;
+        } else if (st.taxStatus === 'na') {
+          taxBadge = `<span class="badge-tax unissued" onclick="ClientManager.toggleTaxStatus('${client.id}', event)" title="영수 (클릭 시 발행완료 전환)"><i class="fa fa-minus"></i> 영수</span>`;
+        } else {
+          taxBadge = `<span class="badge-tax unissued" onclick="ClientManager.toggleTaxStatus('${client.id}', event)" title="클릭 시 [발행완료]로 즉시 전환"><i class="fa fa-clock"></i> 미발행</span>`;
+        }
+
+        // 수금 / 미수금 상태 배지
+        let payBadge = '';
+        if (st.paidAmount >= curBill && curBill > 0) {
+          payBadge = `<span class="badge-pay paid"><i class="fa fa-check"></i> 완납</span>`;
+        } else if (st.paidAmount > 0) {
+          payBadge = `<span class="badge-pay partial" title="입금: ${st.paidAmount.toLocaleString()}원"><i class="fa fa-adjust"></i> 부분 (${st.unpaidAmount.toLocaleString()}원 미수)</span>`;
+        } else {
+          payBadge = `<span class="badge-pay unpaid" title="미납 잔액: ${curBill.toLocaleString()}원"><i class="fa fa-exclamation-circle"></i> 미납 (${curBill.toLocaleString()}원)</span>`;
+        }
 
         // 주 행 (Parent Row)
         html += `
@@ -1231,15 +1278,14 @@ document.addEventListener('DOMContentLoaded', () => {
             </td>
             <td>${idx + 1}</td>
             <td>
-              <strong style="font-size:14px;color:#fff;">${this.escapeHtml(client.name)}</strong>
-              ${client.memo ? `<div style="font-size:11px;color:var(--text-muted);">${this.escapeHtml(client.memo)}</div>` : ''}
+              <strong style="font-size:14px;color:#fff;">${escapeHtml(client.name)}</strong>
+              ${client.memo ? `<div style="font-size:11px;color:var(--text-muted);">${escapeHtml(client.memo)}</div>` : ''}
             </td>
-            <td><code style="background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;color:#cbd5e1;">${this.escapeHtml(client.bizNum || '-')}</code></td>
+            <td><code style="background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;color:#cbd5e1;">${escapeHtml(client.bizNum || '-')}</code></td>
             <td>
-              <div>${this.escapeHtml(client.ceo || '-')}</div>
-              <div style="font-size:12px;color:var(--text-muted);">${this.escapeHtml(client.phone || '-')}</div>
+              <div>${escapeHtml(client.ceo || '-')}</div>
+              <div style="font-size:12px;color:var(--text-muted);">${escapeHtml(client.phone || '-')}</div>
             </td>
-            <td>${client.contractDate || '-'}</td>
             <td>
               <span class="status-badge" style="background:rgba(59,130,246,0.15);color:var(--accent-primary);font-weight:700;">
                 <i class="fa fa-print"></i> ${totals.deviceCount}대
@@ -1252,12 +1298,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <td><strong>${totals.totalSupply.toLocaleString()}원</strong></td>
             <td style="color:var(--text-muted);">${totals.totalVat.toLocaleString()}원</td>
             <td style="color:#60a5fa;font-weight:700;font-size:15px;">
-              ${totals.totalMonthBill.toLocaleString()}원
+              ${curBill.toLocaleString()}원
             </td>
+            <td onclick="event.stopPropagation();">${taxBadge}</td>
+            <td>${payBadge}</td>
             <td>${totals.totalPaid.toLocaleString()}원</td>
             <td onclick="event.stopPropagation();">
               <div style="display:flex;gap:5px;align-items:center;">
-                <button class="btn-action-icon" style="color:#059669;" title="이번달 검침내역 수정" onclick="ClientManager.openMeterEditModal('${client.id}', null, event)">
+                <button class="btn-action-icon" style="color:#059669;" title="이번달 검침내역 수정 및 수금/세금계산서 정산" onclick="ClientManager.openMeterEditModal('${client.id}', null, event)">
                   <i class="fa fa-calendar-check"></i>
                 </button>
                 <button class="btn-action-icon" style="color:#dc2626;" title="이번달 검침 청구서 PDF/인쇄" onclick="ClientManager.printClientMeterReport('${client.id}', null, event)">
@@ -1275,10 +1323,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
           <!-- 아코디언 하위 행 (Subtable Row) -->
           <tr class="device-subtable-row" id="sub-${client.id}" style="display:none;">
-            <td colspan="14">
+            <td colspan="15">
               <div class="device-subtable-wrap">
                 <div class="device-subtable-title" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                  <span><i class="fa fa-layer-group"></i> [${this.escapeHtml(client.name)}] 임대 장비 상세 내역 (${devices.length}대)</span>
+                  <span><i class="fa fa-layer-group"></i> [${escapeHtml(client.name)}] 임대 장비 상세 내역 (${devices.length}대)</span>
                   <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
                     <button type="button" class="btn-primary-sm" style="padding:4px 10px;font-size:11px;background:#059669;" onclick="ClientManager.openMeterEditModal('${client.id}', null, event)">
                       <i class="fa fa-calendar-check"></i> 이번달 검침 수정
@@ -1317,9 +1365,9 @@ document.addEventListener('DOMContentLoaded', () => {
                       return `
                         <tr>
                           <td>${dIdx + 1}</td>
-                          <td><strong style="color:#e2e8f0;">${this.escapeHtml(d.name || '-')}</strong></td>
-                          <td><span style="color:#60a5fa;font-weight:500;">${this.escapeHtml(loc)}</span></td>
-                          <td><span style="color:#94a3b8;font-size:11px;">${this.escapeHtml(sn)}</span></td>
+                          <td><strong style="color:#e2e8f0;">${escapeHtml(d.name || '-')}</strong></td>
+                          <td><span style="color:#60a5fa;font-weight:500;">${escapeHtml(loc)}</span></td>
+                          <td><span style="color:#94a3b8;font-size:11px;">${escapeHtml(sn)}</span></td>
                           <td>${dc.baseRent.toLocaleString()}원</td>
                           <td>${dc.bwBase.toLocaleString()}장 / ${dc.bwUnit}원</td>
                           <td>
@@ -1439,7 +1487,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setVal('clTotalPaid', client.totalPaid || 0);
       setVal('clMemo', client.memo);
 
-      if (title) title.innerHTML = `<i class="fa fa-edit"></i> 거래처 정보 수정 - [${this.escapeHtml(client.name)}]`;
+      if (title) title.innerHTML = `<i class="fa fa-edit"></i> 거래처 정보 수정 - [${escapeHtml(client.name)}]`;
 
       const devList = document.getElementById('clientDeviceFormList');
       if (devList) devList.innerHTML = '';
@@ -1488,15 +1536,15 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="form-grid-4">
           <div class="form-group">
             <label>장비명 (모델명) <span class="req">*</span></label>
-            <input type="text" class="dev-name" value="${this.escapeHtml(dev.name || '')}" placeholder="예: 캐논 iR-ADV C3922" required oninput="ClientManager.updateCalcPreview()">
+            <input type="text" class="dev-name" value="${escapeHtml(dev.name || '')}" placeholder="예: 캐논 iR-ADV C3922" required oninput="ClientManager.updateCalcPreview()">
           </div>
           <div class="form-group">
             <label>설치장소 <span class="req">*</span></label>
-            <input type="text" class="dev-location" value="${this.escapeHtml(location)}" placeholder="예: 7층 본사 기획실, 교무실 등" required oninput="ClientManager.updateCalcPreview()">
+            <input type="text" class="dev-location" value="${escapeHtml(location)}" placeholder="예: 7층 본사 기획실, 교무실 등" required oninput="ClientManager.updateCalcPreview()">
           </div>
           <div class="form-group">
             <label>시리얼 번호 (S/N)</label>
-            <input type="text" class="dev-serial" value="${this.escapeHtml(serial)}" placeholder="예: CN-3922-8812">
+            <input type="text" class="dev-serial" value="${escapeHtml(serial)}" placeholder="예: CN-3922-8812">
           </div>
           <div class="form-group">
             <label>기본 임대료 (원) <span class="req">*</span></label>
@@ -2274,6 +2322,42 @@ document.addEventListener('DOMContentLoaded', () => {
     // 검침 수정 모달, 엑셀 다운로드, PDF/인쇄 기능
     // ============================================
 
+    // 세금계산서 발행 상태 원클릭 토글 (미발행 <-> 발행완료)
+    toggleTaxStatus(clientId, event) {
+      if (event) event.stopPropagation();
+      const curMonth = this.getCurrentMonthStr();
+      const record = this.getMeterRecord(clientId, curMonth);
+      if (!record) return;
+
+      const curStatus = record.settlement?.taxStatus || 'unissued';
+      const nextStatus = (curStatus === 'issued') ? 'unissued' : 'issued';
+      const today = this.getTodayStr();
+
+      if (!record.settlement) {
+        const curBill = record.summary?.totalBill || 0;
+        record.settlement = {
+          paidAmount: curBill,
+          unpaidAmount: 0,
+          paidDate: today,
+          taxStatus: 'unissued',
+          taxDate: ''
+        };
+      }
+
+      record.settlement.taxStatus = nextStatus;
+      record.settlement.taxDate = (nextStatus === 'issued') ? today : '';
+
+      const history = this.getMeterHistory();
+      const existIdx = history.findIndex(h => String(h.clientId) === String(clientId) && h.month === curMonth);
+      if (existIdx !== -1) {
+        history[existIdx] = record;
+      } else {
+        history.push(record);
+      }
+      this.saveMeterHistory(history);
+      this.renderTable();
+    },
+
     // 검침 수정 모달 열기
     openMeterEditModal(clientId, targetMonth = null, event = null) {
       if (event) event.stopPropagation();
@@ -2294,11 +2378,31 @@ document.addEventListener('DOMContentLoaded', () => {
       const dateInput = document.getElementById('meterEditDate');
       const listEl = document.getElementById('meterEditDeviceList');
 
-      if (title) title.innerHTML = `<i class="fa fa-calendar-check" style="color:#059669;margin-right:8px;"></i> [${this.escapeHtml(client.name)}] 검침내역 수정 및 청구 정산`;
+      if (title) title.innerHTML = `<i class="fa fa-calendar-check" style="color:#059669;margin-right:8px;"></i> [${escapeHtml(client.name)}] 검침내역 수정 및 청구 정산`;
       if (idInput) idInput.value = client.id;
       if (nameEl) nameEl.textContent = client.name;
       if (monthInput) monthInput.value = month;
       if (dateInput) dateInput.value = record.readingDate || this.getTodayStr();
+
+      // 수금 및 세금계산서 정산 입력값 로드
+      const totals = this.calcClientTotals(client);
+      const curBill = (record.summary?.totalBill || totals.totalMonthBill) || 0;
+      const st = record.settlement || {
+        paidAmount: curBill,
+        unpaidAmount: 0,
+        paidDate: '',
+        taxStatus: 'unissued',
+        taxDate: ''
+      };
+
+      const paidInput = document.getElementById('meterPaidAmount');
+      const paidDateInput = document.getElementById('meterPaidDate');
+      const taxStatusInput = document.getElementById('meterTaxStatus');
+      const taxDateInput = document.getElementById('meterTaxDate');
+      if (paidInput) paidInput.value = (st.paidAmount !== undefined && st.paidAmount !== null) ? st.paidAmount : '';
+      if (paidDateInput) paidDateInput.value = st.paidDate || '';
+      if (taxStatusInput) taxStatusInput.value = st.taxStatus || 'unissued';
+      if (taxDateInput) taxDateInput.value = st.taxDate || '';
 
       const devices = (record.devices && record.devices.length > 0) ? record.devices : (client.devices || []);
 
@@ -2307,16 +2411,16 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="meter-dev-card" data-device-id="${d.id}">
             <div class="meter-dev-header">
               <div>
-                <strong style="color:#0f172a;font-size:14px;">장비 #${dIdx + 1}: ${this.escapeHtml(d.name || '-')}</strong>
-                <span style="font-size:12px;color:#64748b;margin-left:8px;">[설치장소: ${this.escapeHtml(d.location || '메인 사무실')} | S/N: ${this.escapeHtml(d.serial || '-')}]</span>
+                <strong style="color:#0f172a;font-size:14px;">장비 #${dIdx + 1}: ${escapeHtml(d.name || '-')}</strong>
+                <span style="font-size:12px;color:#64748b;margin-left:8px;">[설치장소: ${escapeHtml(d.location || '메인 사무실')} | S/N: ${escapeHtml(d.serial || '-')}]</span>
               </div>
               <div style="font-size:13px;color:#0284c7;font-weight:700;">
                 월 기본료: ${Number(d.baseRent || 0).toLocaleString()}원
               </div>
             </div>
-            <input type="hidden" class="m-dev-name" value="${this.escapeHtml(d.name || '')}">
-            <input type="hidden" class="m-dev-loc" value="${this.escapeHtml(d.location || '')}">
-            <input type="hidden" class="m-dev-sn" value="${this.escapeHtml(d.serial || '')}">
+            <input type="hidden" class="m-dev-name" value="${escapeHtml(d.name || '')}">
+            <input type="hidden" class="m-dev-loc" value="${escapeHtml(d.location || '')}">
+            <input type="hidden" class="m-dev-sn" value="${escapeHtml(d.serial || '')}">
             <input type="hidden" class="m-dev-baseRent" value="${d.baseRent || 0}">
 
             <div class="meter-grid-row" style="margin-top:10px;">
@@ -2479,6 +2583,13 @@ document.addEventListener('DOMContentLoaded', () => {
       setEl('meterPrevSupply', sumSupply);
       setEl('meterPrevVat', sumVat);
       setEl('meterPrevTotalBill', sumTotal);
+
+      // 당월 수금 / 미수금 실시간 계산 연동
+      const paidInput = document.getElementById('meterPaidAmount');
+      const unpaidEl = document.getElementById('meterUnpaidAmount');
+      const paidAmount = Number(paidInput ? paidInput.value : 0) || 0;
+      const unpaidAmount = Math.max(0, sumTotal - paidAmount);
+      if (unpaidEl) unpaidEl.value = unpaidAmount.toLocaleString() + '원';
     },
 
     // 검침내역 수정 저장
@@ -2552,6 +2663,21 @@ document.addEventListener('DOMContentLoaded', () => {
       const sumVat = Math.round(sumSupply * 0.1);
       const sumTotal = sumSupply + sumVat;
 
+      // 당월 수금 및 세금계산서 정산 정보
+      const paidAmount = Number(document.getElementById('meterPaidAmount')?.value) || 0;
+      const unpaidAmount = Math.max(0, sumTotal - paidAmount);
+      const paidDate = document.getElementById('meterPaidDate')?.value || '';
+      const taxStatus = document.getElementById('meterTaxStatus')?.value || 'unissued';
+      const taxDate = document.getElementById('meterTaxDate')?.value || '';
+
+      const settlement = {
+        paidAmount,
+        unpaidAmount,
+        paidDate,
+        taxStatus,
+        taxDate
+      };
+
       const history = this.getMeterHistory();
       const record = {
         id: `meter_${clientId}_${month}`,
@@ -2575,6 +2701,7 @@ document.addEventListener('DOMContentLoaded', () => {
           totalBill: sumTotal,
           totalPaid: client.totalPaid || 0
         },
+        settlement,
         updatedAt: new Date().toISOString()
       };
 
@@ -2842,10 +2969,10 @@ document.addEventListener('DOMContentLoaded', () => {
                       <div style="font-weight:700;font-size:13px;margin-bottom:6px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;">
                         ■ 공급받는 자 (고객사)
                       </div>
-                      <div><strong>상호(거래처명):</strong> ${this.escapeHtml(rec.clientName)}</div>
-                      <div><strong>사업자등록번호:</strong> ${this.escapeHtml(rec.bizNum || '미기재')}</div>
-                      <div><strong>대표자명:</strong> ${this.escapeHtml(rec.ceo || '미기재')} | <strong>연락처:</strong> ${this.escapeHtml(rec.phone || '-')}</div>
-                      <div><strong>설치 장소:</strong> ${this.escapeHtml(rec.address || '-')}</div>
+                      <div><strong>상호(거래처명):</strong> ${escapeHtml(rec.clientName)}</div>
+                      <div><strong>사업자등록번호:</strong> ${escapeHtml(rec.bizNum || '미기재')}</div>
+                      <div><strong>대표자명:</strong> ${escapeHtml(rec.ceo || '미기재')} | <strong>연락처:</strong> ${escapeHtml(rec.phone || '-')}</div>
+                      <div><strong>설치 장소:</strong> ${escapeHtml(rec.address || '-')}</div>
                     </div>
                   </td>
                   <td style="width:4%;"></td>
@@ -2890,10 +3017,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <tr>
                       <td>${i + 1}</td>
                       <td style="text-align:left;">
-                        <strong>${this.escapeHtml(d.name)}</strong>
-                        <div style="font-size:10px;color:#64748b;">${this.escapeHtml(d.location || '사무실')}</div>
+                        <strong>${escapeHtml(d.name)}</strong>
+                        <div style="font-size:10px;color:#64748b;">${escapeHtml(d.location || '사무실')}</div>
                       </td>
-                      <td>${this.escapeHtml(d.serial || '-')}</td>
+                      <td>${escapeHtml(d.serial || '-')}</td>
                       <td style="text-align:right;">${Number(d.baseRent).toLocaleString()}원</td>
                       <td>${Number(d.bwPrev).toLocaleString()} → ${Number(d.bwTotal).toLocaleString()}</td>
                       <td><strong>${Number(d.bwUsed).toLocaleString()}</strong></td>
@@ -2913,6 +3040,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div>
                   <div style="font-size:12px;color:#64748b;">총 공급가액: <strong>${(summary.totalSupply || 0).toLocaleString()}원</strong> | 부가세(VAT 10%): <strong>${(summary.totalVat || 0).toLocaleString()}원</strong></div>
                   <div style="font-size:11px;color:#0284c7;margin-top:3px;">입금계좌: 우리은행 1002-000-000000 (예금주: 최○○ / 프린터모아)</div>
+                  <div style="margin-top:5px;font-size:11px;color:#334155;display:flex;gap:12px;flex-wrap:wrap;">
+                    <span>세금계산서: <strong>${rec.settlement?.taxStatus === 'issued' ? '발행완료 (' + (rec.settlement.taxDate || '발행') + ')' : (rec.settlement?.taxStatus === 'cashReceipt' ? '현금영수증' : '미발행')}</strong></span>
+                    <span>정산상태: <strong>${(rec.settlement?.paidAmount || 0) >= (summary.totalBill || 0) && (summary.totalBill || 0) > 0 ? '완납 (입금확인)' : ((rec.settlement?.paidAmount || 0) > 0 ? '부분입금 (미수금: ' + (rec.settlement.unpaidAmount || 0).toLocaleString() + '원)' : '미납 (미수금: ' + (summary.totalBill || 0).toLocaleString() + '원)')}</strong></span>
+                  </div>
                 </div>
                 <div style="text-align:right;">
                   <span style="font-size:13px;color:#475569;font-weight:600;">이번달 총 청구금액(VAT포함):</span>
@@ -2976,16 +3107,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================
   const ProfitManager = {
     STORAGE_KEY: 'pm_client_costs',
+    escapeHtml: escapeHtml,
 
     defaultCost: {
-      devCost: 1800000,         // 장비 매입/취득원가 (원)
+      devCost: 1800000,         // 장비 매입/취득원가 총합 (원)
       contractMonths: 36,       // 계약기간 (개월)
-      residualValue: 200000,    // 만료 후 기기 잔존가치 (원)
+      residualValue: 200000,    // 만료 후 기기 잔존가치 총합 (원)
       monthlySupplies: 15000,   // 월평균 소모품비 (토너/잉크/드럼 등)
       monthlyRepairs: 5000,     // 월평균 부품수리비 (헤드/롤러 등)
       monthlyService: 5000,     // 월평균 정기점검 및 방문인건비
-      initialSetup: 50000,      // 초기 설치 및 물류비 (추천 항목)
-      memo: ''
+      initialSetup: 50000,      // 초기 설치 및 물류비 총합 (추천 항목)
+      memo: '',
+      devCosts: {},             // 기기별 분리 원가 { [devId]: { devCost, initialSetup, residualValue } }
+      useActualLogs: false      // 건별 지출 장부 누적합계 자동 연동 여부
     },
 
     getCosts() {
@@ -3008,7 +3142,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     getClientCost(clientId) {
       const costs = this.getCosts();
-      return costs[clientId] || { ...this.defaultCost };
+      const cost = costs[clientId] || { ...this.defaultCost };
+      const client = ClientManager.getClients().find(c => String(c.id) === String(clientId));
+      const devices = client?.devices || [];
+
+      // 기기별 분리 원가 구조(devCosts)가 없으면 거래처 등록 기기 목록으로 초기화
+      if (!cost.devCosts || Object.keys(cost.devCosts).length === 0) {
+        cost.devCosts = {};
+        devices.forEach((d, idx) => {
+          cost.devCosts[d.id] = {
+            devCost: idx === 0 ? (cost.devCost || 1800000) : 1200000,
+            initialSetup: idx === 0 ? (cost.initialSetup || 50000) : 30000,
+            residualValue: idx === 0 ? (cost.residualValue || 200000) : 100000
+          };
+        });
+      }
+
+      // 기기별 합계로 devCost, initialSetup, residualValue 자동 동기화
+      if (cost.devCosts && Object.keys(cost.devCosts).length > 0) {
+        let sumDevCost = 0, sumSetup = 0, sumResidual = 0;
+        Object.values(cost.devCosts).forEach(dc => {
+          sumDevCost += Number(dc.devCost) || 0;
+          sumSetup += Number(dc.initialSetup) || 0;
+          sumResidual += Number(dc.residualValue) || 0;
+        });
+        cost.devCost = sumDevCost;
+        cost.initialSetup = sumSetup;
+        cost.residualValue = sumResidual;
+      }
+
+      return cost;
     },
 
     // 특정 거래처의 렌탈 수익성 및 BEP 정밀 계산
@@ -3139,7 +3302,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!tbody) return;
 
       const kwInput = document.getElementById('profitSearchInput');
-      const kw = (keyword || (kwInput ? kwInput.value : '')).trim().toLowerCase();
+      const kw = String(keyword !== undefined ? keyword : (kwInput ? kwInput.value : '') || '').trim().toLowerCase();
 
       const sortSelect = document.getElementById('profitSortSelect');
       const sortVal = sortSelect ? sortSelect.value : 'name';
@@ -3257,6 +3420,217 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.innerHTML = html;
     },
 
+    // 소모품·부품 건별 지출 장부 스토리지 키
+    MAINT_STORAGE_KEY: 'pm_maintenance_logs',
+
+    getMaintenanceLogs(clientId) {
+      try {
+        const raw = localStorage.getItem(this.MAINT_STORAGE_KEY);
+        const all = raw ? JSON.parse(raw) : {};
+        return all[clientId] || [];
+      } catch (e) {
+        console.error('소모품/부품 장부 로드 실패:', e);
+        return [];
+      }
+    },
+
+    saveMaintenanceLogs(clientId, logs) {
+      try {
+        const raw = localStorage.getItem(this.MAINT_STORAGE_KEY);
+        const all = raw ? JSON.parse(raw) : {};
+        all[clientId] = logs;
+        localStorage.setItem(this.MAINT_STORAGE_KEY, JSON.stringify(all));
+      } catch (e) {
+        console.error('소모품/부품 장부 저장 실패:', e);
+      }
+    },
+
+    // 건별 지출 장부 등록
+    addMaintenanceLog() {
+      const clientId = document.getElementById('profitClientId')?.value;
+      if (!clientId) return;
+
+      const date = document.getElementById('maintInputDate')?.value || ClientManager.getTodayStr();
+      const category = document.getElementById('maintInputCategory')?.value || 'supplies';
+      const name = (document.getElementById('maintInputName')?.value || '').trim();
+      const amount = Number(document.getElementById('maintInputAmount')?.value) || 0;
+      const memo = (document.getElementById('maintInputMemo')?.value || '').trim();
+
+      if (!name) {
+        alert('품목 또는 수리 내역을 입력해주세요.');
+        document.getElementById('maintInputName')?.focus();
+        return;
+      }
+      if (amount <= 0) {
+        alert('0원 이상의 비용 금액을 입력해주세요.');
+        document.getElementById('maintInputAmount')?.focus();
+        return;
+      }
+
+      const logs = this.getMaintenanceLogs(clientId);
+      logs.unshift({
+        id: 'log_' + Date.now(),
+        date,
+        category,
+        name,
+        amount,
+        memo
+      });
+
+      this.saveMaintenanceLogs(clientId, logs);
+      this.renderMaintenanceLogs(clientId);
+
+      // 입력란 리셋
+      document.getElementById('maintInputName').value = '';
+      document.getElementById('maintInputAmount').value = '';
+      document.getElementById('maintInputMemo').value = '';
+    },
+
+    // 건별 지출 장부 삭제
+    deleteMaintenanceLog(logId) {
+      const clientId = document.getElementById('profitClientId')?.value;
+      if (!clientId) return;
+      if (!confirm('해당 건별 지출 내역을 삭제하시겠습니까?')) return;
+
+      let logs = this.getMaintenanceLogs(clientId);
+      logs = logs.filter(l => l.id !== logId);
+      this.saveMaintenanceLogs(clientId, logs);
+      this.renderMaintenanceLogs(clientId);
+    },
+
+    // 건별 지출 장부 테이블 및 합계 렌더링
+    renderMaintenanceLogs(clientId) {
+      const tbody = document.getElementById('maintLogsTableBody');
+      if (!tbody) return;
+
+      const logs = this.getMaintenanceLogs(clientId);
+      let sumSupplies = 0;
+      let sumRepairs = 0;
+      let sumService = 0;
+
+      logs.forEach(l => {
+        const amt = Number(l.amount) || 0;
+        if (l.category === 'supplies') sumSupplies += amt;
+        else if (l.category === 'repairs') sumRepairs += amt;
+        else sumService += amt;
+      });
+      const sumTotal = sumSupplies + sumRepairs + sumService;
+
+      const setEl = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val.toLocaleString() + '원';
+      };
+      setEl('maintSumSupplies', sumSupplies);
+      setEl('maintSumRepairs', sumRepairs);
+      setEl('maintSumService', sumService);
+      setEl('maintSumTotal', sumTotal);
+
+      if (logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="color:#94a3b8;padding:16px;">등록된 건별 지출 내역이 없습니다.</td></tr>';
+      } else {
+        tbody.innerHTML = logs.map(l => {
+          let catBadge = '';
+          if (l.category === 'supplies') catBadge = '<span class="badge" style="background:#e0f2fe;color:#0369a1;">소모품</span>';
+          else if (l.category === 'repairs') catBadge = '<span class="badge" style="background:#fef3c7;color:#b45309;">부품수리</span>';
+          else catBadge = '<span class="badge" style="background:#dcfce7;color:#15803d;">점검/기타</span>';
+
+          return `
+            <tr>
+              <td>${l.date || '-'}</td>
+              <td>${catBadge}</td>
+              <td style="text-align:left;font-weight:600;">${ClientManager.escapeHtml(l.name)}</td>
+              <td style="text-align:right;font-weight:700;color:#0f172a;">${Number(l.amount).toLocaleString()}원</td>
+              <td style="text-align:left;color:#64748b;font-size:11px;">${ClientManager.escapeHtml(l.memo || '-')}</td>
+              <td>
+                <button type="button" class="btn-action-icon delete" style="padding:2px 6px;" title="삭제" onclick="ProfitManager.deleteMaintenanceLog('${l.id}')">
+                  <i class="fa fa-times"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // 실비 자동 반영 체크 시 월평균 환산액 주입
+      const useActual = document.getElementById('profitUseActualLogs')?.checked;
+      if (useActual) {
+        const months = Math.min(12, Number(document.getElementById('profitContractMonths')?.value) || 36);
+        const mSupplies = Math.round(sumSupplies / months);
+        const mRepairs = Math.round(sumRepairs / months);
+        const mService = Math.round(sumService / months);
+        const setInput = (id, v) => {
+          const el = document.getElementById(id);
+          if (el) el.value = v;
+        };
+        setInput('profitMonthlySupplies', mSupplies);
+        setInput('profitMonthlyRepairs', mRepairs);
+        setInput('profitMonthlyService', mService);
+        this.updateModalPreview();
+      }
+    },
+
+    toggleUseActualLogs(checked) {
+      const wrap = document.getElementById('profitManualCostsWrap');
+      const inputs = wrap ? wrap.querySelectorAll('input') : [];
+      inputs.forEach(inp => {
+        inp.readOnly = checked;
+        inp.style.background = checked ? '#f1f5f9' : '#fff';
+      });
+      const clientId = document.getElementById('profitClientId')?.value;
+      if (clientId) this.renderMaintenanceLogs(clientId);
+      this.updateModalPreview();
+    },
+
+    // 기기별 입력 카드 합계 실시간 계산 및 상단 요약 바 반영
+    updateDeviceCostTotals() {
+      const container = document.getElementById('profitDeviceCostList');
+      if (!container) return;
+      const cards = container.querySelectorAll('.profit-dev-cost-card');
+
+      let sumDevCost = 0;
+      let sumSetup = 0;
+      let sumResidual = 0;
+
+      cards.forEach(card => {
+        const costInput = card.querySelector('.dev-cost-input');
+        const setupInput = card.querySelector('.dev-setup-input');
+        const residualInput = card.querySelector('.dev-residual-input');
+        const subtotalEl = card.querySelector('.dev-subtotal-val');
+
+        const dCost = Number(costInput ? costInput.value : 0) || 0;
+        const dSetup = Number(setupInput ? setupInput.value : 0) || 0;
+        const dResidual = Number(residualInput ? residualInput.value : 0) || 0;
+        const subtotal = Math.max(0, dCost + dSetup - dResidual);
+
+        if (subtotalEl) subtotalEl.textContent = `${subtotal.toLocaleString()}원`;
+
+        sumDevCost += dCost;
+        sumSetup += dSetup;
+        sumResidual += dResidual;
+      });
+
+      const sumNetInvest = Math.max(0, sumDevCost + sumSetup - sumResidual);
+
+      const setEl = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val.toLocaleString() + '원';
+      };
+      setEl('profitTotalDevCostDisplay', sumDevCost);
+      setEl('profitTotalSetupDisplay', sumSetup);
+      setEl('profitTotalResidualDisplay', sumResidual);
+      setEl('profitNetInvestDisplay', sumNetInvest);
+
+      // hidden inputs 동기화
+      const hCost = document.getElementById('profitDevCost');
+      const hSetup = document.getElementById('profitInitialSetup');
+      const hResidual = document.getElementById('profitResidualValue');
+      if (hCost) hCost.value = sumDevCost;
+      if (hSetup) hSetup.value = sumSetup;
+      if (hResidual) hResidual.value = sumResidual;
+
+      this.updateModalPreview();
+    },
+
     // 원가 설정 모달 열기
     openEditModal(clientId) {
       const modal = document.getElementById('profitEditModal');
@@ -3287,14 +3661,74 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el) el.value = (v !== undefined && v !== null) ? v : '';
       };
 
-      setVal('profitDevCost', cost.devCost);
       setVal('profitContractMonths', cost.contractMonths || 36);
-      setVal('profitResidualValue', cost.residualValue);
       setVal('profitMonthlySupplies', cost.monthlySupplies);
       setVal('profitMonthlyRepairs', cost.monthlyRepairs);
       setVal('profitMonthlyService', cost.monthlyService);
-      setVal('profitInitialSetup', cost.initialSetup);
       setVal('profitMemo', cost.memo);
+
+      // 1. 기기별 원가 분리 입력 카드 렌더링
+      const devCostListEl = document.getElementById('profitDeviceCostList');
+      const devCountBadge = document.getElementById('profitDeviceCountBadge');
+      const devices = (client.devices && client.devices.length > 0) ? client.devices : [
+        { id: 'dev_default', name: client.name + ' 임대 복합기', location: '메인 사무실', serial: '-' }
+      ];
+      if (devCountBadge) devCountBadge.textContent = `등록 기기: ${devices.length}대`;
+
+      const savedDevCosts = cost.devCosts || {};
+      if (devCostListEl) {
+        devCostListEl.innerHTML = devices.map((d, dIdx) => {
+          const dSaved = savedDevCosts[d.id] || {};
+          const defDevCost = dIdx === 0 ? (cost.devCost || 1800000) : 1200000;
+          const defSetup = dIdx === 0 ? (cost.initialSetup || 50000) : 30000;
+          const defResidual = dIdx === 0 ? (cost.residualValue || 200000) : 100000;
+
+          const curDevCost = dSaved.devCost !== undefined ? dSaved.devCost : defDevCost;
+          const curSetup = dSaved.initialSetup !== undefined ? dSaved.initialSetup : defSetup;
+          const curResidual = dSaved.residualValue !== undefined ? dSaved.residualValue : defResidual;
+          const subtotal = Math.max(0, curDevCost + curSetup - curResidual);
+
+          return `
+            <div class="profit-dev-cost-card" data-dev-id="${d.id}">
+              <div class="profit-dev-cost-header">
+                <div>
+                  <strong style="font-size:13px;color:#1e293b;">
+                    <i class="fa fa-print" style="color:#0284c7;margin-right:4px;"></i>
+                    [기기 #${dIdx + 1}] ${ClientManager.escapeHtml(d.name || '복합기')}
+                  </strong>
+                  <span style="font-size:11px;color:#64748b;margin-left:6px;">(${ClientManager.escapeHtml(d.location || '사무실')} / S/N: ${ClientManager.escapeHtml(d.serial || '-')})</span>
+                </div>
+                <div style="font-size:11px;color:#7c3aed;font-weight:700;">
+                  기기 순투자: <span class="dev-subtotal-val">${subtotal.toLocaleString()}원</span>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:10px;">
+                <div>
+                  <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">기기 매입/취득원가(원)</label>
+                  <input type="number" class="form-input dev-cost-input" value="${curDevCost}" min="0" step="10000" placeholder="원가 입력" oninput="ProfitManager.updateDeviceCostTotals()">
+                </div>
+                <div>
+                  <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">초기 설치/물류비(원)</label>
+                  <input type="number" class="form-input dev-setup-input" value="${curSetup}" min="0" step="5000" placeholder="설치비 입력" oninput="ProfitManager.updateDeviceCostTotals()">
+                </div>
+                <div>
+                  <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">만료 잔존가치(원)</label>
+                  <input type="number" class="form-input dev-residual-input" value="${curResidual}" min="0" step="10000" placeholder="잔존가치 입력" oninput="ProfitManager.updateDeviceCostTotals()">
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+      this.updateDeviceCostTotals();
+
+      // 2. 소모품·부품 건별 지출 장부 렌더링
+      const dateInp = document.getElementById('maintInputDate');
+      if (dateInp) dateInp.value = ClientManager.getTodayStr();
+      const useActualChk = document.getElementById('profitUseActualLogs');
+      if (useActualChk) useActualChk.checked = !!cost.useActualLogs;
+      this.renderMaintenanceLogs(clientId);
+      this.toggleUseActualLogs(!!cost.useActualLogs);
 
       modal.style.display = 'flex';
       this.updateModalPreview();
@@ -3362,23 +3796,46 @@ document.addEventListener('DOMContentLoaded', () => {
       const clientId = document.getElementById('profitClientId')?.value;
       if (!clientId) return;
 
+      const container = document.getElementById('profitDeviceCostList');
+      const cards = container ? container.querySelectorAll('.profit-dev-cost-card') : [];
+      const devCosts = {};
+      let totalDevCost = 0, totalSetup = 0, totalResidual = 0;
+
+      cards.forEach(card => {
+        const devId = card.dataset.devId;
+        const dCost = Number(card.querySelector('.dev-cost-input')?.value) || 0;
+        const dSetup = Number(card.querySelector('.dev-setup-input')?.value) || 0;
+        const dResidual = Number(card.querySelector('.dev-residual-input')?.value) || 0;
+
+        devCosts[devId] = {
+          devCost: dCost,
+          initialSetup: dSetup,
+          residualValue: dResidual
+        };
+        totalDevCost += dCost;
+        totalSetup += dSetup;
+        totalResidual += dResidual;
+      });
+
       const costs = this.getCosts();
       costs[clientId] = {
-        devCost: Number(document.getElementById('profitDevCost')?.value) || 0,
+        devCost: totalDevCost,
         contractMonths: Number(document.getElementById('profitContractMonths')?.value) || 36,
-        residualValue: Number(document.getElementById('profitResidualValue')?.value) || 0,
+        residualValue: totalResidual,
         monthlySupplies: Number(document.getElementById('profitMonthlySupplies')?.value) || 0,
         monthlyRepairs: Number(document.getElementById('profitMonthlyRepairs')?.value) || 0,
         monthlyService: Number(document.getElementById('profitMonthlyService')?.value) || 0,
-        initialSetup: Number(document.getElementById('profitInitialSetup')?.value) || 0,
+        initialSetup: totalSetup,
         memo: document.getElementById('profitMemo')?.value || '',
+        devCosts: devCosts,
+        useActualLogs: !!document.getElementById('profitUseActualLogs')?.checked,
         updatedAt: new Date().toISOString()
       };
 
       this.saveCosts(costs);
       this.closeModal();
       this.render();
-      alert('원가 및 비용 정보가 성공적으로 저장되었습니다.\n수익성 분석 지표가 최신으로 갱신되었습니다.');
+      alert('기기별 원가 및 소모품 유지비용 정보가 성공적으로 저장되었습니다.\n수익성 분석 지표가 최신으로 갱신되었습니다.');
     },
 
     // 수익성 분석 엑셀 다운로드
@@ -3431,6 +3888,10 @@ document.addEventListener('DOMContentLoaded', () => {
       XLSX.writeFile(wb, `렌탈수익성분석_보고서_${today}.xlsx`);
     },
 
+    escapeHtml(str) {
+      return ClientManager.escapeHtml(str);
+    },
+
     init() {
       // 모달 바깥 클릭 시 닫기
       const modal = document.getElementById('profitEditModal');
@@ -3451,13 +3912,352 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // ============================================
+  // 월별 정산 히스토리 및 비교 차트 모듈 (SettlementHistoryManager)
+  // ============================================
+  const SettlementHistoryManager = {
+    escapeHtml: escapeHtml,
+    revChart: null,
+    volChart: null,
+
+    openModal(targetClientId = null) {
+      const modal = document.getElementById('settlementHistoryModal');
+      if (!modal) return;
+
+      // 거래처 필터 드롭다운 채우기
+      const select = document.getElementById('settlementClientFilter');
+      if (select) {
+        const clients = ClientManager.getClients();
+        select.innerHTML = '<option value="ALL">전체 거래처 통합 정산</option>' +
+          clients.map(c => `<option value="${c.id}">${ClientManager.escapeHtml(c.name)}</option>`).join('');
+        if (targetClientId) select.value = targetClientId;
+        else select.value = 'ALL';
+      }
+
+      modal.style.display = 'flex';
+      this.switchTab('charts');
+      this.render();
+    },
+
+    closeModal() {
+      const modal = document.getElementById('settlementHistoryModal');
+      if (modal) modal.style.display = 'none';
+    },
+
+    onClientFilterChange() {
+      this.render();
+    },
+
+    switchTab(tabName) {
+      const btnCharts = document.getElementById('tabBtnCharts');
+      const btnTable = document.getElementById('tabBtnTable');
+      const tabCharts = document.getElementById('settlementTabCharts');
+      const tabTable = document.getElementById('settlementTabTable');
+
+      if (tabName === 'charts') {
+        if (btnCharts) btnCharts.classList.add('active');
+        if (btnTable) btnTable.classList.remove('active');
+        if (tabCharts) tabCharts.style.display = 'block';
+        if (tabTable) tabTable.style.display = 'none';
+      } else {
+        if (btnCharts) btnCharts.classList.remove('active');
+        if (btnTable) btnTable.classList.add('active');
+        if (tabCharts) tabCharts.style.display = 'none';
+        if (tabTable) tabTable.style.display = 'block';
+      }
+    },
+
+    render() {
+      const filterVal = document.getElementById('settlementClientFilter')?.value || 'ALL';
+      const history = ClientManager.getMeterHistory();
+      const clients = ClientManager.getClients();
+
+      // 필터 적용
+      let records = (filterVal === 'ALL')
+        ? [...history]
+        : history.filter(h => String(h.clientId) === String(filterVal));
+
+      // 만약 레코드가 없거나 부족하면 현재 등록된 거래처들로 당월 레코드 생성
+      if (records.length === 0 && clients.length > 0) {
+        clients.forEach(c => {
+          if (filterVal === 'ALL' || String(c.id) === String(filterVal)) {
+            const rec = ClientManager.syncMeterFromClient(c, ClientManager.getCurrentMonthStr());
+            if (rec) records.push(rec);
+          }
+        });
+      }
+
+      // 월별 정렬 (오름차순: 과거 -> 최근)
+      records.sort((a, b) => (a.month || '').localeCompare(b.month || ''));
+
+      // 4개 핵심 지표 요약
+      let sumBilled = 0;
+      let sumPaid = 0;
+      let sumUnpaid = 0;
+      let issuedCount = 0;
+
+      records.forEach(r => {
+        const billed = r.summary?.totalBill || r.summary?.totalMonthBill || 0;
+        const paid = r.settlement?.paidAmount !== undefined ? r.settlement.paidAmount : billed;
+        const unpaid = r.settlement?.unpaidAmount !== undefined ? r.settlement.unpaidAmount : Math.max(0, billed - paid);
+
+        sumBilled += billed;
+        sumPaid += paid;
+        sumUnpaid += unpaid;
+        if (r.settlement?.taxStatus === 'issued' || r.settlement?.taxStatus === 'cashReceipt') {
+          issuedCount++;
+        }
+      });
+
+      const taxRate = records.length > 0 ? Math.round((issuedCount / records.length) * 100) : 0;
+
+      const setEl = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+      };
+      setEl('settleSumBilled', sumBilled.toLocaleString() + '원');
+      setEl('settleSumPaid', sumPaid.toLocaleString() + '원');
+      setEl('settleSumUnpaid', sumUnpaid.toLocaleString() + '원');
+      setEl('settleTaxRate', taxRate + '% (' + issuedCount + '/' + records.length + '건)');
+
+      // 차트 & 테이블 렌더링
+      this.renderCharts(records);
+      this.renderHistoryTable(records);
+    },
+
+    renderCharts(records) {
+      if (typeof Chart === 'undefined') return;
+
+      // 월별로 집계
+      const monthlyMap = {};
+      records.forEach(r => {
+        const m = r.month || ClientManager.getCurrentMonthStr();
+        if (!monthlyMap[m]) {
+          monthlyMap[m] = {
+            billed: 0,
+            paid: 0,
+            unpaid: 0,
+            bwTotal: 0,
+            colorTotal: 0
+          };
+        }
+        const billed = r.summary?.totalBill || r.summary?.totalMonthBill || 0;
+        const paid = r.settlement?.paidAmount !== undefined ? r.settlement.paidAmount : billed;
+        const unpaid = r.settlement?.unpaidAmount !== undefined ? r.settlement.unpaidAmount : Math.max(0, billed - paid);
+
+        monthlyMap[m].billed += billed;
+        monthlyMap[m].paid += paid;
+        monthlyMap[m].unpaid += unpaid;
+
+        (r.devices || []).forEach(d => {
+          monthlyMap[m].bwTotal += (Number(d.bwUsed) || 0);
+          monthlyMap[m].colorTotal += (Number(d.colorUsed) || 0);
+        });
+      });
+
+      const labels = Object.keys(monthlyMap).sort();
+      const billedData = labels.map(m => monthlyMap[m].billed);
+      const paidData = labels.map(m => monthlyMap[m].paid);
+      const unpaidData = labels.map(m => monthlyMap[m].unpaid);
+      const bwData = labels.map(m => monthlyMap[m].bwTotal);
+      const colorData = labels.map(m => monthlyMap[m].colorTotal);
+
+      // Chart 1: 청구액 vs 실제 입금액 & 미수금
+      const canvas1 = document.getElementById('settlementRevenueChart');
+      if (canvas1) {
+        if (this.revChart) this.revChart.destroy();
+        this.revChart = new Chart(canvas1, {
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                type: 'bar',
+                label: '청구금액(원)',
+                data: billedData,
+                backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                borderColor: '#4f46e5',
+                borderWidth: 1,
+                borderRadius: 4
+              },
+              {
+                type: 'bar',
+                label: '실제 입금액(원)',
+                data: paidData,
+                backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                borderColor: '#10b981',
+                borderWidth: 1,
+                borderRadius: 4
+              },
+              {
+                type: 'line',
+                label: '미수금 잔액(원)',
+                data: unpaidData,
+                borderColor: '#ef4444',
+                backgroundColor: '#ef4444',
+                tension: 0.2,
+                borderWidth: 2,
+                pointRadius: 4
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.parsed.y).toLocaleString()}원`
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: (v) => (v >= 10000 ? (v / 10000).toLocaleString() + '만' : v.toLocaleString())
+                }
+              }
+            }
+          }
+        });
+      }
+
+      // Chart 2: 복합기 출력량 추이
+      const canvas2 = document.getElementById('settlementVolumeChart');
+      if (canvas2) {
+        if (this.volChart) this.volChart.destroy();
+        this.volChart = new Chart(canvas2, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: '흑백 출력량 (장)',
+                data: bwData,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.3,
+                borderWidth: 2,
+                pointRadius: 4
+              },
+              {
+                label: '컬러 출력량 (장)',
+                data: colorData,
+                borderColor: '#ec4899',
+                backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                fill: true,
+                tension: 0.3,
+                borderWidth: 2,
+                pointRadius: 4
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.parsed.y).toLocaleString()}장`
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: (v) => v.toLocaleString() + '장'
+                }
+              }
+            }
+          }
+        });
+      }
+    },
+
+    renderHistoryTable(records) {
+      const tbody = document.getElementById('settlementHistoryTbody');
+      if (!tbody) return;
+
+      if (records.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="color:#94a3b8;padding:24px;">정산 내역이 존재하지 않습니다.</td></tr>';
+        return;
+      }
+
+      // 내림차순(최신순) 표시
+      const descList = [...records].reverse();
+      tbody.innerHTML = descList.map(r => {
+        const billed = r.summary?.totalBill || r.summary?.totalMonthBill || 0;
+        const paid = r.settlement?.paidAmount !== undefined ? r.settlement.paidAmount : billed;
+        const unpaid = r.settlement?.unpaidAmount !== undefined ? r.settlement.unpaidAmount : Math.max(0, billed - paid);
+
+        let payBadge = '';
+        if (paid >= billed && billed > 0) {
+          payBadge = '<span class="badge-pay paid"><i class="fa fa-check"></i> 완납</span>';
+        } else if (paid > 0) {
+          payBadge = `<span class="badge-pay partial"><i class="fa fa-adjust"></i> 부분입금</span>`;
+        } else {
+          payBadge = `<span class="badge-pay unpaid"><i class="fa fa-exclamation-circle"></i> 미납</span>`;
+        }
+
+        let taxBadge = '';
+        const tStatus = r.settlement?.taxStatus || 'unissued';
+        if (tStatus === 'issued') {
+          taxBadge = '<span class="badge-tax issued"><i class="fa fa-check-circle"></i> 발행완료</span>';
+        } else if (tStatus === 'cashReceipt') {
+          taxBadge = '<span class="badge-tax issued"><i class="fa fa-receipt"></i> 현금영수증</span>';
+        } else if (tStatus === 'na') {
+          taxBadge = '<span class="badge-tax unissued"><i class="fa fa-minus"></i> 영수</span>';
+        } else {
+          taxBadge = '<span class="badge-tax unissued"><i class="fa fa-clock"></i> 미발행</span>';
+        }
+
+        const dateStr = r.settlement?.paidDate || r.settlement?.taxDate || r.readingDate || '-';
+
+        return `
+          <tr>
+            <td><strong>${r.month || '-'}</strong></td>
+            <td style="text-align:left;font-weight:700;">${ClientManager.escapeHtml(r.clientName || '-')}</td>
+            <td style="text-align:right;font-weight:700;color:#1e40af;">${billed.toLocaleString()}원</td>
+            <td style="text-align:right;font-weight:700;color:#16a34a;">${paid.toLocaleString()}원</td>
+            <td style="text-align:right;font-weight:800;color:${unpaid > 0 ? '#dc2626' : '#64748b'};">${unpaid.toLocaleString()}원</td>
+            <td>${payBadge}</td>
+            <td>${taxBadge}</td>
+            <td style="font-size:11px;color:#64748b;">${dateStr}</td>
+          </tr>
+        `;
+      }).join('');
+    },
+
+    init() {
+      const modal = document.getElementById('settlementHistoryModal');
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) this.closeModal();
+        });
+      }
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
+          this.closeModal();
+        }
+      });
+    }
+  };
+
   // 전역 노출
   window.ClientManager = ClientManager;
   window.ProfitManager = ProfitManager;
+  window.SettlementHistoryManager = SettlementHistoryManager;
 
-  // 초기화 실행
-  ClientManager.init();
-  ProfitManager.init();
+  // 모듈 초기화 실행 (각 모듈 독립 실행 보장)
+  try { ClientManager.init(); } catch (e) { console.error('ClientManager init error:', e); }
+  try { ProfitManager.init(); } catch (e) { console.error('ProfitManager init error:', e); }
+  try { SettlementHistoryManager.init(); } catch (e) { console.error('SettlementHistoryManager init error:', e); }
 
   // 관리자 로그인 시 전화상담신청 새 글 알림 확인
   if (typeof Auth !== 'undefined' && Auth.isAdmin && Auth.isAdmin()) {

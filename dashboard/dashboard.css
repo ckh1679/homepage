@@ -912,7 +912,8 @@ ul { list-style: none; }
 /* ──────────────────────────────────────────
    거래처 등록/수정 모달 (Modal)
 ────────────────────────────────────────── */
-.modal-backdrop {
+.modal-backdrop,
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -934,7 +935,9 @@ ul { list-style: none; }
   to { opacity: 1; }
 }
 
-.modal-container {
+.modal-container,
+.modal-card,
+.modal-box {
   background: #141724;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px;
@@ -1319,6 +1322,147 @@ ul { list-style: none; }
     border-top: 1px dashed #ccc;
     padding-top: 10px;
   }
+}
+
+/* 세금계산서 및 수금 상태 배지 */
+.badge-tax {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.badge-tax.issued {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+.badge-tax.unissued {
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+}
+.badge-tax:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.95);
+}
+
+.badge-pay {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.badge-pay.paid {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+.badge-pay.partial {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #7dd3fc;
+}
+.badge-pay.unpaid {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+/* 기기별 원가 분리 입력 카드 */
+.profit-dev-cost-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.profit-dev-cost-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+/* 소모품/부품 건별 지출 장부 */
+.maint-log-wrap {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  background: #fff;
+  margin-bottom: 14px;
+}
+.maint-log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 10px;
+}
+.maint-log-table th {
+  background: #f1f5f9;
+  color: #475569;
+  font-weight: 700;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+}
+.maint-log-table td {
+  padding: 7px 8px;
+  border: 1px solid #e2e8f0;
+  text-align: center;
+  color: #334155;
+}
+.maint-summary-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+/* 월별 정산 히스토리 모달 & 탭 */
+.settlement-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+.settlement-tab-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.settlement-tab-btn.active {
+  color: #4f46e5;
+  background: #eef2ff;
+  font-weight: 700;
+}
+.chart-container-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+  position: relative;
 }
 
 
