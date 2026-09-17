@@ -1167,5 +1167,160 @@ ul { list-style: none; }
   color: var(--text-primary);
 }
 
+/* =============================================
+   검침내역 수정 및 수익성 분석 스타일
+   ============================================= */
+.meter-dev-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.meter-dev-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+.meter-grid-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  align-items: center;
+}
+.meter-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.meter-input-group label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+}
+.meter-input-group input {
+  padding: 7px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #0f172a;
+  background: #fff;
+  font-weight: 600;
+}
+.meter-input-group input:read-only {
+  background: #f8fafc;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+/* BEP 회수 진행률 바 */
+.bep-bar-wrap {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 5px;
+  position: relative;
+}
+.bep-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6 0%, #10b981 100%);
+  border-radius: 6px;
+  transition: width 0.4s ease;
+}
+
+/* =============================================
+   검침 청구서 PDF / A4 인쇄 전용 스타일 (@media print)
+   ============================================= */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  #meterPrintArea, #meterPrintArea * {
+    visibility: visible !important;
+  }
+  #meterPrintArea {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    display: block !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif !important;
+    padding: 20px !important;
+  }
+  .print-page {
+    page-break-after: always;
+    padding: 10px 0;
+  }
+  .print-page:last-child {
+    page-break-after: avoid;
+  }
+  .print-header {
+    text-align: center;
+    border-bottom: 2px solid #000;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+  .print-header h1 {
+    font-size: 22px;
+    margin: 0 0 6px 0;
+    color: #000;
+    letter-spacing: 1px;
+  }
+  .print-header p {
+    font-size: 13px;
+    margin: 0;
+    color: #333;
+  }
+  .print-info-grid {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 11px;
+  }
+  .print-table th, .print-table td {
+    border: 1px solid #999;
+    padding: 7px 6px;
+    text-align: center;
+  }
+  .print-table th {
+    background: #f0f0f0 !important;
+    font-weight: 700;
+    color: #000;
+  }
+  .print-total-box {
+    border: 2px solid #333;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    background: #fafafa !important;
+  }
+  .print-footer {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 11px;
+    color: #666;
+    border-top: 1px dashed #ccc;
+    padding-top: 10px;
+  }
+}
+
+
 
 

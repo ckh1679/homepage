@@ -18,6 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.innerWidth <= 768) {
       document.getElementById('sidebar').classList.remove('active');
     }
+
+    if (pageId === 'rental-analysis' && window.ProfitManager) {
+      window.ProfitManager.render();
+    }
+    if (pageId === 'clients' && window.ClientManager) {
+      window.ClientManager.renderTable();
+    }
   }
   window.showPage = showPage;
 
@@ -926,6 +933,120 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     },
 
+    METER_STORAGE_KEY: 'pm_meter_history',
+
+    // 검침 이력 로드
+    getMeterHistory() {
+      try {
+        const raw = localStorage.getItem(this.METER_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        console.error('검침 이력 로드 실패:', e);
+        return [];
+      }
+    },
+
+    // 검침 이력 저장
+    saveMeterHistory(history) {
+      try {
+        localStorage.setItem(this.METER_STORAGE_KEY, JSON.stringify(history));
+      } catch (e) {
+        console.error('검침 이력 저장 실패:', e);
+      }
+    },
+
+    // 현재 연월 YYYY-MM
+    getCurrentMonthStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    },
+
+    // 오늘 날짜 YYYY-MM-DD
+    getTodayStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    },
+
+    // 거래처 데이터로부터 당월(또는 지정월) 검침 스냅샷 생성 및 동기화
+    syncMeterFromClient(client, targetMonth = null) {
+      if (!client || !client.id) return null;
+      const month = targetMonth || this.getCurrentMonthStr();
+      const history = this.getMeterHistory();
+
+      const devices = (client.devices || []).map(d => {
+        const dc = this.calcDevice(d);
+        const loc = d.location || (d.serial && d.serial.includes('/') ? d.serial.split('/')[1].trim() : '') || '메인 사무실';
+        const sn = d.serial && d.serial.includes('/') ? d.serial.split('/')[0].trim() : (d.serial || '-');
+        return {
+          id: d.id,
+          name: d.name,
+          location: loc,
+          serial: sn,
+          baseRent: dc.baseRent,
+          bwBase: dc.bwBase,
+          bwUnit: dc.bwUnit,
+          bwPrev: dc.bwPrev,
+          bwTotal: dc.bwTotal,
+          bwUsed: dc.bwUsed,
+          bwOver: dc.bwOver,
+          bwExtra: dc.bwExtra,
+          colorBase: dc.colorBase,
+          colorUnit: dc.colorUnit,
+          colorPrev: dc.colorPrev,
+          colorTotal: dc.colorTotal,
+          colorUsed: dc.colorUsed,
+          colorOver: dc.colorOver,
+          colorExtra: dc.colorExtra,
+          totalUsage: dc.totalUsage,
+          supply: dc.supply,
+          vat: dc.vat,
+          total: dc.total
+        };
+      });
+
+      const totals = this.calcClientTotals(client);
+      const record = {
+        id: `meter_${client.id}_${month}`,
+        clientId: client.id,
+        clientName: client.name,
+        bizNum: client.bizNum || '',
+        ceo: client.ceo || '',
+        phone: client.phone || '',
+        email: client.email || '',
+        address: client.address || '',
+        month: month,
+        readingDate: this.getTodayStr(),
+        devices: devices,
+        summary: totals,
+        updatedAt: new Date().toISOString()
+      };
+
+      const existingIdx = history.findIndex(h => h.clientId === client.id && h.month === month);
+      if (existingIdx !== -1) {
+        history[existingIdx] = { ...history[existingIdx], ...record };
+      } else {
+        history.push(record);
+      }
+
+      this.saveMeterHistory(history);
+      return record;
+    },
+
+    // 특정 거래처의 특정 월 검침 레코드 가져오기 (없으면 현재 거래처 데이터로 초기화)
+    getMeterRecord(clientId, targetMonth = null) {
+      const month = targetMonth || this.getCurrentMonthStr();
+      const history = this.getMeterHistory();
+      let record = history.find(h => String(h.clientId) === String(clientId) && h.month === month);
+      if (!record) {
+        const clients = this.getClients();
+        const client = clients.find(c => String(c.id) === String(clientId));
+        if (client) {
+          record = this.syncMeterFromClient(client, month);
+        }
+      }
+      return record;
+    },
+
     // 장비별 계산 (전월누적/당월누적 -> 이번달 사용량 자동 계산, 초과금액, 공급가, VAT, 월임대료)
     calcDevice(dev) {
       const bwBase    = Number(dev.bwBase) || 0;
@@ -1010,6 +1131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         totalSupply,
         totalVat,
         totalMonthBill,
+        totalBill: totalMonthBill,
         totalCumulativeUsage,
         totalPaid: Number(client.totalPaid) || 0
       };
@@ -1134,7 +1256,13 @@ document.addEventListener('DOMContentLoaded', () => {
             </td>
             <td>${totals.totalPaid.toLocaleString()}원</td>
             <td onclick="event.stopPropagation();">
-              <div style="display:flex;gap:6px;">
+              <div style="display:flex;gap:5px;align-items:center;">
+                <button class="btn-action-icon" style="color:#059669;" title="이번달 검침내역 수정" onclick="ClientManager.openMeterEditModal('${client.id}', null, event)">
+                  <i class="fa fa-calendar-check"></i>
+                </button>
+                <button class="btn-action-icon" style="color:#dc2626;" title="이번달 검침 청구서 PDF/인쇄" onclick="ClientManager.printClientMeterReport('${client.id}', null, event)">
+                  <i class="fa fa-file-pdf"></i>
+                </button>
                 <button class="btn-action-icon edit" title="수정" onclick="ClientManager.openEditModal('${client.id}')">
                   <i class="fa fa-edit"></i>
                 </button>
@@ -1149,11 +1277,19 @@ document.addEventListener('DOMContentLoaded', () => {
           <tr class="device-subtable-row" id="sub-${client.id}" style="display:none;">
             <td colspan="14">
               <div class="device-subtable-wrap">
-                <div class="device-subtable-title">
-                  <i class="fa fa-layer-group"></i> [${this.escapeHtml(client.name)}] 임대 장비 상세 내역 (${devices.length}대)
-                  <span style="margin-left:auto;color:var(--text-muted);font-weight:normal;font-size:11px;">
-                    설치주소: ${this.escapeHtml(client.address || '미기재')} | 이메일: ${this.escapeHtml(client.email || '미기재')}
-                  </span>
+                <div class="device-subtable-title" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                  <span><i class="fa fa-layer-group"></i> [${this.escapeHtml(client.name)}] 임대 장비 상세 내역 (${devices.length}대)</span>
+                  <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+                    <button type="button" class="btn-primary-sm" style="padding:4px 10px;font-size:11px;background:#059669;" onclick="ClientManager.openMeterEditModal('${client.id}', null, event)">
+                      <i class="fa fa-calendar-check"></i> 이번달 검침 수정
+                    </button>
+                    <button type="button" class="btn-primary-sm" style="padding:4px 10px;font-size:11px;background:#0284c7;" onclick="ClientManager.exportMeterToExcel('${client.id}', event)">
+                      <i class="fa fa-file-excel"></i> 엑셀
+                    </button>
+                    <button type="button" class="btn-primary-sm" style="padding:4px 10px;font-size:11px;background:#dc2626;" onclick="ClientManager.printClientMeterReport('${client.id}', null, event)">
+                      <i class="fa fa-file-pdf"></i> PDF/인쇄
+                    </button>
+                  </div>
                 </div>
                 <table class="device-subtable">
                   <thead>
@@ -1698,6 +1834,7 @@ document.addEventListener('DOMContentLoaded', () => {
           };
 
           this.saveClients(clients);
+          this.syncMeterFromClient(clients[targetIdx]);
           this.closeModal();
           alert(`[${name}] 거래처 및 임대 장비 정보가 성공적으로 수정·저장되었습니다.`);
           return;
@@ -1723,6 +1860,7 @@ document.addEventListener('DOMContentLoaded', () => {
             id: duplicate.id
           };
           this.saveClients(clients);
+          this.syncMeterFromClient(clients[targetIdx]);
           this.closeModal();
           alert(`[${name}] 거래처 정보가 기존 데이터에 성공적으로 업데이트되었습니다.`);
           return;
@@ -1736,6 +1874,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
       clients.unshift(newClient);
       this.saveClients(clients);
+      this.syncMeterFromClient(newClient);
       this.closeModal();
       alert(`[${name}] 거래처 및 임대 장비가 성공적으로 등록되었습니다.`);
     },
@@ -2105,6 +2244,7 @@ document.addEventListener('DOMContentLoaded', () => {
           });
 
           this.saveClients(existingClients);
+          existingClients.forEach(c => this.syncMeterFromClient(c));
           event.target.value = '';
 
           alert(`엑셀 일괄 등록이 완료되었습니다!\n- 신규 등록: ${addedCount}건\n- 기존 업데이트: ${updatedCount}건`);
@@ -2130,6 +2270,665 @@ document.addEventListener('DOMContentLoaded', () => {
       if (elHomeRentals) elHomeRentals.textContent = totalDevices.toLocaleString();
     },
 
+    // ============================================
+    // 검침 수정 모달, 엑셀 다운로드, PDF/인쇄 기능
+    // ============================================
+
+    // 검침 수정 모달 열기
+    openMeterEditModal(clientId, targetMonth = null, event = null) {
+      if (event) event.stopPropagation();
+      const month = targetMonth || this.getCurrentMonthStr();
+      const client = this.getClients().find(c => String(c.id) === String(clientId));
+      if (!client) {
+        alert('해당 거래처 정보를 찾을 수 없습니다.');
+        return;
+      }
+
+      const record = this.getMeterRecord(clientId, month) || {};
+
+      const modal = document.getElementById('meterEditModal');
+      const title = document.getElementById('meterEditModalTitle');
+      const idInput = document.getElementById('meterEditClientId');
+      const nameEl = document.getElementById('meterEditClientName');
+      const monthInput = document.getElementById('meterEditMonth');
+      const dateInput = document.getElementById('meterEditDate');
+      const listEl = document.getElementById('meterEditDeviceList');
+
+      if (title) title.innerHTML = `<i class="fa fa-calendar-check" style="color:#059669;margin-right:8px;"></i> [${this.escapeHtml(client.name)}] 검침내역 수정 및 청구 정산`;
+      if (idInput) idInput.value = client.id;
+      if (nameEl) nameEl.textContent = client.name;
+      if (monthInput) monthInput.value = month;
+      if (dateInput) dateInput.value = record.readingDate || this.getTodayStr();
+
+      const devices = (record.devices && record.devices.length > 0) ? record.devices : (client.devices || []);
+
+      if (listEl) {
+        listEl.innerHTML = devices.map((d, dIdx) => `
+          <div class="meter-dev-card" data-device-id="${d.id}">
+            <div class="meter-dev-header">
+              <div>
+                <strong style="color:#0f172a;font-size:14px;">장비 #${dIdx + 1}: ${this.escapeHtml(d.name || '-')}</strong>
+                <span style="font-size:12px;color:#64748b;margin-left:8px;">[설치장소: ${this.escapeHtml(d.location || '메인 사무실')} | S/N: ${this.escapeHtml(d.serial || '-')}]</span>
+              </div>
+              <div style="font-size:13px;color:#0284c7;font-weight:700;">
+                월 기본료: ${Number(d.baseRent || 0).toLocaleString()}원
+              </div>
+            </div>
+            <input type="hidden" class="m-dev-name" value="${this.escapeHtml(d.name || '')}">
+            <input type="hidden" class="m-dev-loc" value="${this.escapeHtml(d.location || '')}">
+            <input type="hidden" class="m-dev-sn" value="${this.escapeHtml(d.serial || '')}">
+            <input type="hidden" class="m-dev-baseRent" value="${d.baseRent || 0}">
+
+            <div class="meter-grid-row" style="margin-top:10px;">
+              <div class="meter-input-group">
+                <label>흑백 기준매수 / 초과단가</label>
+                <div style="display:flex;gap:4px;">
+                  <input type="number" class="m-dev-bwBase" value="${d.bwBase !== undefined ? d.bwBase : 1000}" style="width:55%;" title="흑백 기준매수" oninput="ClientManager.updateMeterModalPreview()">
+                  <input type="number" class="m-dev-bwUnit" value="${d.bwUnit !== undefined ? d.bwUnit : 10}" style="width:45%;" title="흑백 초과단가(원)" oninput="ClientManager.updateMeterModalPreview()">
+                </div>
+              </div>
+              <div class="meter-input-group">
+                <label>전월 흑백 누적 (장)</label>
+                <input type="number" class="m-dev-bwPrev" value="${d.bwPrev !== undefined ? d.bwPrev : 0}" min="0" oninput="ClientManager.updateMeterModalUsage(this, 'bw')">
+              </div>
+              <div class="meter-input-group">
+                <label style="color:#0284c7;font-weight:700;">당월 흑백 누적 (장)</label>
+                <input type="number" class="m-dev-bwTotal" value="${d.bwTotal !== undefined ? d.bwTotal : 0}" min="0" oninput="ClientManager.updateMeterModalUsage(this, 'bw')">
+              </div>
+              <div class="meter-input-group">
+                <label style="color:#f59e0b;font-weight:700;">이번달 흑백 사용량 (장)</label>
+                <input type="number" class="m-dev-bwUsed" value="${d.bwUsed !== undefined ? d.bwUsed : 0}" min="0" oninput="ClientManager.updateMeterModalPreview()">
+              </div>
+            </div>
+
+            <div class="meter-grid-row" style="margin-top:8px;">
+              <div class="meter-input-group">
+                <label>컬러 기준매수 / 초과단가</label>
+                <div style="display:flex;gap:4px;">
+                  <input type="number" class="m-dev-colorBase" value="${d.colorBase !== undefined ? d.colorBase : 300}" style="width:55%;" title="컬러 기준매수" oninput="ClientManager.updateMeterModalPreview()">
+                  <input type="number" class="m-dev-colorUnit" value="${d.colorUnit !== undefined ? d.colorUnit : 100}" style="width:45%;" title="컬러 초과단가(원)" oninput="ClientManager.updateMeterModalPreview()">
+                </div>
+              </div>
+              <div class="meter-input-group">
+                <label>전월 컬러 누적 (장)</label>
+                <input type="number" class="m-dev-colorPrev" value="${d.colorPrev !== undefined ? d.colorPrev : 0}" min="0" oninput="ClientManager.updateMeterModalUsage(this, 'color')">
+              </div>
+              <div class="meter-input-group">
+                <label style="color:#0284c7;font-weight:700;">당월 컬러 누적 (장)</label>
+                <input type="number" class="m-dev-colorTotal" value="${d.colorTotal !== undefined ? d.colorTotal : 0}" min="0" oninput="ClientManager.updateMeterModalUsage(this, 'color')">
+              </div>
+              <div class="meter-input-group">
+                <label style="color:#f59e0b;font-weight:700;">이번달 컬러 사용량 (장)</label>
+                <input type="number" class="m-dev-colorUsed" value="${d.colorUsed !== undefined ? d.colorUsed : 0}" min="0" oninput="ClientManager.updateMeterModalPreview()">
+              </div>
+            </div>
+
+            <div class="m-dev-calc-result" style="margin-top:8px;font-size:12px;color:#475569;padding:6px 10px;background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0;"></div>
+          </div>
+        `).join('');
+      }
+
+      if (modal) modal.style.display = 'flex';
+      this.updateMeterModalPreview();
+    },
+
+    // 검침 모달 닫기
+    closeMeterModal() {
+      const modal = document.getElementById('meterEditModal');
+      if (modal) modal.style.display = 'none';
+    },
+
+    // 검침 모달에서 연월 변경 시 데이터 다시 불러오기
+    loadMeterRecordForSelectedMonth() {
+      const clientId = document.getElementById('meterEditClientId')?.value;
+      const month = document.getElementById('meterEditMonth')?.value;
+      if (clientId && month) {
+        this.openMeterEditModal(clientId, month);
+      }
+    },
+
+    // 검침 모달 내 계수기(전월/당월) 입력 시 이번달 사용량 자동 계산
+    updateMeterModalUsage(inputEl, type) {
+      const card = inputEl ? inputEl.closest('.meter-dev-card') : null;
+      if (!card) return;
+
+      if (type === 'bw') {
+        const prev = Number(card.querySelector('.m-dev-bwPrev')?.value) || 0;
+        const total = Number(card.querySelector('.m-dev-bwTotal')?.value) || 0;
+        const usedEl = card.querySelector('.m-dev-bwUsed');
+        if (total > 0 || prev > 0) {
+          if (usedEl) usedEl.value = Math.max(0, total - prev);
+        }
+      } else if (type === 'color') {
+        const prev = Number(card.querySelector('.m-dev-colorPrev')?.value) || 0;
+        const total = Number(card.querySelector('.m-dev-colorTotal')?.value) || 0;
+        const usedEl = card.querySelector('.m-dev-colorUsed');
+        if (total > 0 || prev > 0) {
+          if (usedEl) usedEl.value = Math.max(0, total - prev);
+        }
+      }
+
+      this.updateMeterModalPreview();
+    },
+
+    // 검침 모달 내 실시간 청구 합계 프리뷰 업데이트
+    updateMeterModalPreview() {
+      const list = document.getElementById('meterEditDeviceList');
+      if (!list) return;
+      const cards = list.querySelectorAll('.meter-dev-card');
+
+      let sumBaseRent = 0;
+      let sumBwExtra = 0;
+      let sumColorExtra = 0;
+
+      cards.forEach(card => {
+        const baseRent = Number(card.querySelector('.m-dev-baseRent')?.value) || 0;
+        const bwBase = Number(card.querySelector('.m-dev-bwBase')?.value) || 0;
+        const bwUnit = Number(card.querySelector('.m-dev-bwUnit')?.value) || 0;
+        const bwPrev = Number(card.querySelector('.m-dev-bwPrev')?.value) || 0;
+        const bwTotal = Number(card.querySelector('.m-dev-bwTotal')?.value) || 0;
+        const bwUsed = Number(card.querySelector('.m-dev-bwUsed')?.value) || 0;
+
+        const colorBase = Number(card.querySelector('.m-dev-colorBase')?.value) || 0;
+        const colorUnit = Number(card.querySelector('.m-dev-colorUnit')?.value) || 0;
+        const colorPrev = Number(card.querySelector('.m-dev-colorPrev')?.value) || 0;
+        const colorTotal = Number(card.querySelector('.m-dev-colorTotal')?.value) || 0;
+        const colorUsed = Number(card.querySelector('.m-dev-colorUsed')?.value) || 0;
+
+        const bwOver = Math.max(0, bwUsed - bwBase);
+        const bwExtra = bwOver * bwUnit;
+        const colorOver = Math.max(0, colorUsed - colorBase);
+        const colorExtra = colorOver * colorUnit;
+
+        const devExtra = bwExtra + colorExtra;
+        const devSupply = baseRent + devExtra;
+        const devTotal = Math.round(devSupply * 1.1);
+
+        const tag = card.querySelector('.m-dev-calc-result');
+        if (tag) {
+          let warnHtml = '';
+          if (bwTotal > 0 && bwPrev > 0 && bwTotal < bwPrev) {
+            warnHtml += '<span style="color:#ef4444;margin-right:8px;">[흑백 당월 < 전월 오류]</span> ';
+          }
+          if (colorTotal > 0 && colorPrev > 0 && colorTotal < colorPrev) {
+            warnHtml += '<span style="color:#ef4444;margin-right:8px;">[컬러 당월 < 전월 오류]</span> ';
+          }
+
+          tag.innerHTML = `${warnHtml}흑백: <strong>${bwUsed.toLocaleString()}장</strong> (추가 +${bwExtra.toLocaleString()}원) | ` +
+                          `컬러: <strong>${colorUsed.toLocaleString()}장</strong> (추가 +${colorExtra.toLocaleString()}원) | ` +
+                          `기기 소계: <strong style="color:#0284c7;">${devSupply.toLocaleString()}원</strong> (VAT포함 ${devTotal.toLocaleString()}원)`;
+        }
+
+        sumBaseRent += baseRent;
+        sumBwExtra += bwExtra;
+        sumColorExtra += colorExtra;
+      });
+
+      const sumSupply = sumBaseRent + sumBwExtra + sumColorExtra;
+      const sumVat = Math.round(sumSupply * 0.1);
+      const sumTotal = sumSupply + sumVat;
+
+      const setEl = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val.toLocaleString() + '원';
+      };
+
+      setEl('meterPrevBaseRent', sumBaseRent);
+      setEl('meterPrevBwExtra', sumBwExtra);
+      setEl('meterPrevColorExtra', sumColorExtra);
+      setEl('meterPrevSupply', sumSupply);
+      setEl('meterPrevVat', sumVat);
+      setEl('meterPrevTotalBill', sumTotal);
+    },
+
+    // 검침내역 수정 저장
+    saveMeterEdit(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      const clientId = document.getElementById('meterEditClientId')?.value;
+      const month = document.getElementById('meterEditMonth')?.value || this.getCurrentMonthStr();
+      const date = document.getElementById('meterEditDate')?.value || this.getTodayStr();
+
+      if (!clientId) return;
+      const clients = this.getClients();
+      const client = clients.find(c => String(c.id) === String(clientId));
+      if (!client) return;
+
+      const list = document.getElementById('meterEditDeviceList');
+      const cards = list ? list.querySelectorAll('.meter-dev-card') : [];
+
+      const devices = [];
+      let sumBase = 0, sumBwExtra = 0, sumColorExtra = 0;
+
+      cards.forEach(card => {
+        const devId = card.dataset.deviceId;
+        const name = card.querySelector('.m-dev-name')?.value || '';
+        const loc = card.querySelector('.m-dev-loc')?.value || '';
+        const sn = card.querySelector('.m-dev-sn')?.value || '';
+        const baseRent = Number(card.querySelector('.m-dev-baseRent')?.value) || 0;
+
+        const bwBase = Number(card.querySelector('.m-dev-bwBase')?.value) || 0;
+        const bwUnit = Number(card.querySelector('.m-dev-bwUnit')?.value) || 0;
+        const bwPrev = Number(card.querySelector('.m-dev-bwPrev')?.value) || 0;
+        const bwTotal = Number(card.querySelector('.m-dev-bwTotal')?.value) || 0;
+        const bwUsed = Number(card.querySelector('.m-dev-bwUsed')?.value) || 0;
+
+        const colorBase = Number(card.querySelector('.m-dev-colorBase')?.value) || 0;
+        const colorUnit = Number(card.querySelector('.m-dev-colorUnit')?.value) || 0;
+        const colorPrev = Number(card.querySelector('.m-dev-colorPrev')?.value) || 0;
+        const colorTotal = Number(card.querySelector('.m-dev-colorTotal')?.value) || 0;
+        const colorUsed = Number(card.querySelector('.m-dev-colorUsed')?.value) || 0;
+
+        const bwOver = Math.max(0, bwUsed - bwBase);
+        const bwExtra = bwOver * bwUnit;
+        const colorOver = Math.max(0, colorUsed - colorBase);
+        const colorExtra = colorOver * colorUnit;
+
+        const supply = baseRent + bwExtra + colorExtra;
+        const vat = Math.round(supply * 0.1);
+        const total = supply + vat;
+
+        sumBase += baseRent;
+        sumBwExtra += bwExtra;
+        sumColorExtra += colorExtra;
+
+        devices.push({
+          id: devId,
+          name,
+          location: loc,
+          serial: sn,
+          baseRent,
+          bwBase, bwUnit, bwPrev, bwTotal, bwUsed, bwOver, bwExtra,
+          colorBase, colorUnit, colorPrev, colorTotal, colorUsed, colorOver, colorExtra,
+          totalUsage: bwTotal + colorTotal,
+          supply, vat, total
+        });
+      });
+
+      const sumSupply = sumBase + sumBwExtra + sumColorExtra;
+      const sumVat = Math.round(sumSupply * 0.1);
+      const sumTotal = sumSupply + sumVat;
+
+      const history = this.getMeterHistory();
+      const record = {
+        id: `meter_${clientId}_${month}`,
+        clientId,
+        clientName: client.name,
+        bizNum: client.bizNum || '',
+        ceo: client.ceo || '',
+        phone: client.phone || '',
+        email: client.email || '',
+        address: client.address || '',
+        month,
+        readingDate: date,
+        devices,
+        summary: {
+          totalBaseRent: sumBase,
+          totalExtra: sumBwExtra + sumColorExtra,
+          totalBwExtra: sumBwExtra,
+          totalColorExtra: sumColorExtra,
+          totalSupply: sumSupply,
+          totalVat: sumVat,
+          totalBill: sumTotal,
+          totalPaid: client.totalPaid || 0
+        },
+        updatedAt: new Date().toISOString()
+      };
+
+      const existIdx = history.findIndex(h => String(h.clientId) === String(clientId) && h.month === month);
+      if (existIdx !== -1) {
+        history[existIdx] = record;
+      } else {
+        history.push(record);
+      }
+      this.saveMeterHistory(history);
+
+      // 현재 기준월이면 거래처 기본 장비 계수기에도 즉시 동기화 반영
+      if (month === this.getCurrentMonthStr()) {
+        const cIdx = clients.findIndex(c => String(c.id) === String(clientId));
+        if (cIdx !== -1) {
+          clients[cIdx].devices = (clients[cIdx].devices || []).map(cd => {
+            const matched = devices.find(d => String(d.id) === String(cd.id));
+            if (matched) {
+              return {
+                ...cd,
+                bwBase: matched.bwBase,
+                bwUnit: matched.bwUnit,
+                bwPrev: matched.bwPrev,
+                bwTotal: matched.bwTotal,
+                bwUsed: matched.bwUsed,
+                colorBase: matched.colorBase,
+                colorUnit: matched.colorUnit,
+                colorPrev: matched.colorPrev,
+                colorTotal: matched.colorTotal,
+                colorUsed: matched.colorUsed
+              };
+            }
+            return cd;
+          });
+          this.saveClients(clients);
+        }
+      }
+
+      this.closeMeterModal();
+      alert(`[${client.name}]의 ${month} 검침내역이 성공적으로 저장되었습니다.`);
+      this.renderTable();
+      if (window.ProfitManager) window.ProfitManager.render();
+    },
+
+    // 검침내역 엑셀 다운로드 (단일 거래처 또는 이번달 전체 거래처)
+    exportMeterToExcel(clientId = null, event = null) {
+      if (event) event.stopPropagation();
+      if (typeof XLSX === 'undefined') {
+        alert('엑셀 라이브러리(SheetJS)를 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+        return;
+      }
+
+      const curMonth = this.getCurrentMonthStr();
+      const clients = this.getClients();
+      let targetRecords = [];
+
+      if (clientId) {
+        const rec = this.getMeterRecord(clientId, curMonth);
+        if (rec) targetRecords.push(rec);
+      } else {
+        clients.forEach(c => {
+          const rec = this.getMeterRecord(c.id, curMonth);
+          if (rec) targetRecords.push(rec);
+        });
+      }
+
+      if (targetRecords.length === 0) {
+        alert('내보낼 검침 데이터가 없습니다.');
+        return;
+      }
+
+      const rows = [];
+      targetRecords.forEach(rec => {
+        (rec.devices || []).forEach((dev, idx) => {
+          rows.push({
+            '검침연월': rec.month,
+            '검침일자': rec.readingDate || '',
+            '거래처명': rec.clientName,
+            '사업자번호': rec.bizNum || '',
+            '대표자': rec.ceo || '',
+            '전화번호': rec.phone || '',
+            '설치주소': rec.address || '',
+            '순번': idx + 1,
+            '장비명': dev.name || '',
+            '설치장소': dev.location || '',
+            '시리얼번호': dev.serial || '',
+            '기본임대료': dev.baseRent,
+            '흑백_전월누적': dev.bwPrev,
+            '흑백_당월누적': dev.bwTotal,
+            '흑백_사용량': dev.bwUsed,
+            '흑백_기준매수': dev.bwBase,
+            '흑백_초과매수': dev.bwOver || Math.max(0, dev.bwUsed - dev.bwBase),
+            '흑백_초과단가': dev.bwUnit,
+            '흑백_추가금액': dev.bwExtra,
+            '컬러_전월누적': dev.colorPrev,
+            '컬러_당월누적': dev.colorTotal,
+            '컬러_사용량': dev.colorUsed,
+            '컬러_기준매수': dev.colorBase,
+            '컬러_초과매수': dev.colorOver || Math.max(0, dev.colorUsed - dev.colorBase),
+            '컬러_초과단가': dev.colorUnit,
+            '컬러_추가금액': dev.colorExtra,
+            '기기_총누적(카운터)': dev.totalUsage,
+            '공급가액': dev.supply,
+            'V.A.T': dev.vat,
+            '청구합계금액': dev.total
+          });
+        });
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws['!cols'] = [
+        { wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 14 }, { wch: 10 },
+        { wch: 14 }, { wch: 28 }, { wch: 6 }, { wch: 22 }, { wch: 16 },
+        { wch: 16 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
+        { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
+        { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
+        { wch: 12 }, { wch: 16 }, { wch: 12 }, { wch: 10 }, { wch: 14 }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      const sheetName = clientId ? '거래처_검침내역' : '전체_검침내역';
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+      const fileTitle = clientId ? `검침내역_${targetRecords[0].clientName}_${curMonth}.xlsx` : `전체거래처_검침내역_${curMonth}.xlsx`;
+      XLSX.writeFile(wb, fileTitle);
+    },
+
+    // 현재 열린 검침 모달 내용 엑셀 다운로드
+    exportCurrentMeterModalExcel() {
+      const clientId = document.getElementById('meterEditClientId')?.value;
+      if (clientId) {
+        this.exportMeterToExcel(clientId);
+      }
+    },
+
+    // 단일 거래처 검침 청구서 인쇄 / PDF 출력
+    printClientMeterReport(clientId, targetMonth = null, event = null) {
+      if (event) event.stopPropagation();
+      const month = targetMonth || this.getCurrentMonthStr();
+      const record = this.getMeterRecord(clientId, month);
+      if (!record) {
+        alert('출력할 검침 내역이 없습니다.');
+        return;
+      }
+
+      const html = this.generateMeterReportHtml([record], `${record.clientName} ${month} 검침 청구서`);
+      const area = document.getElementById('meterPrintArea');
+      if (!area) return;
+
+      area.innerHTML = html;
+      area.style.display = 'block';
+      window.print();
+      setTimeout(() => {
+        area.style.display = 'none';
+        area.innerHTML = '';
+      }, 1000);
+    },
+
+    // 현재 열린 검침 모달 청구서 인쇄 / PDF 출력
+    printCurrentMeterModalReport() {
+      const clientId = document.getElementById('meterEditClientId')?.value;
+      const month = document.getElementById('meterEditMonth')?.value;
+      if (clientId) {
+        this.printClientMeterReport(clientId, month);
+      }
+    },
+
+    // 이번달 전체 거래처 검침 청구서 일괄 인쇄 / PDF 출력
+    printAllMeterReports() {
+      const month = this.getCurrentMonthStr();
+      const clients = this.getClients();
+      if (clients.length === 0) {
+        alert('출력할 거래처 데이터가 없습니다.');
+        return;
+      }
+
+      const records = clients.map(c => this.getMeterRecord(c.id, month)).filter(Boolean);
+      const html = this.generateMeterReportHtml(records, `전체 거래처 ${month} 검침 청구서`);
+      const area = document.getElementById('meterPrintArea');
+      if (!area) return;
+
+      area.innerHTML = html;
+      area.style.display = 'block';
+      window.print();
+      setTimeout(() => {
+        area.style.display = 'none';
+        area.innerHTML = '';
+      }, 1000);
+    },
+
+    // A4 검침 청구서 HTML 서식 생성
+    generateMeterReportHtml(records, title) {
+      const today = this.getTodayStr();
+      return `
+        <style>
+          .meter-print-page {
+            font-family: 'Pretendard', sans-serif, -apple-system;
+            color: #1e293b;
+            padding: 24px;
+            background: #fff;
+            max-width: 900px;
+            margin: 0 auto;
+            page-break-after: always;
+          }
+          .meter-print-page:last-child {
+            page-break-after: auto;
+          }
+          .print-hdr-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+          }
+          .print-hdr-table td {
+            vertical-align: top;
+          }
+          .print-box {
+            border: 1px solid #cbd5e1;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.6;
+          }
+          .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 14px;
+            margin-bottom: 14px;
+            font-size: 11.5px;
+          }
+          .print-table th, .print-table td {
+            border: 1px solid #94a3b8;
+            padding: 6px 8px;
+            text-align: center;
+          }
+          .print-table th {
+            background: #f1f5f9;
+            font-weight: 700;
+          }
+          .print-summary-box {
+            margin-top: 14px;
+            background: #f8fafc;
+            border: 1.5px solid #0f172a;
+            padding: 12px 18px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+        </style>
+        ${records.map(rec => {
+          const summary = rec.summary || {};
+          return `
+            <div class="meter-print-page">
+              <div style="text-align:center;margin-bottom:20px;">
+                <h1 style="font-size:24px;margin:0;font-weight:800;letter-spacing:-0.5px;text-decoration:underline;">복합기 임대료 및 검침 정산 청구서</h1>
+                <div style="margin-top:6px;font-size:13px;color:#475569;">
+                  <strong>청구 연월: ${rec.month}</strong> | 검침 일자: ${rec.readingDate || today}
+                </div>
+              </div>
+
+              <table class="print-hdr-table">
+                <tr>
+                  <td style="width:48%;">
+                    <div class="print-box">
+                      <div style="font-weight:700;font-size:13px;margin-bottom:6px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;">
+                        ■ 공급받는 자 (고객사)
+                      </div>
+                      <div><strong>상호(거래처명):</strong> ${this.escapeHtml(rec.clientName)}</div>
+                      <div><strong>사업자등록번호:</strong> ${this.escapeHtml(rec.bizNum || '미기재')}</div>
+                      <div><strong>대표자명:</strong> ${this.escapeHtml(rec.ceo || '미기재')} | <strong>연락처:</strong> ${this.escapeHtml(rec.phone || '-')}</div>
+                      <div><strong>설치 장소:</strong> ${this.escapeHtml(rec.address || '-')}</div>
+                    </div>
+                  </td>
+                  <td style="width:4%;"></td>
+                  <td style="width:48%;">
+                    <div class="print-box">
+                      <div style="font-weight:700;font-size:13px;margin-bottom:6px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;">
+                        ■ 공급자 (렌탈사)
+                      </div>
+                      <div><strong>상호:</strong> 프린터모아</div>
+                      <div><strong>사업자등록번호:</strong> 110-81-12345</div>
+                      <div><strong>대표자:</strong> 최○○ | <strong>대표번호:</strong> 010-5922-3650</div>
+                      <div><strong>사업장주소:</strong> 서울 강동구 아리수로64길 11 1층</div>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <table class="print-table">
+                <thead>
+                  <tr>
+                    <th rowspan="2" style="width:25px;">#</th>
+                    <th rowspan="2">장비명 (설치장소)</th>
+                    <th rowspan="2">시리얼</th>
+                    <th rowspan="2">기본임대료</th>
+                    <th colspan="4" style="background:#e2e8f0;">흑백 검침 내역</th>
+                    <th colspan="4" style="background:#fce7f3;">컬러 검침 내역</th>
+                    <th rowspan="2">합계(공급가)</th>
+                  </tr>
+                  <tr>
+                    <th>전월→당월</th>
+                    <th>사용량</th>
+                    <th>기준(단가)</th>
+                    <th>추가금</th>
+                    <th>전월→당월</th>
+                    <th>사용량</th>
+                    <th>기준(단가)</th>
+                    <th>추가금</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${(rec.devices || []).map((d, i) => `
+                    <tr>
+                      <td>${i + 1}</td>
+                      <td style="text-align:left;">
+                        <strong>${this.escapeHtml(d.name)}</strong>
+                        <div style="font-size:10px;color:#64748b;">${this.escapeHtml(d.location || '사무실')}</div>
+                      </td>
+                      <td>${this.escapeHtml(d.serial || '-')}</td>
+                      <td style="text-align:right;">${Number(d.baseRent).toLocaleString()}원</td>
+                      <td>${Number(d.bwPrev).toLocaleString()} → ${Number(d.bwTotal).toLocaleString()}</td>
+                      <td><strong>${Number(d.bwUsed).toLocaleString()}</strong></td>
+                      <td>${Number(d.bwBase).toLocaleString()} (${d.bwUnit}원)</td>
+                      <td style="text-align:right;color:#d97706;">+${Number(d.bwExtra).toLocaleString()}원</td>
+                      <td>${Number(d.colorPrev).toLocaleString()} → ${Number(d.colorTotal).toLocaleString()}</td>
+                      <td><strong>${Number(d.colorUsed).toLocaleString()}</strong></td>
+                      <td>${Number(d.colorBase).toLocaleString()} (${d.colorUnit}원)</td>
+                      <td style="text-align:right;color:#d97706;">+${Number(d.colorExtra).toLocaleString()}원</td>
+                      <td style="text-align:right;font-weight:700;">${Number(d.supply).toLocaleString()}원</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+
+              <div class="print-summary-box">
+                <div>
+                  <div style="font-size:12px;color:#64748b;">총 공급가액: <strong>${(summary.totalSupply || 0).toLocaleString()}원</strong> | 부가세(VAT 10%): <strong>${(summary.totalVat || 0).toLocaleString()}원</strong></div>
+                  <div style="font-size:11px;color:#0284c7;margin-top:3px;">입금계좌: 우리은행 1002-000-000000 (예금주: 최○○ / 프린터모아)</div>
+                </div>
+                <div style="text-align:right;">
+                  <span style="font-size:13px;color:#475569;font-weight:600;">이번달 총 청구금액(VAT포함):</span>
+                  <div style="font-size:22px;font-weight:800;color:#0f172a;">${(summary.totalBill || 0).toLocaleString()} 원</div>
+                </div>
+              </div>
+
+              <div style="margin-top:16px;font-size:11px;color:#64748b;text-align:center;">
+                귀사의 일익 번창하심을 기원합니다. 청구서 내용에 이상이 있거나 문의사항은 고객센터(010-5922-3650)로 연락 바랍니다.
+              </div>
+            </div>
+          `;
+        }).join('')}
+      `;
+    },
+
     // HTML 이스케이프 유틸
     escapeHtml(str) {
       if (!str) return '';
@@ -2146,8 +2945,495 @@ document.addEventListener('DOMContentLoaded', () => {
       this.renderTable();
       this.updateGlobalDashboardStats();
 
-      // 모달 바깥 클릭 시 닫기
+      // 거래처 모달 바깥 클릭 및 ESC
       const modal = document.getElementById('clientModal');
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) this.closeModal();
+        });
+      }
+
+      // 검침 수정 모달 바깥 클릭 및 ESC
+      const meterModal = document.getElementById('meterEditModal');
+      if (meterModal) {
+        meterModal.addEventListener('click', (e) => {
+          if (e.target === meterModal) this.closeMeterModal();
+        });
+      }
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (modal && modal.style.display === 'flex') this.closeModal();
+          if (meterModal && meterModal.style.display === 'flex') this.closeMeterModal();
+        }
+      });
+    }
+  };
+
+  // ============================================
+  // 렌탈 수익성 분석 관리자 모듈 (ProfitManager)
+  // 대외비 보안: 관리자 전용 손익분기점(BEP) 및 ROI 분석
+  // ============================================
+  const ProfitManager = {
+    STORAGE_KEY: 'pm_client_costs',
+
+    defaultCost: {
+      devCost: 1800000,         // 장비 매입/취득원가 (원)
+      contractMonths: 36,       // 계약기간 (개월)
+      residualValue: 200000,    // 만료 후 기기 잔존가치 (원)
+      monthlySupplies: 15000,   // 월평균 소모품비 (토너/잉크/드럼 등)
+      monthlyRepairs: 5000,     // 월평균 부품수리비 (헤드/롤러 등)
+      monthlyService: 5000,     // 월평균 정기점검 및 방문인건비
+      initialSetup: 50000,      // 초기 설치 및 물류비 (추천 항목)
+      memo: ''
+    },
+
+    getCosts() {
+      try {
+        const raw = localStorage.getItem(this.STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        console.error('원가 데이터 로드 실패:', e);
+        return {};
+      }
+    },
+
+    saveCosts(costs) {
+      try {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(costs));
+      } catch (e) {
+        console.error('원가 데이터 저장 실패:', e);
+      }
+    },
+
+    getClientCost(clientId) {
+      const costs = this.getCosts();
+      return costs[clientId] || { ...this.defaultCost };
+    },
+
+    // 특정 거래처의 렌탈 수익성 및 BEP 정밀 계산
+    calcProfit(client, costConfig = null) {
+      const cost = costConfig || this.getClientCost(client.id);
+      const totals = ClientManager.calcClientTotals(client);
+
+      // 월 렌탈 매출 (VAT 제외 공급가액 기준 - B2B 손익분석 표준)
+      const monthlyRevenue = totals.totalSupply || 0;
+
+      // 월간 경상 유지비용 (소모품 + 부품수리 + 정기점검)
+      const monthlyCosts = (Number(cost.monthlySupplies) || 0) +
+                           (Number(cost.monthlyRepairs) || 0) +
+                           (Number(cost.monthlyService) || 0);
+
+      // 월 순마진 (월 영업이익)
+      const monthlyNet = monthlyRevenue - monthlyCosts;
+
+      // 순 자본 투자원가 (기기 매입가 + 초기설치비 - 만료 후 잔존가치)
+      const devCost = Number(cost.devCost) || 0;
+      const initialSetup = Number(cost.initialSetup) || 0;
+      const residualValue = Number(cost.residualValue) || 0;
+      const contractMonths = Number(cost.contractMonths) || 36;
+
+      const netInvestment = Math.max(0, devCost + initialSetup - residualValue);
+      const grossInvestment = devCost + initialSetup;
+
+      // 손익분기점 (BEP) 회수 기간 (개월)
+      let bepMonths = 0;
+      let isPaybackPossible = true;
+      if (monthlyNet <= 0) {
+        bepMonths = 9999;
+        isPaybackPossible = false;
+      } else {
+        bepMonths = netInvestment / monthlyNet;
+      }
+
+      // 계약 기간 전체 총 예상 수입, 총 비용, 총 순이익
+      const totalContractRevenue = monthlyRevenue * contractMonths;
+      const totalContractCosts = (monthlyCosts * contractMonths) + netInvestment;
+      const totalContractNet = (monthlyNet * contractMonths) - netInvestment;
+
+      // 투자수익률 (ROI)
+      let roi = 0;
+      if (grossInvestment > 0) {
+        roi = Math.round((totalContractNet / grossInvestment) * 100);
+      }
+
+      return {
+        clientId: client.id,
+        clientName: client.name,
+        deviceCount: (client.devices || []).length,
+        deviceNames: (client.devices || []).map(d => d.name).join(', '),
+        costConfig: cost,
+        monthlyRevenue,
+        monthlyCosts,
+        monthlyNet,
+        netInvestment,
+        grossInvestment,
+        contractMonths,
+        bepMonths,
+        isPaybackPossible,
+        totalContractRevenue,
+        totalContractCosts,
+        totalContractNet,
+        roi
+      };
+    },
+
+    // 전체 화면 렌더링
+    render(keyword = '') {
+      this.renderStats();
+      this.renderTable(keyword);
+    },
+
+    // 상단 4개 요약 통계 카드
+    renderStats() {
+      const clients = ClientManager.getClients();
+      let totalInvest = 0;
+      let totalMonthlyNet = 0;
+      let totalMonthlyRevenue = 0;
+      let totalContractNet = 0;
+      let totalDevices = 0;
+      let sumBep = 0;
+      let validBepCount = 0;
+      let sumRoi = 0;
+
+      clients.forEach(c => {
+        const p = this.calcProfit(c);
+        totalInvest += p.grossInvestment;
+        totalMonthlyNet += p.monthlyNet;
+        totalMonthlyRevenue += p.monthlyRevenue;
+        totalContractNet += p.totalContractNet;
+        totalDevices += p.deviceCount;
+        if (p.isPaybackPossible && p.bepMonths < 999) {
+          sumBep += p.bepMonths;
+          validBepCount++;
+        }
+        sumRoi += p.roi;
+      });
+
+      const avgBep = validBepCount > 0 ? (sumBep / validBepCount).toFixed(1) : '0.0';
+      const marginRate = totalMonthlyRevenue > 0 ? Math.round((totalMonthlyNet / totalMonthlyRevenue) * 100) : 0;
+      const avgRoi = clients.length > 0 ? Math.round(sumRoi / clients.length) : 0;
+
+      const elInvest = document.getElementById('profitStatTotalInvestment');
+      const elDevCount = document.getElementById('profitStatDeviceCount');
+      const elMonthlyNet = document.getElementById('profitStatMonthlyNet');
+      const elMargin = document.getElementById('profitStatMarginRate');
+      const elAvgBep = document.getElementById('profitStatAvgBep');
+      const elContractNet = document.getElementById('profitStatTotalContractNet');
+      const elAvgRoi = document.getElementById('profitStatAvgRoi');
+
+      if (elInvest) elInvest.textContent = '₩ ' + totalInvest.toLocaleString();
+      if (elDevCount) elDevCount.textContent = `임대 기기 총 ${totalDevices}대 운용 중`;
+      if (elMonthlyNet) elMonthlyNet.textContent = '₩ ' + totalMonthlyNet.toLocaleString();
+      if (elMargin) elMargin.textContent = `월평균 순마진율 ${marginRate}%`;
+      if (elAvgBep) elAvgBep.textContent = `${avgBep} 개월`;
+      if (elContractNet) elContractNet.textContent = '₩ ' + totalContractNet.toLocaleString();
+      if (elAvgRoi) elAvgRoi.textContent = `평균 ROI ${avgRoi}% (36개월 기준)`;
+    },
+
+    // 거래처별 수익성 분석 테이블 렌더링
+    renderTable(keyword = '') {
+      const tbody = document.getElementById('profitTbody');
+      const empty = document.getElementById('profitEmpty');
+      const badge = document.getElementById('profitClientCountBadge');
+      if (!tbody) return;
+
+      const kwInput = document.getElementById('profitSearchInput');
+      const kw = (keyword || (kwInput ? kwInput.value : '')).trim().toLowerCase();
+
+      const sortSelect = document.getElementById('profitSortSelect');
+      const sortVal = sortSelect ? sortSelect.value : 'name';
+
+      let clients = ClientManager.getClients();
+
+      if (kw) {
+        clients = clients.filter(c => {
+          const name = (c.name || '').toLowerCase();
+          const devs = (c.devices || []).map(d => d.name || '').join(' ').toLowerCase();
+          return name.includes(kw) || devs.includes(kw);
+        });
+      }
+
+      if (badge) badge.textContent = `${clients.length}개사`;
+
+      if (clients.length === 0) {
+        tbody.innerHTML = '';
+        if (empty) empty.style.display = 'block';
+        return;
+      }
+      if (empty) empty.style.display = 'none';
+
+      const profitList = clients.map(c => this.calcProfit(c));
+      profitList.sort((a, b) => {
+        if (sortVal === 'name') return a.clientName.localeCompare(b.clientName);
+        if (sortVal === 'bep_asc') return a.bepMonths - b.bepMonths;
+        if (sortVal === 'net_desc') return b.monthlyNet - a.monthlyNet;
+        if (sortVal === 'roi_desc') return b.roi - a.roi;
+        if (sortVal === 'invest_desc') return b.grossInvestment - a.grossInvestment;
+        return 0;
+      });
+
+      const html = profitList.map((p, idx) => {
+        let bepBadge = '';
+        let barWidth = 0;
+        let barColor = '#10b981';
+
+        if (!p.isPaybackPossible) {
+          bepBadge = '<span class="badge" style="background:#fee2e2;color:#ef4444;font-size:11px;">회수 불가(적자)</span>';
+          barWidth = 0;
+        } else {
+          const pct = Math.min(100, Math.round((p.bepMonths / p.contractMonths) * 100));
+          barWidth = pct;
+          if (p.bepMonths <= p.contractMonths * 0.5) {
+            barColor = '#10b981';
+            bepBadge = `<span class="badge" style="background:#dcfce7;color:#15803d;font-weight:700;font-size:11px;">${p.bepMonths.toFixed(1)}개월 (${pct}% 시점)</span>`;
+          } else if (p.bepMonths <= p.contractMonths) {
+            barColor = '#f59e0b';
+            bepBadge = `<span class="badge" style="background:#fef3c7;color:#b45309;font-weight:700;font-size:11px;">${p.bepMonths.toFixed(1)}개월 (${pct}% 시점)</span>`;
+          } else {
+            barColor = '#ef4444';
+            bepBadge = `<span class="badge" style="background:#fee2e2;color:#b91c1c;font-weight:700;font-size:11px;">계약초과 (${p.bepMonths.toFixed(1)}개월)</span>`;
+          }
+        }
+
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td>
+              <strong>${ClientManager.escapeHtml(p.clientName)}</strong>
+              <div style="font-size:11px;color:#64748b;">계약기간: ${p.contractMonths}개월</div>
+            </td>
+            <td>
+              <div style="font-weight:600;color:#0284c7;">${p.deviceCount}대</div>
+              <div style="font-size:11px;color:#64748b;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${ClientManager.escapeHtml(p.deviceNames || '-')}">
+                ${ClientManager.escapeHtml(p.deviceNames || '-')}
+              </div>
+            </td>
+            <td>
+              <div style="font-weight:700;">${p.costConfig.devCost.toLocaleString()}원</div>
+              <div style="font-size:10px;color:#94a3b8;">초기설치 +${(p.costConfig.initialSetup || 0).toLocaleString()}원</div>
+            </td>
+            <td>
+              <div style="color:#d97706;font-weight:600;">-${p.monthlyCosts.toLocaleString()}원</div>
+              <div style="font-size:10px;color:#94a3b8;">소모품/부품/점검</div>
+            </td>
+            <td>
+              <div style="font-weight:700;color:#0284c7;">+${p.monthlyRevenue.toLocaleString()}원</div>
+              <div style="font-size:10px;color:#94a3b8;">(공급가 기준)</div>
+            </td>
+            <td>
+              <div style="font-weight:800;color:${p.monthlyNet >= 0 ? '#059669' : '#ef4444'};">
+                ${p.monthlyNet >= 0 ? '+' : ''}${p.monthlyNet.toLocaleString()}원
+              </div>
+            </td>
+            <td>
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+                ${bepBadge}
+              </div>
+              <div class="bep-bar-wrap">
+                <div class="bep-bar-fill" style="width:${barWidth}%;background:${barColor};"></div>
+              </div>
+            </td>
+            <td>
+              <div style="font-weight:800;color:${p.totalContractNet >= 0 ? '#1e40af' : '#dc2626'};">
+                ${p.totalContractNet >= 0 ? '+' : ''}${p.totalContractNet.toLocaleString()}원
+              </div>
+              <div style="font-size:10px;color:#64748b;">${p.contractMonths}개월 총순익</div>
+            </td>
+            <td>
+              <span class="badge" style="background:${p.roi >= 100 ? '#f3e8ff' : '#f1f5f9'};color:${p.roi >= 100 ? '#7e22ce' : '#334155'};font-weight:700;font-size:12px;">
+                ${p.roi}%
+              </span>
+            </td>
+            <td>
+              <button class="btn-primary-sm" style="padding:4px 8px;font-size:11px;background:#7c3aed;" onclick="ProfitManager.openEditModal('${p.clientId}')">
+                <i class="fa fa-cog"></i> 원가설정
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      tbody.innerHTML = html;
+    },
+
+    // 원가 설정 모달 열기
+    openEditModal(clientId) {
+      const modal = document.getElementById('profitEditModal');
+      if (!modal) return;
+
+      const clients = ClientManager.getClients();
+      const client = clients.find(c => String(c.id) === String(clientId));
+      if (!client) {
+        alert('거래처 정보를 찾을 수 없습니다.');
+        return;
+      }
+
+      const cost = this.getClientCost(clientId);
+      const totals = ClientManager.calcClientTotals(client);
+
+      const idEl = document.getElementById('profitClientId');
+      const nameEl = document.getElementById('profitClientName');
+      const revEl = document.getElementById('profitMonthlyRevenue');
+
+      if (idEl) idEl.value = clientId;
+      if (nameEl) nameEl.textContent = client.name;
+      const supAmt = (totals.totalSupply || 0).toLocaleString();
+      const billAmt = (totals.totalMonthBill || totals.totalBill || 0).toLocaleString();
+      if (revEl) revEl.textContent = `${supAmt}원 (VAT포함 ${billAmt}원)`;
+
+      const setVal = (id, v) => {
+        const el = document.getElementById(id);
+        if (el) el.value = (v !== undefined && v !== null) ? v : '';
+      };
+
+      setVal('profitDevCost', cost.devCost);
+      setVal('profitContractMonths', cost.contractMonths || 36);
+      setVal('profitResidualValue', cost.residualValue);
+      setVal('profitMonthlySupplies', cost.monthlySupplies);
+      setVal('profitMonthlyRepairs', cost.monthlyRepairs);
+      setVal('profitMonthlyService', cost.monthlyService);
+      setVal('profitInitialSetup', cost.initialSetup);
+      setVal('profitMemo', cost.memo);
+
+      modal.style.display = 'flex';
+      this.updateModalPreview();
+    },
+
+    // 원가 모달 닫기
+    closeModal() {
+      const modal = document.getElementById('profitEditModal');
+      if (modal) modal.style.display = 'none';
+    },
+
+    // 모달 내 실시간 시뮬레이션 프리뷰
+    updateModalPreview() {
+      const clientId = document.getElementById('profitClientId')?.value;
+      if (!clientId) return;
+      const clients = ClientManager.getClients();
+      const client = clients.find(c => String(c.id) === String(clientId));
+      if (!client) return;
+
+      const devCost = Number(document.getElementById('profitDevCost')?.value) || 0;
+      const contractMonths = Number(document.getElementById('profitContractMonths')?.value) || 36;
+      const residualValue = Number(document.getElementById('profitResidualValue')?.value) || 0;
+      const monthlySupplies = Number(document.getElementById('profitMonthlySupplies')?.value) || 0;
+      const monthlyRepairs = Number(document.getElementById('profitMonthlyRepairs')?.value) || 0;
+      const monthlyService = Number(document.getElementById('profitMonthlyService')?.value) || 0;
+      const initialSetup = Number(document.getElementById('profitInitialSetup')?.value) || 0;
+
+      const candidateCost = {
+        devCost, contractMonths, residualValue, monthlySupplies, monthlyRepairs, monthlyService, initialSetup
+      };
+
+      const p = this.calcProfit(client, candidateCost);
+
+      const elNet = document.getElementById('prevProfitMonthlyNet');
+      const elBep = document.getElementById('prevProfitBepMonths');
+      const elTotal = document.getElementById('prevProfitTotalNet');
+      const elRoi = document.getElementById('prevProfitRoi');
+
+      if (elNet) elNet.textContent = `${p.monthlyNet.toLocaleString()}원`;
+      if (elBep) {
+        if (!p.isPaybackPossible) {
+          elBep.textContent = '회수 불가 (적자)';
+          elBep.style.color = '#ef4444';
+        } else {
+          elBep.textContent = `${p.bepMonths.toFixed(1)}개월 (${p.contractMonths}M 계약)`;
+          elBep.style.color = p.bepMonths <= p.contractMonths ? '#059669' : '#d97706';
+        }
+      }
+      if (elTotal) {
+        elTotal.textContent = `${p.totalContractNet.toLocaleString()}원`;
+        elTotal.style.color = p.totalContractNet >= 0 ? '#1e40af' : '#ef4444';
+      }
+      if (elRoi) {
+        elRoi.textContent = `${p.roi}%`;
+        elRoi.style.color = p.roi >= 100 ? '#7e22ce' : '#334155';
+      }
+    },
+
+    // 원가 설정 저장
+    saveProfitCost(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      const clientId = document.getElementById('profitClientId')?.value;
+      if (!clientId) return;
+
+      const costs = this.getCosts();
+      costs[clientId] = {
+        devCost: Number(document.getElementById('profitDevCost')?.value) || 0,
+        contractMonths: Number(document.getElementById('profitContractMonths')?.value) || 36,
+        residualValue: Number(document.getElementById('profitResidualValue')?.value) || 0,
+        monthlySupplies: Number(document.getElementById('profitMonthlySupplies')?.value) || 0,
+        monthlyRepairs: Number(document.getElementById('profitMonthlyRepairs')?.value) || 0,
+        monthlyService: Number(document.getElementById('profitMonthlyService')?.value) || 0,
+        initialSetup: Number(document.getElementById('profitInitialSetup')?.value) || 0,
+        memo: document.getElementById('profitMemo')?.value || '',
+        updatedAt: new Date().toISOString()
+      };
+
+      this.saveCosts(costs);
+      this.closeModal();
+      this.render();
+      alert('원가 및 비용 정보가 성공적으로 저장되었습니다.\n수익성 분석 지표가 최신으로 갱신되었습니다.');
+    },
+
+    // 수익성 분석 엑셀 다운로드
+    exportToExcel() {
+      if (typeof XLSX === 'undefined') {
+        alert('엑셀 라이브러리(SheetJS)를 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+        return;
+      }
+      const clients = ClientManager.getClients();
+      if (clients.length === 0) {
+        alert('내보낼 거래처 데이터가 없습니다.');
+        return;
+      }
+
+      const rows = clients.map((c, idx) => {
+        const p = this.calcProfit(c);
+        return {
+          '순번': idx + 1,
+          '거래처명': p.clientName,
+          '임대장비수': p.deviceCount,
+          '장비목록': p.deviceNames,
+          '장비취득원가': p.costConfig.devCost,
+          '초기설치물류비': p.costConfig.initialSetup,
+          '만료잔존가치': p.costConfig.residualValue,
+          '월소모품비': p.costConfig.monthlySupplies,
+          '월부품수리비': p.costConfig.monthlyRepairs,
+          '월정기점검비': p.costConfig.monthlyService,
+          '월유지비합계': p.monthlyCosts,
+          '월렌탈매출(공급가)': p.monthlyRevenue,
+          '월순마진': p.monthlyNet,
+          '계약기간(개월)': p.contractMonths,
+          '원가회수시점(BEP개월)': p.isPaybackPossible ? Number(p.bepMonths.toFixed(1)) : '회수불가',
+          '계약기간예상총순익': p.totalContractNet,
+          '투자수익률(ROI%)': p.roi,
+          '비고': p.costConfig.memo || ''
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws['!cols'] = [
+        { wch: 6 }, { wch: 18 }, { wch: 10 }, { wch: 25 }, { wch: 14 },
+        { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
+        { wch: 14 }, { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 18 },
+        { wch: 18 }, { wch: 14 }, { wch: 25 }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '렌탈수익성분석');
+      const today = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(wb, `렌탈수익성분석_보고서_${today}.xlsx`);
+    },
+
+    init() {
+      // 모달 바깥 클릭 시 닫기
+      const modal = document.getElementById('profitEditModal');
       if (modal) {
         modal.addEventListener('click', (e) => {
           if (e.target === modal) this.closeModal();
@@ -2160,14 +3446,18 @@ document.addEventListener('DOMContentLoaded', () => {
           this.closeModal();
         }
       });
+
+      this.render();
     }
   };
 
   // 전역 노출
   window.ClientManager = ClientManager;
+  window.ProfitManager = ProfitManager;
 
-  // ClientManager 초기화 실행
+  // 초기화 실행
   ClientManager.init();
+  ProfitManager.init();
 
   // 관리자 로그인 시 전화상담신청 새 글 알림 확인
   if (typeof Auth !== 'undefined' && Auth.isAdmin && Auth.isAdmin()) {

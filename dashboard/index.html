@@ -48,7 +48,7 @@
           <i class="fa fa-laptop-house"></i> 임대 관리
         </div>
         <div class="menu-item" data-page="rental-analysis">
-          <i class="fa fa-chart-line"></i> 렌탈 분석
+          <i class="fa fa-chart-line"></i> 렌탈 수익성 분석
         </div>
 
         <!-- 고객 및 사이트 -->
@@ -267,9 +267,19 @@
                   <i class="fa fa-file-excel"></i> 엑셀 일괄 등록
                 </button>
 
-                <!-- 엑셀 다운로드 버튼 -->
+                <!-- 이번달 검침 엑셀 다운로드 버튼 -->
+                <button class="btn-primary-sm" style="background:linear-gradient(135deg,#059669,#047857);" onclick="ClientManager.exportMeterToExcel()" title="이번달 거래처별 전체 검침 상세 엑셀 다운로드">
+                  <i class="fa fa-file-excel"></i> 이번달 검침 엑셀
+                </button>
+
+                <!-- 이번달 검침 PDF/인쇄 버튼 -->
+                <button class="btn-primary-sm" style="background:linear-gradient(135deg,#dc2626,#b91c1c);" onclick="ClientManager.printAllMeterReports()" title="이번달 거래처별 검침 청구서 통합 인쇄 및 PDF 저장">
+                  <i class="fa fa-file-pdf"></i> 이번달 검침 PDF/인쇄
+                </button>
+
+                <!-- 엑셀 전체 목록 다운로드 버튼 -->
                 <button class="btn-primary-sm" style="background:linear-gradient(135deg,#0284c7,#0369a1);" onclick="ClientManager.exportToExcel()">
-                  <i class="fa fa-download"></i> 엑셀 목록 다운로드
+                  <i class="fa fa-download"></i> 거래처 목록 엑셀
                 </button>
 
                 <!-- 엑셀 양식 다운로드 버튼 -->
@@ -580,29 +590,108 @@
           </div>
         </section>
 
-        <!-- ====== 렌탈 분석 ====== -->
+        <!-- ====== 렌탈 수익성 분석 (내부 관리자 전용) ====== -->
         <section id="page-rental-analysis" class="page-section">
-          <div class="page-title">
-            <h2><i class="fa fa-chart-line" style="margin-right:10px;color:var(--accent-primary);"></i>렌탈 분석</h2>
-            <p>기간별 렌탈 수익, 기기별 통계, 계약 현황 분석을 제공합니다.</p>
+          <div class="page-title" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+            <div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <h2 style="margin:0;"><i class="fa fa-chart-line" style="margin-right:10px;color:var(--accent-primary);"></i>렌탈 수익성 분석</h2>
+                <span class="badge" style="background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:700;">
+                  <i class="fa fa-user-shield"></i> 내부 관리자 전용 (대외비)
+                </span>
+              </div>
+              <p style="margin-top:6px;">거래처별 장비 원가 회수 시점(손익분기점 BEP)과 계약 기간 예상 수익·투자수익률(ROI)을 정밀 분석합니다.</p>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-primary-sm" style="background:linear-gradient(135deg,#059669,#047857);" onclick="ProfitManager.exportToExcel()">
+                <i class="fa fa-file-excel"></i> 수익성 분석 엑셀 다운로드
+              </button>
+            </div>
           </div>
+
+          <!-- 수익성 핵심 요약 지표 (4개 카드) -->
           <div class="stats-grid">
             <div class="stat-card">
-              <div class="stat-icon primary"><i class="fa fa-won-sign"></i></div>
-              <div class="stat-details"><div class="stat-title">월간 렌탈 매출</div><div class="stat-value">₩ 0</div><div class="stat-trend">데이터 없음</div></div>
+              <div class="stat-icon primary"><i class="fa fa-wallet"></i></div>
+              <div class="stat-details">
+                <div class="stat-title">총 장비 투자원가</div>
+                <div class="stat-value" id="profitStatTotalInvestment">₩ 0</div>
+                <div class="stat-trend" id="profitStatDeviceCount">장비 0대 등록</div>
+              </div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon success"><i class="fa fa-file-contract"></i></div>
-              <div class="stat-details"><div class="stat-title">신규 계약 (이달)</div><div class="stat-value">0 건</div><div class="stat-trend">데이터 없음</div></div>
+              <div class="stat-icon success"><i class="fa fa-coins"></i></div>
+              <div class="stat-details">
+                <div class="stat-title">월간 총 순마진 (영업익)</div>
+                <div class="stat-value" id="profitStatMonthlyNet">₩ 0</div>
+                <div class="stat-trend" id="profitStatMarginRate">평균 마진율 0%</div>
+              </div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon warning"><i class="fa fa-exclamation-triangle"></i></div>
-              <div class="stat-details"><div class="stat-title">만료 예정 계약</div><div class="stat-value">0 건</div><div class="stat-trend">30일 이내</div></div>
+              <div class="stat-icon warning"><i class="fa fa-hourglass-half"></i></div>
+              <div class="stat-details">
+                <div class="stat-title">평균 원가 회수 기간 (BEP)</div>
+                <div class="stat-value" id="profitStatAvgBep">0.0 개월</div>
+                <div class="stat-trend">장비 투자비 100% 회수 시점</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background:#f3e8ff;color:#7e22ce;"><i class="fa fa-chart-pie"></i></div>
+              <div class="stat-details">
+                <div class="stat-title">계약기간(36M) 총 예상 순익</div>
+                <div class="stat-value" id="profitStatTotalContractNet">₩ 0</div>
+                <div class="stat-trend" id="profitStatAvgRoi">평균 ROI 0%</div>
+              </div>
             </div>
           </div>
+
+          <!-- 거래처별 수익성 분석 테이블 패널 -->
           <div class="panel">
-            <div class="panel-header"><div class="panel-title">월별 렌탈 추이</div></div>
-            <div class="chart-placeholder"><i class="fa fa-chart-bar" style="font-size:32px;margin-right:12px;"></i> 계약 데이터 등록 후 차트가 표시됩니다.</div>
+            <div class="panel-header" style="flex-wrap:wrap;gap:12px;">
+              <div class="panel-title" style="display:flex;align-items:center;gap:8px;">
+                <span>거래처별 원가 회수 및 수익 분석</span>
+                <span class="badge" id="profitClientCountBadge" style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:12px;font-size:12px;">0개사</span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input type="text" id="profitSearchInput" placeholder="거래처명, 장비명 검색..." style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:200px;" oninput="ProfitManager.renderTable()">
+                <select id="profitSortSelect" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;" onchange="ProfitManager.renderTable()">
+                  <option value="name">거래처명 순</option>
+                  <option value="bep_asc">원가회수 빠른 순 (BEP↑)</option>
+                  <option value="net_desc">월 순마진 높은 순</option>
+                  <option value="roi_desc">투자수익률(ROI) 높은 순</option>
+                  <option value="invest_desc">투자원가 높은 순</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table class="data-table" id="profitTable">
+                <thead>
+                  <tr>
+                    <th style="width:45px;">번호</th>
+                    <th>거래처명</th>
+                    <th>임대 장비</th>
+                    <th>장비 취득원가</th>
+                    <th>월 유지비용 (소모품/부품)</th>
+                    <th>월 렌탈수입</th>
+                    <th>월 순마진</th>
+                    <th style="width:160px;">원가 회수 시점 (BEP)</th>
+                    <th>계약기간 예상 순익</th>
+                    <th>ROI</th>
+                    <th style="width:90px;">원가/비용 관리</th>
+                  </tr>
+                </thead>
+                <tbody id="profitTbody">
+                  <!-- JS 동적 렌더링 -->
+                </tbody>
+              </table>
+            </div>
+
+            <div class="empty-state" id="profitEmpty" style="display:none;">
+              <i class="fa fa-calculator"></i>
+              <p>분석할 거래처 데이터가 없습니다.</p>
+              <span>거래처 관리에서 거래처 및 임대 장비를 먼저 등록해주세요.</span>
+            </div>
           </div>
         </section>
 
@@ -833,11 +922,232 @@
             </button>
           </div>
         </form>
+  <!-- ============================================
+       이번달 검침내역 수정 및 정산 모달
+       ============================================ -->
+  <div class="modal-overlay" id="meterEditModal" style="display:none;">
+    <div class="modal-card" style="max-width:850px;width:95%;">
+      <div class="modal-header">
+        <div class="modal-title" id="meterEditModalTitle">
+          <i class="fa fa-calendar-check" style="color:#059669;margin-right:8px;"></i> 이번달 검침내역 수정 및 청구 정산
+        </div>
+        <button class="modal-close" onclick="ClientManager.closeMeterModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height:80vh;overflow-y:auto;">
+        <form id="meterEditForm" onsubmit="ClientManager.saveMeterEdit(event);">
+          <input type="hidden" id="meterEditClientId">
+
+          <!-- 상단 거래처 정보 및 검침 연월 선택 바 -->
+          <div style="background:#f1f5f9;border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+            <div>
+              <span style="font-size:12px;color:#64748b;font-weight:600;">거래처</span>
+              <div style="font-size:16px;font-weight:800;color:#0f172a;" id="meterEditClientName">-</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+              <div>
+                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">검침 기준 연월</label>
+                <input type="month" id="meterEditMonth" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-weight:700;color:#0f172a;" onchange="ClientManager.loadMeterRecordForSelectedMonth()">
+              </div>
+              <div>
+                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">검침 일자</label>
+                <input type="date" id="meterEditDate" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;color:#0f172a;">
+              </div>
+            </div>
+          </div>
+
+          <div style="font-size:13px;color:#64748b;margin-bottom:10px;">
+            <i class="fa fa-info-circle" style="color:#0284c7;"></i> 당월 누적 계수기를 수정하면 <strong>전월 대비 이번달 사용량과 초과 추가요금이 자동 계산</strong>됩니다.
+          </div>
+
+          <!-- 기기별 검침 입력 리스트 -->
+          <div id="meterEditDeviceList"></div>
+
+          <!-- 실시간 청구 합계 프리뷰 -->
+          <div class="calc-preview-card" style="margin-top:20px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:16px;">
+            <div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:10px;">
+              <i class="fa fa-receipt" style="color:#059669;"></i> 이번달 최종 청구 정산 합계
+            </div>
+            <div class="calc-preview-grid">
+              <div class="calc-item">
+                <span class="calc-label">기본 임대료</span>
+                <span class="calc-val" id="meterPrevBaseRent">0원</span>
+              </div>
+              <div class="calc-item">
+                <span class="calc-label">흑백 추가금</span>
+                <span class="calc-val" id="meterPrevBwExtra">0원</span>
+              </div>
+              <div class="calc-item">
+                <span class="calc-label">컬러 추가금</span>
+                <span class="calc-val" id="meterPrevColorExtra">0원</span>
+              </div>
+              <div class="calc-item">
+                <span class="calc-label">공급가액</span>
+                <span class="calc-val bold" id="meterPrevSupply">0원</span>
+              </div>
+              <div class="calc-item">
+                <span class="calc-label">V.A.T (10%)</span>
+                <span class="calc-val" id="meterPrevVat">0원</span>
+              </div>
+              <div class="calc-item total">
+                <span class="calc-label">이번달 총 청구금액</span>
+                <span class="calc-val highlight" id="meterPrevTotalBill">0원</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 액션 버튼 -->
+          <div class="modal-footer" style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+            <div style="display:flex;gap:8px;">
+              <button type="button" class="btn-primary-sm" style="background:#059669;" onclick="ClientManager.exportCurrentMeterModalExcel()">
+                <i class="fa fa-file-excel"></i> 이 검침서 엑셀 받기
+              </button>
+              <button type="button" class="btn-primary-sm" style="background:#dc2626;" onclick="ClientManager.printCurrentMeterModalReport()">
+                <i class="fa fa-file-pdf"></i> PDF / 인쇄
+              </button>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button type="button" class="btn-secondary" onclick="ClientManager.closeMeterModal()">닫기</button>
+              <button type="submit" class="btn-primary-sm" style="padding:10px 22px;background:#0284c7;font-size:14px;">
+                <i class="fa fa-check"></i> 검침내역 저장하기
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   </div>
 
-  <script src="../auth.js"></script>
+  <!-- ============================================
+       렌탈 수익성 분석 - 원가 및 비용 상세 입력 모달
+       ============================================ -->
+  <div class="modal-overlay" id="profitEditModal" style="display:none;">
+    <div class="modal-card" style="max-width:760px;width:95%;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i class="fa fa-calculator" style="color:#7c3aed;margin-right:8px;"></i> 렌탈 수익성 분석 - 원가 및 비용 설정
+        </div>
+        <button class="modal-close" onclick="ProfitManager.closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height:80vh;overflow-y:auto;">
+        <form id="profitForm" onsubmit="ProfitManager.saveProfitCost(event);">
+          <input type="hidden" id="profitClientId">
+
+          <!-- 안내 배너 -->
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:#991b1b;display:flex;align-items:center;gap:8px;">
+            <i class="fa fa-shield-alt" style="font-size:16px;"></i>
+            <span><strong>대외비 보안:</strong> 본 입력 정보(기기 원가, 소모품/부품 매입가)는 관리자 전용이며, 고객 견적서에 절대 노출되지 않습니다.</span>
+          </div>
+
+          <div style="background:#f8fafc;border-radius:8px;padding:12px 16px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div>
+              <span style="font-size:12px;color:#64748b;">대상 거래처</span>
+              <div style="font-size:16px;font-weight:700;color:#0f172a;" id="profitClientName">-</div>
+            </div>
+            <div style="text-align:right;">
+              <span style="font-size:12px;color:#64748b;">월 렌탈 매출 (기본+추가)</span>
+              <div style="font-size:16px;font-weight:700;color:#0284c7;" id="profitMonthlyRevenue">-</div>
+            </div>
+          </div>
+
+          <!-- 1. 장비 취득 원가 및 계약 기간 -->
+          <div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:14px;background:#fff;">
+            <div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+              <i class="fa fa-print" style="color:#0284c7;"></i> 1. 장비 취득원가 및 기본 계약 정보
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
+              <div>
+                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">기기 매입/취득원가 (원)</label>
+                <input type="number" id="profitDevCost" min="0" step="10000" class="form-input" placeholder="예: 1800000" required oninput="ProfitManager.updateModalPreview()">
+              </div>
+              <div>
+                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">계약 기간 (개월)</label>
+                <input type="number" id="profitContractMonths" min="1" max="120" value="36" class="form-input" placeholder="기본 36" required oninput="ProfitManager.updateModalPreview()">
+              </div>
+              <div>
+                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">계약만료 후 기기 잔존가치 (원)</label>
+                <input type="number" id="profitResidualValue" min="0" step="10000" class="form-input" placeholder="중고 매각 예상가 (예: 200000)" oninput="ProfitManager.updateModalPreview()">
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. 소모품 & 부품 수리 & 유지비용 -->
+          <div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:14px;background:#fff;">
+            <div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+              <i class="fa fa-tools" style="color:#d97706;"></i> 2. 소모품·부품 및 정기 유지비용
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
+              <div>
+                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">소모품비 (월평균 토너/잉크/드럼 등)</label>
+                <input type="number" id="profitMonthlySupplies" min="0" step="1000" class="form-input" placeholder="예: 15000" oninput="ProfitManager.updateModalPreview()">
+              </div>
+              <div>
+                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">부품 수리비 (월 환산 헤드/롤러 등)</label>
+                <input type="number" id="profitMonthlyRepairs" min="0" step="1000" class="form-input" placeholder="예: 5000" oninput="ProfitManager.updateModalPreview()">
+              </div>
+              <div>
+                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">정기 점검/방문 인건비 (월)</label>
+                <input type="number" id="profitMonthlyService" min="0" step="1000" class="form-input" placeholder="예: 5000" oninput="ProfitManager.updateModalPreview()">
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 초기 설치 및 부대비용 (추천 항목) -->
+          <div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:16px;background:#fff;">
+            <div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+              <i class="fa fa-truck" style="color:#059669;"></i> 3. 초기 설치 및 부대비용 (추천)
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
+              <div>
+                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">초기 설치 및 물류비 (배송/설치비)</label>
+                <input type="number" id="profitInitialSetup" min="0" step="5000" class="form-input" placeholder="예: 50000" oninput="ProfitManager.updateModalPreview()">
+              </div>
+              <div>
+                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">비고 및 메모</label>
+                <input type="text" id="profitMemo" class="form-input" placeholder="예: 재생토너 사용, 2년차 정착기 교체 예정">
+              </div>
+            </div>
+          </div>
+
+          <!-- 실시간 수익성 분석 계산 결과 프리뷰 -->
+          <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:16px;margin-bottom:18px;">
+            <div style="font-size:14px;font-weight:700;color:#166534;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+              <i class="fa fa-chart-pie"></i> 실시간 손익분기점(BEP) 및 예상 수익 시뮬레이션
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px;text-align:center;">
+              <div style="background:#fff;padding:10px;border-radius:8px;border:1px solid #bbf7d0;">
+                <div style="font-size:11px;color:#64748b;">월 순마진</div>
+                <div style="font-size:16px;font-weight:800;color:#059669;" id="prevProfitMonthlyNet">0원</div>
+              </div>
+              <div style="background:#fff;padding:10px;border-radius:8px;border:1px solid #bbf7d0;">
+                <div style="font-size:11px;color:#64748b;">원가 회수 시점 (BEP)</div>
+                <div style="font-size:16px;font-weight:800;color:#d97706;" id="prevProfitBepMonths">0.0개월</div>
+              </div>
+              <div style="background:#fff;padding:10px;border-radius:8px;border:1px solid #bbf7d0;">
+                <div style="font-size:11px;color:#64748b;">계약기간 총 예상순익</div>
+                <div style="font-size:16px;font-weight:800;color:#1e40af;" id="prevProfitTotalNet">0원</div>
+              </div>
+              <div style="background:#fff;padding:10px;border-radius:8px;border:1px solid #bbf7d0;">
+                <div style="font-size:11px;color:#64748b;">투자수익률 (ROI)</div>
+                <div style="font-size:16px;font-weight:800;color:#7e22ce;" id="prevProfitRoi">0%</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;">
+            <button type="button" class="btn-secondary" onclick="ProfitManager.closeModal()">취소</button>
+            <button type="submit" class="btn-primary-sm" style="padding:10px 24px;font-size:14px;background:#7c3aed;">
+              <i class="fa fa-save"></i> 원가/비용 설정 저장
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       인쇄 및 PDF 생성용 오버레이 컨테이너
+       ============================================ -->
+  <div id="meterPrintArea" style="display:none;"></div>
   <script src="../board/board.js"></script>
   <script src="dashboard.js?v=2"></script>
 </body>
