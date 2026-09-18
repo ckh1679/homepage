@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>프린터모아 - 관리자 대시보드</title>
+  <title>?�린?�모??- 관리자 ?�?�보??/title>
   <link rel="stylesheet" href="dashboard.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- SheetJS (Excel xlsx 업로드/다운로드 라이브러리) -->
+  <!-- SheetJS (Excel xlsx ?�로???�운로드 ?�이브러�? -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <!-- Chart.js (월별 정산 히스토리 및 비교 차트) -->
+  <!-- Chart.js (?�별 ?�산 ?�스?�리 �?비교 차트) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -23,62 +23,54 @@
       </div>
       
       <div class="sidebar-menu">
-        <!-- 대시보드 홈 -->
-        <div class="menu-label">홈</div>
+        <!-- ?�?�보????-->
+        <div class="menu-label">??/div>
         <div class="menu-item active" data-page="home">
-          <i class="fa fa-chart-pie"></i> 대시보드 홈
-        </div>
+          <i class="fa fa-chart-pie"></i> ?�?�보????        </div>
 
-        <!-- 거래 관리 -->
-        <div class="menu-label">거래 관리</div>
+        <!-- 거래 관�?-->
+        <div class="menu-label">거래 관�?/div>
         <div class="menu-item" data-page="clients">
-          <i class="fa fa-building"></i> 거래처 관리
-        </div>
+          <i class="fa fa-building"></i> 거래�?관�?        </div>
         <div class="menu-item" data-page="items">
-          <i class="fa fa-boxes"></i> 품목 관리
-        </div>
+          <i class="fa fa-boxes"></i> ?�목 관�?        </div>
         <div class="menu-item" data-page="statement">
-          <i class="fa fa-file-invoice"></i> 거래명세서 작성
+          <i class="fa fa-file-invoice"></i> 거래명세???�성
         </div>
 
-        <!-- 렌탈 관리 -->
-        <div class="menu-label">렌탈 관리</div>
+        <!-- ?�탈 관�?-->
+        <div class="menu-label">?�탈 관�?/div>
         <div class="menu-item" data-page="rental-quote">
-          <i class="fa fa-file-signature"></i> 렌탈 견적서 작성
+          <i class="fa fa-file-signature"></i> ?�탈 견적???�성
         </div>
         <div class="menu-item" data-page="rental-mgmt">
-          <i class="fa fa-laptop-house"></i> 임대 관리
-        </div>
+          <i class="fa fa-laptop-house"></i> ?��? 관�?        </div>
         <div class="menu-item" data-page="rental-analysis">
-          <i class="fa fa-chart-line"></i> 렌탈 수익성 분석
+          <i class="fa fa-chart-line"></i> ?�탈 ?�익??분석
         </div>
 
-        <!-- 고객 및 사이트 -->
-        <div class="menu-label">고객 및 사이트</div>
+        <!-- 고객 �??�이??-->
+        <div class="menu-label">고객 �??�이??/div>
         <div class="menu-item" data-page="members">
-          <i class="fa fa-users"></i> 가입회원 관리
-        </div>
+          <i class="fa fa-users"></i> 가?�회??관�?        </div>
         <div class="menu-item" onclick="window.location.href='../board/board.html?type=request'">
-          <i class="fa fa-phone-alt"></i> 전화상담신청 관리
-        </div>
+          <i class="fa fa-phone-alt"></i> ?�화?�담?�청 관�?        </div>
         <div class="menu-item" onclick="window.location.href='../board/board.html?type=consult'">
-          <i class="fa fa-headset"></i> 상담게시판 확인
+          <i class="fa fa-headset"></i> ?�담게시???�인
         </div>
         <div class="menu-item" data-page="analytics">
-          <i class="fa fa-eye"></i> 방문자 통계
+          <i class="fa fa-eye"></i> 방문???�계
         </div>
 
-        <!-- 시스템 -->
-        <div class="menu-label">시스템</div>
+        <!-- ?�스??-->
+        <div class="menu-label">?�스??/div>
         <div class="menu-item" data-page="users">
-          <i class="fa fa-user-shield"></i> 사용자 관리
-        </div>
+          <i class="fa fa-user-shield"></i> ?�용??관�?        </div>
       </div>
       
       <div class="sidebar-footer">
         <button class="logout-btn" onclick="window.location.href='../index.html'">
-          <i class="fa fa-arrow-left" style="margin-right:8px;"></i> 메인으로 돌아가기
-        </button>
+          <i class="fa fa-arrow-left" style="margin-right:8px;"></i> 메인?�로 ?�아가�?        </button>
       </div>
     </aside>
 
@@ -93,12 +85,12 @@
           </button>
           <div class="search-bar">
             <i class="fa fa-search"></i>
-            <input type="text" placeholder="거래처명, 회원명, 연락처 검색...">
+            <input type="text" placeholder="거래처명, ?�원�? ?�락�?검??..">
           </div>
         </div>
         
         <div class="header-right">
-          <button class="icon-btn" title="알림">
+          <button class="icon-btn" title="?�림">
             <i class="fa fa-bell"></i>
             <span class="badge-dot"></span>
           </button>
@@ -113,44 +105,44 @@
       <!-- ==================== Content Area ==================== -->
       <main class="content-area">
 
-        <!-- ====== 대시보드 홈 ====== -->
+        <!-- ====== ?�?�보????====== -->
         <section id="page-home" class="page-section active">
           <div class="page-title">
-            <h2><i class="fa fa-chart-pie" style="margin-right:10px;color:var(--accent-primary);"></i>대시보드 홈</h2>
-            <p>오늘의 주요 지표와 최근 활동 내역을 한눈에 확인하세요.</p>
+            <h2><i class="fa fa-chart-pie" style="margin-right:10px;color:var(--accent-primary);"></i>?�?�보????/h2>
+            <p>?�늘??주요 지?��? 최근 ?�동 ?�역???�눈???�인?�세??</p>
           </div>
 
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-icon primary"><i class="fa fa-building"></i></div>
               <div class="stat-details">
-                <div class="stat-title">총 거래처 수</div>
+                <div class="stat-title">�?거래�???/div>
                 <div class="stat-value" id="stat-clients">0</div>
-                <div class="stat-trend trend-up"><i class="fa fa-arrow-up"></i> 이번 달 +3</div>
+                <div class="stat-trend trend-up"><i class="fa fa-arrow-up"></i> ?�번 ??+3</div>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon success"><i class="fa fa-laptop-house"></i></div>
               <div class="stat-details">
-                <div class="stat-title">임대 진행 중</div>
+                <div class="stat-title">?��? 진행 �?/div>
                 <div class="stat-value" id="stat-rentals">0</div>
-                <div class="stat-trend trend-up"><i class="fa fa-arrow-up"></i> 5건 신규</div>
+                <div class="stat-trend trend-up"><i class="fa fa-arrow-up"></i> 5�??�규</div>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon warning"><i class="fa fa-headset"></i></div>
               <div class="stat-details">
-                <div class="stat-title">미처리 상담</div>
+                <div class="stat-title">미처�??�담</div>
                 <div class="stat-value" id="stat-consult">0</div>
-                <div class="stat-trend trend-down"><i class="fa fa-arrow-down"></i> 2건 감소</div>
+                <div class="stat-trend trend-down"><i class="fa fa-arrow-down"></i> 2�?감소</div>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon secondary"><i class="fa fa-users"></i></div>
               <div class="stat-details">
-                <div class="stat-title">가입 회원 수</div>
+                <div class="stat-title">가???�원 ??/div>
                 <div class="stat-value" id="stat-members">0</div>
-                <div class="stat-trend trend-up"><i class="fa fa-arrow-up"></i> 12% 이번 달</div>
+                <div class="stat-trend trend-up"><i class="fa fa-arrow-up"></i> 12% ?�번 ??/div>
               </div>
             </div>
           </div>
@@ -158,14 +150,14 @@
           <div class="dashboard-grid">
             <div class="panel">
               <div class="panel-header">
-                <div class="panel-title">최근 상담 및 렌탈 내역</div>
-                <div class="panel-action" onclick="showPage('consult')">전체 보기</div>
+                <div class="panel-title">최근 ?�담 �??�탈 ?�역</div>
+                <div class="panel-action" onclick="showPage('consult')">?�체 보기</div>
               </div>
               <div class="table-wrapper">
                 <table class="data-table">
                   <thead>
                     <tr>
-                      <th>구분</th><th>거래처 / 고객명</th><th>요청 내용</th><th>접수일</th><th>상태</th>
+                      <th>구분</th><th>거래�?/ 고객�?/th><th>?�청 ?�용</th><th>?�수??/th><th>?�태</th>
                     </tr>
                   </thead>
                   <tbody id="homeRecentBody"></tbody>
@@ -174,72 +166,72 @@
             </div>
 
             <div class="panel">
-              <div class="panel-header"><div class="panel-title">최근 활동 로그</div></div>
+              <div class="panel-header"><div class="panel-title">최근 ?�동 로그</div></div>
               <div class="activity-list" id="homeActivityList">
                 <div class="activity-item">
                   <div class="activity-icon"><i class="fa fa-building"></i></div>
-                  <div class="activity-content"><p><strong>(주)미래오피스</strong> 거래처 등록 완료</p><span>10분 전</span></div>
+                  <div class="activity-content"><p><strong>(�?미래?�피??/strong> 거래�??�록 ?�료</p><span>10�???/span></div>
                 </div>
                 <div class="activity-item">
                   <div class="activity-icon"><i class="fa fa-file-invoice" style="color:var(--accent-success);"></i></div>
-                  <div class="activity-content"><p><strong>거래명세서 #2024-108</strong> 작성 완료</p><span>1시간 전</span></div>
+                  <div class="activity-content"><p><strong>거래명세??#2024-108</strong> ?�성 ?�료</p><span>1?�간 ??/span></div>
                 </div>
                 <div class="activity-item">
                   <div class="activity-icon"><i class="fa fa-comment-dots" style="color:var(--accent-warning);"></i></div>
-                  <div class="activity-content"><p>새로운 <strong>맞춤 렌탈 상담</strong> 접수</p><span>2시간 전</span></div>
+                  <div class="activity-content"><p>?�로??<strong>맞춤 ?�탈 ?�담</strong> ?�수</p><span>2?�간 ??/span></div>
                 </div>
                 <div class="activity-item">
                   <div class="activity-icon"><i class="fa fa-wrench" style="color:var(--accent-secondary);"></i></div>
-                  <div class="activity-content"><p><strong>강동구 사무소</strong> A/S 처리 완료</p><span>5시간 전</span></div>
+                  <div class="activity-content"><p><strong>강동�??�무??/strong> A/S 처리 ?�료</p><span>5?�간 ??/span></div>
                 </div>
                 <div class="activity-item">
                   <div class="activity-icon"><i class="fa fa-user-plus" style="color:var(--accent-primary);"></i></div>
-                  <div class="activity-content"><p><strong>김○○</strong>님 신규 회원 가입</p><span>6시간 전</span></div>
+                  <div class="activity-content"><p><strong>김?�○</strong>???�규 ?�원 가??/p><span>6?�간 ??/span></div>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- ====== 거래처 관리 ====== -->
+        <!-- ====== 거래�?관�?====== -->
         <section id="page-clients" class="page-section">
           <div class="page-title">
-            <h2><i class="fa fa-building" style="margin-right:10px;color:var(--accent-primary);"></i>거래처 관리</h2>
-            <p>복합기/프린터 렌탈 거래처와 다중 임대 장비, 이번달 사용량 및 정산 금액을 통합 관리합니다.</p>
+            <h2><i class="fa fa-building" style="margin-right:10px;color:var(--accent-primary);"></i>거래�?관�?/h2>
+            <p>복합�??�린???�탈 거래처�? ?�중 ?��? ?�비, ?�번???�용??�??�산 금액???�합 관리합?�다.</p>
           </div>
 
-          <!-- 통계 지표 카드 4종 -->
+          <!-- ?�계 지??카드 4�?-->
           <div class="stats-grid client-stats-grid" style="margin-bottom:20px;">
             <div class="stat-card">
               <div class="stat-icon primary"><i class="fa fa-building"></i></div>
               <div class="stat-details">
-                <div class="stat-title">총 관리 거래처</div>
+                <div class="stat-title">�?관�?거래�?/div>
                 <div class="stat-value" id="clientStatTotal">0</div>
-                <div class="stat-trend trend-up">현재 계약 유지 업체</div>
+                <div class="stat-trend trend-up">?�재 계약 ?��? ?�체</div>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon info" style="background:rgba(14,165,233,0.15);color:#0284c7;"><i class="fa fa-print"></i></div>
               <div class="stat-details">
-                <div class="stat-title">총 임대 장비 대수</div>
+                <div class="stat-title">�??��? ?�비 ?�??/div>
                 <div class="stat-value" id="clientStatDevices">0</div>
-                <div class="stat-trend trend-up">등록된 복합기/프린터</div>
+                <div class="stat-trend trend-up">?�록??복합�??�린??/div>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon success"><i class="fa fa-won-sign"></i></div>
               <div class="stat-details">
-                <div class="stat-title">이번달 총 청구예정액</div>
-                <div class="stat-value" id="clientStatMonthBill">0원</div>
-                <div class="stat-trend trend-up">공급가액 + V.A.T 포함</div>
+                <div class="stat-title">?�번??�?�?��?�정??/div>
+                <div class="stat-value" id="clientStatMonthBill">0??/div>
+                <div class="stat-trend trend-up">공급가??+ V.A.T ?�함</div>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon warning"><i class="fa fa-receipt"></i></div>
               <div class="stat-details">
-                <div class="stat-title">총 누적 결제금액</div>
-                <div class="stat-value" id="clientStatTotalPaid">0원</div>
-                <div class="stat-trend">거래처 전체 누적 입금합계</div>
+                <div class="stat-title">�??�적 결제금액</div>
+                <div class="stat-value" id="clientStatTotalPaid">0??/div>
+                <div class="stat-trend">거래�??�체 ?�적 ?�금?�계</div>
               </div>
             </div>
           </div>
@@ -247,253 +239,253 @@
           <div class="panel">
             <div class="panel-header" style="flex-wrap:wrap;gap:12px;">
               <div class="panel-title" style="display:flex;align-items:center;gap:8px;">
-                <span>거래처 및 임대 현황 목록</span>
+                <span>거래�?�??��? ?�황 목록</span>
                 <span class="badge" id="clientCountBadge" style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:12px;font-size:12px;">0개사</span>
               </div>
               
-              <!-- 툴바 버튼 그룹 -->
+              <!-- ?�바 버튼 그룹 -->
               <div class="client-toolbar" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                <!-- 검색창 -->
+                <!-- 검?�창 -->
                 <div style="position:relative;">
-                  <input type="text" id="clientSearchInput" placeholder="거래처명, 사업자번호, 대표자, 연락처..." style="padding:8px 12px 8px 30px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:240px;" oninput="ClientManager.searchClients()">
+                  <input type="text" id="clientSearchInput" placeholder="거래처명, ?�업?�번?? ?�?�자, ?�락�?.." style="padding:8px 12px 8px 30px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:240px;" oninput="ClientManager.searchClients()">
                   <i class="fa fa-search" style="position:absolute;left:10px;top:10px;color:#94a3b8;font-size:12px;"></i>
                 </div>
 
                 <button class="btn-primary-sm" onclick="ClientManager.openAddModal()">
-                  <i class="fa fa-plus"></i> 거래처 신규 등록
+                  <i class="fa fa-plus"></i> 거래�??�규 ?�록
                 </button>
 
-                <!-- 엑셀 일괄 등록 버튼 & 숨겨진 input -->
+                <!-- ?��? ?�괄 ?�록 버튼 & ?�겨�?input -->
                 <input type="file" id="clientExcelInput" accept=".xlsx, .xls" style="display:none;" onchange="ClientManager.handleExcelUpload(event)">
                 <button class="btn-primary-sm" style="background:linear-gradient(135deg,#10b981,#059669);" onclick="document.getElementById('clientExcelInput').click()">
-                  <i class="fa fa-file-excel"></i> 엑셀 일괄 등록
+                  <i class="fa fa-file-excel"></i> ?��? ?�괄 ?�록
                 </button>
 
-                <!-- 이번달 검침 엑셀 다운로드 버튼 -->
-                <button class="btn-primary-sm" style="background:linear-gradient(135deg,#059669,#047857);" onclick="ClientManager.exportMeterToExcel()" title="이번달 거래처별 전체 검침 상세 엑셀 다운로드">
-                  <i class="fa fa-file-excel"></i> 이번달 검침 엑셀
+                <!-- ?�번??검�??��? ?�운로드 버튼 -->
+                <button class="btn-primary-sm" style="background:linear-gradient(135deg,#059669,#047857);" onclick="ClientManager.exportMeterToExcel()" title="?�번??거래처별 ?�체 검�??�세 ?��? ?�운로드">
+                  <i class="fa fa-file-excel"></i> ?�번??검�??��?
                 </button>
 
-                <!-- 이번달 검침 PDF/인쇄 버튼 -->
-                <button class="btn-primary-sm" style="background:linear-gradient(135deg,#dc2626,#b91c1c);" onclick="ClientManager.printAllMeterReports()" title="이번달 거래처별 검침 청구서 통합 인쇄 및 PDF 저장">
-                  <i class="fa fa-file-pdf"></i> 이번달 검침 PDF/인쇄
+                <!-- ?�번??검�?PDF/?�쇄 버튼 -->
+                <button class="btn-primary-sm" style="background:linear-gradient(135deg,#dc2626,#b91c1c);" onclick="ClientManager.printAllMeterReports()" title="?�번??거래처별 검�?�?��???�합 ?�쇄 �?PDF ?�??>
+                  <i class="fa fa-file-pdf"></i> ?�번??검�?PDF/?�쇄
                 </button>
 
-                <!-- 월별 정산 히스토리 및 비교 차트 버튼 -->
-                <button class="btn-primary-sm" style="background:linear-gradient(135deg,#6366f1,#4f46e5);" onclick="SettlementHistoryManager.openModal()" title="월별 매출·수금 비교 차트 및 정산 이력 조회">
-                  <i class="fa fa-chart-bar"></i> 월별 정산 히스토리
+                <!-- ?�별 ?�산 ?�스?�리 �?비교 차트 버튼 -->
+                <button class="btn-primary-sm" style="background:linear-gradient(135deg,#6366f1,#4f46e5);" onclick="SettlementHistoryManager.openModal()" title="?�별 매출·?�금 비교 차트 �??�산 ?�력 조회">
+                  <i class="fa fa-chart-bar"></i> ?�별 ?�산 ?�스?�리
                 </button>
 
-                <!-- 엑셀 전체 목록 다운로드 버튼 -->
+                <!-- ?��? ?�체 목록 ?�운로드 버튼 -->
                 <button class="btn-primary-sm" style="background:linear-gradient(135deg,#0284c7,#0369a1);" onclick="ClientManager.exportToExcel()">
-                  <i class="fa fa-download"></i> 거래처 목록 엑셀
+                  <i class="fa fa-download"></i> 거래�?목록 ?��?
                 </button>
 
-                <!-- 엑셀 양식 다운로드 버튼 -->
+                <!-- ?��? ?�식 ?�운로드 버튼 -->
                 <button class="btn-primary-sm" style="background:linear-gradient(135deg,#64748b,#475569);" onclick="ClientManager.downloadTemplate()">
-                  <i class="fa fa-file-alt"></i> 엑셀 양식 받기
+                  <i class="fa fa-file-alt"></i> ?��? ?�식 받기
                 </button>
               </div>
             </div>
 
-            <!-- 거래처 목록 테이블 -->
+            <!-- 거래�?목록 ?�이�?-->
             <div class="table-wrapper" id="clientTableWrapper">
               <table class="data-table client-table" id="clientTable">
                 <thead>
                   <tr>
                     <th style="width:40px;"></th>
                     <th style="width:45px;">번호</th>
-                    <th>거래처명 (상호)</th>
-                    <th>사업자번호</th>
-                    <th>대표자 / 연락처</th>
-                    <th>임대장비</th>
-                    <th>기본임대료</th>
-                    <th>추가금액</th>
-                    <th>합계(공급가)</th>
+                    <th>거래처명 (?�호)</th>
+                    <th>?�업?�번??/th>
+                    <th>?�?�자 / ?�락�?/th>
+                    <th>?��??�비</th>
+                    <th>기본?��?�?/th>
+                    <th>추�?금액</th>
+                    <th>?�계(공급가)</th>
                     <th>V.A.T</th>
-                    <th style="color:#2563eb;">이번달 청구액</th>
-                    <th>세금계산서</th>
-                    <th>수금 / 미수금</th>
-                    <th>총 누적결제액</th>
-                    <th style="width:145px;">관리</th>
+                    <th style="color:#2563eb;">?�번??�?��??/th>
+                    <th>?�금계산??/th>
+                    <th>?�금 / 미수�?/th>
+                    <th>�??�적결제??/th>
+                    <th style="width:145px;">관�?/th>
                   </tr>
                 </thead>
                 <tbody id="clientTbody">
-                  <!-- JS로 동적 렌더링 -->
+                  <!-- JS�??�적 ?�더�?-->
                 </tbody>
               </table>
             </div>
 
-            <!-- 데이터 없을 때 빈 화면 -->
+            <!-- ?�이???�을 ??�??�면 -->
             <div class="empty-state" id="clientEmpty" style="display:none;">
               <i class="fa fa-building"></i>
-              <p>등록된 거래처가 없습니다.</p>
-              <span>상단의 '+ 거래처 신규 등록' 또는 '엑셀 일괄 등록' 버튼을 이용해 거래처를 등록하세요.</span>
+              <p>?�록??거래처�? ?�습?�다.</p>
+              <span>?�단??'+ 거래�??�규 ?�록' ?�는 '?��? ?�괄 ?�록' 버튼???�용??거래처�? ?�록?�세??</span>
             </div>
           </div>
         </section>
 
-        <!-- ====== 품목 관리 ====== -->
+        <!-- ====== ?�목 관�?====== -->
         <section id="page-items" class="page-section">
           <div class="page-title">
-            <h2><i class="fa fa-boxes" style="margin-right:10px;color:var(--accent-primary);"></i>품목 관리</h2>
-            <p>렌탈 제품 및 소모품 품목 목록을 관리합니다.</p>
+            <h2><i class="fa fa-boxes" style="margin-right:10px;color:var(--accent-primary);"></i>?�목 관�?/h2>
+            <p>?�탈 ?�품 �??�모???�목 목록??관리합?�다.</p>
           </div>
           <div class="panel">
             <div class="panel-header">
-              <div class="panel-title">품목 목록</div>
-              <button class="btn-primary-sm"><i class="fa fa-plus"></i> 품목 추가</button>
+              <div class="panel-title">?�목 목록</div>
+              <button class="btn-primary-sm"><i class="fa fa-plus"></i> ?�목 추�?</button>
             </div>
             <div class="empty-state">
               <i class="fa fa-boxes"></i>
-              <p>등록된 품목이 없습니다.</p>
-              <span>상단 '품목 추가' 버튼을 클릭하여 제품을 등록해 주세요.</span>
+              <p>?�록???�목???�습?�다.</p>
+              <span>?�단 '?�목 추�?' 버튼???�릭?�여 ?�품???�록??주세??</span>
             </div>
           </div>
         </section>
 
-        <!-- ====== 거래명세서 작성 ====== -->
+        <!-- ====== 거래명세???�성 ====== -->
         <section id="page-statement" class="page-section">
           <div class="page-title">
-            <h2><i class="fa fa-file-invoice" style="margin-right:10px;color:var(--accent-primary);"></i>거래명세서 작성</h2>
-            <p>거래처별 거래명세서를 작성하고 발행·인쇄합니다.</p>
+            <h2><i class="fa fa-file-invoice" style="margin-right:10px;color:var(--accent-primary);"></i>거래명세???�성</h2>
+            <p>거래처별 거래명세?��? ?�성?�고 발행·?�쇄?�니??</p>
           </div>
 
-          <!-- 상단 버튼 -->
+          <!-- ?�단 버튼 -->
           <div style="display:flex;gap:10px;margin-bottom:24px;">
-            <button class="btn-primary-sm" onclick="stAddRow()"><i class="fa fa-plus"></i> 품목 행 추가</button>
-            <button class="btn-primary-sm" style="background:linear-gradient(135deg,#10b981,#059669);" onclick="stPrint()"><i class="fa fa-print"></i> 인쇄 / PDF 출력</button>
-            <button class="btn-primary-sm" style="background:linear-gradient(135deg,#64748b,#475569);" onclick="stReset()"><i class="fa fa-redo"></i> 초기화</button>
+            <button class="btn-primary-sm" onclick="stAddRow()"><i class="fa fa-plus"></i> ?�목 ??추�?</button>
+            <button class="btn-primary-sm" style="background:linear-gradient(135deg,#10b981,#059669);" onclick="stPrint()"><i class="fa fa-print"></i> ?�쇄 / PDF 출력</button>
+            <button class="btn-primary-sm" style="background:linear-gradient(135deg,#64748b,#475569);" onclick="stReset()"><i class="fa fa-redo"></i> 초기??/button>
           </div>
 
           <div class="quote-editor-wrap">
 
-            <!-- ======== 왼쪽: 입력 폼 ======== -->
+            <!-- ======== ?�쪽: ?�력 ??======== -->
             <div class="quote-form-panel panel">
-              <div class="panel-title" style="margin-bottom:16px;">📝 명세서 정보 입력</div>
+              <div class="panel-title" style="margin-bottom:16px;">?�� 명세???�보 ?�력</div>
 
-              <!-- 기본 정보 -->
-              <div class="form-section-label">기본 정보</div>
+              <!-- 기본 ?�보 -->
+              <div class="form-section-label">기본 ?�보</div>
               <div class="form-row">
                 <div class="form-group">
-                  <label for="stDate">발행일자</label>
+                  <label for="stDate">발행?�자</label>
                   <input type="date" id="stDate" oninput="stUpdatePreview()">
                 </div>
                 <div class="form-group">
                   <label for="stClient">거래처명</label>
-                  <input type="text" id="stClient" placeholder="(주)○○" oninput="stUpdatePreview()">
+                  <input type="text" id="stClient" placeholder="(�??�○" oninput="stUpdatePreview()">
                 </div>
               </div>
 
-              <!-- 공급자 정보 -->
-              <div class="form-section-label" style="margin-top:16px;">공급자 정보</div>
+              <!-- 공급???�보 -->
+              <div class="form-section-label" style="margin-top:16px;">공급???�보</div>
               <div class="form-row">
                 <div class="form-group">
-                  <label for="stSupName">상호</label>
-                  <input type="text" id="stSupName" value="렌탈사무기" oninput="stUpdatePreview()">
+                  <label for="stSupName">?�호</label>
+                  <input type="text" id="stSupName" value="?�탈?�무�? oninput="stUpdatePreview()">
                 </div>
                 <div class="form-group">
-                  <label for="stSupCeo">대표자</label>
-                  <input type="text" id="stSupCeo" value="최○○" oninput="stUpdatePreview()">
+                  <label for="stSupCeo">?�?�자</label>
+                  <input type="text" id="stSupCeo" value="최○?? oninput="stUpdatePreview()">
                 </div>
               </div>
               <div class="form-group" style="margin-bottom:10px;">
                 <label for="stSupAddr">주소</label>
-                <input type="text" id="stSupAddr" value="서울 강동구 아리수로64길 11 1층 렌탈사무기" oninput="stUpdatePreview()">
+                <input type="text" id="stSupAddr" value="?�울 강동�??�리?�로64�?11 1�??�탈?�무�? oninput="stUpdatePreview()">
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label for="stSupBiz">업태</label>
-                  <input type="text" id="stSupBiz" value="도소매 외" oninput="stUpdatePreview()">
+                  <label for="stSupBiz">?�태</label>
+                  <input type="text" id="stSupBiz" value="?�소�??? oninput="stUpdatePreview()">
                 </div>
                 <div class="form-group">
                   <label for="stSupType">종목</label>
-                  <input type="text" id="stSupType" value="사무기기 외" oninput="stUpdatePreview()">
+                  <input type="text" id="stSupType" value="?�무기기 ?? oninput="stUpdatePreview()">
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label for="stSupTel">전화</label>
+                  <label for="stSupTel">?�화</label>
                   <input type="text" id="stSupTel" value="010-5922-3650" oninput="stUpdatePreview()">
                 </div>
                 <div class="form-group">
-                  <label for="stSupFax">팩스</label>
+                  <label for="stSupFax">?�스</label>
                   <input type="text" id="stSupFax" value="-" oninput="stUpdatePreview()">
                 </div>
               </div>
 
-              <!-- 하단 합계 정보 -->
-              <div class="form-section-label" style="margin-top:16px;">합계 정보</div>
+              <!-- ?�단 ?�계 ?�보 -->
+              <div class="form-section-label" style="margin-top:16px;">?�계 ?�보</div>
               <div class="form-row">
                 <div class="form-group">
-                  <label for="stPrevBalance">전잔금 (원)</label>
+                  <label for="stPrevBalance">?�잔�?(??</label>
                   <input type="number" id="stPrevBalance" value="0" oninput="stUpdatePreview()">
                 </div>
                 <div class="form-group">
-                  <label for="stPayment">입금 (원)</label>
+                  <label for="stPayment">?�금 (??</label>
                   <input type="number" id="stPayment" value="0" oninput="stUpdatePreview()">
                 </div>
               </div>
               <div class="form-group" style="margin-top:8px;">
-                <label for="stBankInfo">계좌 안내 (하단 표시)</label>
-                <input type="text" id="stBankInfo" value="우리은행 1002-000-000000 렌탈사무기(최○○)" oninput="stUpdatePreview()">
+                <label for="stBankInfo">계좌 ?�내 (?�단 ?�시)</label>
+                <input type="text" id="stBankInfo" value="?�리?�??1002-000-000000 ?�탈?�무�?최○??" oninput="stUpdatePreview()">
               </div>
 
-              <!-- 품목 목록 입력 -->
-              <div class="form-section-label" style="margin-top:16px;">품목 목록</div>
+              <!-- ?�목 목록 ?�력 -->
+              <div class="form-section-label" style="margin-top:16px;">?�목 목록</div>
               <div id="stItemList"></div>
             </div>
 
-            <!-- ======== 오른쪽: 미리보기 ======== -->
+            <!-- ======== ?�른�? 미리보기 ======== -->
             <div class="quote-preview-panel">
-              <div class="panel-title" style="margin-bottom:16px;">👁️ 거래명세서 미리보기</div>
+              <div class="panel-title" style="margin-bottom:16px;">?���?거래명세??미리보기</div>
               <div id="stPreview" class="quote-preview-paper">
-                <!-- JS로 렌더링 -->
+                <!-- JS�??�더�?-->
               </div>
             </div>
 
           </div>
         </section>
 
-        <!-- ====== 렌탈 견적서 작성 ====== -->
+        <!-- ====== ?�탈 견적???�성 ====== -->
         <section id="page-rental-quote" class="page-section">
           <div class="page-title">
-            <h2><i class="fa fa-file-signature" style="margin-right:10px;color:var(--accent-primary);"></i>렌탈 견적서 작성</h2>
-            <p>고객 요구사항에 맞는 렌탈 견적서를 작성하고 PDF로 출력합니다.</p>
+            <h2><i class="fa fa-file-signature" style="margin-right:10px;color:var(--accent-primary);"></i>?�탈 견적???�성</h2>
+            <p>고객 ?�구?�항??맞는 ?�탈 견적?��? ?�성?�고 PDF�?출력?�니??</p>
           </div>
 
-          <!-- 상단 버튼 -->
+          <!-- ?�단 버튼 -->
           <div style="display:flex;gap:10px;margin-bottom:24px;">
-            <button class="btn-primary-sm" onclick="addDevice()"><i class="fa fa-plus"></i> 기기 추가</button>
-            <button class="btn-primary-sm" style="background:linear-gradient(135deg,#10b981,#059669);" onclick="printQuote()"><i class="fa fa-print"></i> 인쇄 / PDF 출력</button>
-            <button class="btn-primary-sm" style="background:linear-gradient(135deg,#64748b,#475569);" onclick="resetQuote()"><i class="fa fa-redo"></i> 초기화</button>
+            <button class="btn-primary-sm" onclick="addDevice()"><i class="fa fa-plus"></i> 기기 추�?</button>
+            <button class="btn-primary-sm" style="background:linear-gradient(135deg,#10b981,#059669);" onclick="printQuote()"><i class="fa fa-print"></i> ?�쇄 / PDF 출력</button>
+            <button class="btn-primary-sm" style="background:linear-gradient(135deg,#64748b,#475569);" onclick="resetQuote()"><i class="fa fa-redo"></i> 초기??/button>
           </div>
 
           <div class="quote-editor-wrap">
 
-            <!-- ======== 왼쪽: 입력 폼 ======== -->
+            <!-- ======== ?�쪽: ?�력 ??======== -->
             <div class="quote-form-panel panel">
-              <div class="panel-title" style="margin-bottom:16px;">📝 견적 정보 입력</div>
+              <div class="panel-title" style="margin-bottom:16px;">?�� 견적 ?�보 ?�력</div>
 
-              <!-- 기본 정보 -->
-              <div class="form-section-label">기본 정보</div>
+              <!-- 기본 ?�보 -->
+              <div class="form-section-label">기본 ?�보</div>
               <div class="form-row">
                 <div class="form-group">
                   <label for="qNo">견적번호</label>
                   <input type="text" id="qNo" value="RQ-20260909-0001" oninput="updatePreview()">
                 </div>
                 <div class="form-group">
-                  <label for="qDate">견적일자</label>
+                  <label for="qDate">견적?�자</label>
                   <input type="date" id="qDate" oninput="updatePreview()">
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label for="qReceiver">수신 (거래처명)</label>
-                  <input type="text" id="qReceiver" placeholder="(주)○○ 귀중" oninput="updatePreview()">
+                  <label for="qReceiver">?�신 (거래처명)</label>
+                  <input type="text" id="qReceiver" placeholder="(�??�○ 귀�? oninput="updatePreview()">
                 </div>
                 <div class="form-group">
-                  <label for="qExpiry">견적 유효일</label>
+                  <label for="qExpiry">견적 ?�효??/label>
                   <input type="date" id="qExpiry" oninput="updatePreview()">
                 </div>
               </div>
@@ -506,72 +498,72 @@
                   <input type="number" id="qPeriod" value="36" oninput="updatePreview()">
                 </div>
                 <div class="form-group">
-                  <label for="qVat">부가세</label>
+                  <label for="qVat">부가??/label>
                   <select id="qVat" onchange="updatePreview()">
-                    <option value="별도">부가세 별도</option>
-                    <option value="포함">부가세 포함</option>
+                    <option value="별도">부가??별도</option>
+                    <option value="?�함">부가???�함</option>
                   </select>
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-group" style="flex:1;">
-                  <label for="qInstallPlace">설치장소</label>
-                  <input type="text" id="qInstallPlace" value="거래처 지정 장소" oninput="updatePreview()">
+                  <label for="qInstallPlace">?�치?�소</label>
+                  <input type="text" id="qInstallPlace" value="거래�?지???�소" oninput="updatePreview()">
                 </div>
               </div>
 
-              <!-- 공급자 정보 -->
-              <div class="form-section-label" style="margin-top:16px;">공급자 정보 (우측 인감 영역)</div>
+              <!-- 공급???�보 -->
+              <div class="form-section-label" style="margin-top:16px;">공급???�보 (?�측 ?�감 ?�역)</div>
               <div class="form-row">
                 <div class="form-group">
-                  <label for="qSupName">상호</label>
-                  <input type="text" id="qSupName" value="렌탈사무기" oninput="updatePreview()">
+                  <label for="qSupName">?�호</label>
+                  <input type="text" id="qSupName" value="?�탈?�무�? oninput="updatePreview()">
                 </div>
                 <div class="form-group">
-                  <label for="qSupCeo">대표자</label>
-                  <input type="text" id="qSupCeo" value="최○○" oninput="updatePreview()">
+                  <label for="qSupCeo">?�?�자</label>
+                  <input type="text" id="qSupCeo" value="최○?? oninput="updatePreview()">
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-group" style="flex:1;">
                   <label for="qSupAddr">주소</label>
-                  <input type="text" id="qSupAddr" value="서울 강동구 아리수로64길 11 1층 렌탈사무기" oninput="updatePreview()">
+                  <input type="text" id="qSupAddr" value="?�울 강동�??�리?�로64�?11 1�??�탈?�무�? oninput="updatePreview()">
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label for="qSupTel">전화</label>
+                  <label for="qSupTel">?�화</label>
                   <input type="text" id="qSupTel" value="010-5922-3650" oninput="updatePreview()">
                 </div>
                 <div class="form-group">
-                  <label for="qSupFax">팩스</label>
+                  <label for="qSupFax">?�스</label>
                   <input type="text" id="qSupFax" value="-" oninput="updatePreview()">
                 </div>
               </div>
 
-              <!-- 기기 목록 입력 -->
+              <!-- 기기 목록 ?�력 -->
               <div class="form-section-label" style="margin-top:16px;">기기 목록</div>
               <div id="deviceFormList"></div>
 
-              <!-- 요약 정보 -->
-              <div class="form-section-label" style="margin-top:16px;">합계 정보</div>
+              <!-- ?�약 ?�보 -->
+              <div class="form-section-label" style="margin-top:16px;">?�계 ?�보</div>
               <div class="form-row">
                 <div class="form-group">
-                  <label for="qDeposit">임대보증금 (원)</label>
+                  <label for="qDeposit">?��?보증�?(??</label>
                   <input type="number" id="qDeposit" value="0" oninput="updatePreview()">
                 </div>
               </div>
               <div class="form-group" style="margin-top:8px;">
-                <label for="qMaintenance">유지보수 조건</label>
-                <textarea id="qMaintenance" rows="3" style="width:100%;background:rgba(0,0,0,0.2);border:1px solid var(--border-color);color:var(--text-primary);border-radius:8px;padding:10px;font-family:inherit;font-size:13px;resize:vertical;" oninput="updatePreview()">토너 부품 출장비 등 유지보수 비용 포함, 복사손지 제외</textarea>
+                <label for="qMaintenance">?��?보수 조건</label>
+                <textarea id="qMaintenance" rows="3" style="width:100%;background:rgba(0,0,0,0.2);border:1px solid var(--border-color);color:var(--text-primary);border-radius:8px;padding:10px;font-family:inherit;font-size:13px;resize:vertical;" oninput="updatePreview()">?�너 부??출장�????��?보수 비용 ?�함, 복사?��? ?�외</textarea>
               </div>
             </div>
 
-            <!-- ======== 오른쪽: 미리보기 ======== -->
+            <!-- ======== ?�른�? 미리보기 ======== -->
             <div class="quote-preview-panel">
-              <div class="panel-title" style="margin-bottom:16px;">👁️ 견적서 미리보기</div>
+              <div class="panel-title" style="margin-bottom:16px;">?���?견적??미리보기</div>
               <div id="quotePreview" class="quote-preview-paper">
-                <!-- JS로 렌더링 -->
+                <!-- JS�??�더�?-->
               </div>
             </div>
 
@@ -579,95 +571,95 @@
         </section>
 
 
-        <!-- ====== 임대 관리 ====== -->
+        <!-- ====== ?��? 관�?====== -->
         <section id="page-rental-mgmt" class="page-section">
           <div class="page-title">
-            <h2><i class="fa fa-laptop-house" style="margin-right:10px;color:var(--accent-primary);"></i>임대 관리</h2>
-            <p>현재 진행 중인 모든 렌탈·임대 계약을 관리합니다.</p>
+            <h2><i class="fa fa-laptop-house" style="margin-right:10px;color:var(--accent-primary);"></i>?��? 관�?/h2>
+            <p>?�재 진행 중인 모든 ?�탈·?��? 계약??관리합?�다.</p>
           </div>
           <div class="panel">
             <div class="panel-header">
-              <div class="panel-title">임대 계약 목록</div>
-              <button class="btn-primary-sm"><i class="fa fa-plus"></i> 계약 등록</button>
+              <div class="panel-title">?��? 계약 목록</div>
+              <button class="btn-primary-sm"><i class="fa fa-plus"></i> 계약 ?�록</button>
             </div>
             <div class="empty-state">
               <i class="fa fa-laptop-house"></i>
-              <p>등록된 임대 계약이 없습니다.</p>
-              <span>거래처 등록 후 임대 계약을 추가해 주세요.</span>
+              <p>?�록???��? 계약???�습?�다.</p>
+              <span>거래�??�록 ???��? 계약??추�???주세??</span>
             </div>
           </div>
         </section>
 
-        <!-- ====== 렌탈 수익성 분석 (내부 관리자 전용) ====== -->
+        <!-- ====== ?�탈 ?�익??분석 (?��? 관리자 ?�용) ====== -->
         <section id="page-rental-analysis" class="page-section">
           <div class="page-title" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
             <div>
               <div style="display:flex;align-items:center;gap:10px;">
-                <h2 style="margin:0;"><i class="fa fa-chart-line" style="margin-right:10px;color:var(--accent-primary);"></i>렌탈 수익성 분석</h2>
+                <h2 style="margin:0;"><i class="fa fa-chart-line" style="margin-right:10px;color:var(--accent-primary);"></i>?�탈 ?�익??분석</h2>
                 <span class="badge" style="background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:700;">
-                  <i class="fa fa-user-shield"></i> 내부 관리자 전용 (대외비)
+                  <i class="fa fa-user-shield"></i> ?��? 관리자 ?�용 (?�?�비)
                 </span>
               </div>
-              <p style="margin-top:6px;">거래처별 장비 원가 회수 시점(손익분기점 BEP)과 계약 기간 예상 수익·투자수익률(ROI)을 정밀 분석합니다.</p>
+              <p style="margin-top:6px;">거래처별 ?�비 ?��? ?�수 ?�점(?�익분기??BEP)�?계약 기간 ?�상 ?�익·?�자?�익�?ROI)???��? 분석?�니??</p>
             </div>
             <div style="display:flex;gap:8px;">
               <button class="btn-primary-sm" style="background:linear-gradient(135deg,#059669,#047857);" onclick="ProfitManager.exportToExcel()">
-                <i class="fa fa-file-excel"></i> 수익성 분석 엑셀 다운로드
+                <i class="fa fa-file-excel"></i> ?�익??분석 ?��? ?�운로드
               </button>
             </div>
           </div>
 
-          <!-- 수익성 핵심 요약 지표 (4개 카드) -->
+          <!-- ?�익???�심 ?�약 지??(4�?카드) -->
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-icon primary"><i class="fa fa-wallet"></i></div>
               <div class="stat-details">
-                <div class="stat-title">총 장비 투자원가</div>
-                <div class="stat-value" id="profitStatTotalInvestment">₩ 0</div>
-                <div class="stat-trend" id="profitStatDeviceCount">장비 0대 등록</div>
+                <div class="stat-title">�??�비 ?�자?��?</div>
+                <div class="stat-value" id="profitStatTotalInvestment">??0</div>
+                <div class="stat-trend" id="profitStatDeviceCount">?�비 0?� ?�록</div>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon success"><i class="fa fa-coins"></i></div>
               <div class="stat-details">
-                <div class="stat-title">월간 총 순마진 (영업익)</div>
-                <div class="stat-value" id="profitStatMonthlyNet">₩ 0</div>
-                <div class="stat-trend" id="profitStatMarginRate">평균 마진율 0%</div>
+                <div class="stat-title">?�간 �??�마�?(?�업??</div>
+                <div class="stat-value" id="profitStatMonthlyNet">??0</div>
+                <div class="stat-trend" id="profitStatMarginRate">?�균 마진??0%</div>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon warning"><i class="fa fa-hourglass-half"></i></div>
               <div class="stat-details">
-                <div class="stat-title">평균 원가 회수 기간 (BEP)</div>
+                <div class="stat-title">?�균 ?��? ?�수 기간 (BEP)</div>
                 <div class="stat-value" id="profitStatAvgBep">0.0 개월</div>
-                <div class="stat-trend">장비 투자비 100% 회수 시점</div>
+                <div class="stat-trend">?�비 ?�자�?100% ?�수 ?�점</div>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon" style="background:#f3e8ff;color:#7e22ce;"><i class="fa fa-chart-pie"></i></div>
               <div class="stat-details">
-                <div class="stat-title">계약기간(36M) 총 예상 순익</div>
-                <div class="stat-value" id="profitStatTotalContractNet">₩ 0</div>
-                <div class="stat-trend" id="profitStatAvgRoi">평균 ROI 0%</div>
+                <div class="stat-title">계약기간(36M) �??�상 ?�익</div>
+                <div class="stat-value" id="profitStatTotalContractNet">??0</div>
+                <div class="stat-trend" id="profitStatAvgRoi">?�균 ROI 0%</div>
               </div>
             </div>
           </div>
 
-          <!-- 거래처별 수익성 분석 테이블 패널 -->
+          <!-- 거래처별 ?�익??분석 ?�이�??�널 -->
           <div class="panel">
             <div class="panel-header" style="flex-wrap:wrap;gap:12px;">
               <div class="panel-title" style="display:flex;align-items:center;gap:8px;">
-                <span>거래처별 원가 회수 및 수익 분석</span>
+                <span>거래처별 ?��? ?�수 �??�익 분석</span>
                 <span class="badge" id="profitClientCountBadge" style="background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:12px;font-size:12px;">0개사</span>
               </div>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <input type="text" id="profitSearchInput" placeholder="거래처명, 장비명 검색..." style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:200px;" oninput="ProfitManager.renderTable()">
+                <input type="text" id="profitSearchInput" placeholder="거래처명, ?�비�?검??.." style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:200px;" oninput="ProfitManager.renderTable()">
                 <select id="profitSortSelect" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;" onchange="ProfitManager.renderTable()">
-                  <option value="name">거래처명 순</option>
-                  <option value="bep_asc">원가회수 빠른 순 (BEP↑)</option>
-                  <option value="net_desc">월 순마진 높은 순</option>
-                  <option value="roi_desc">투자수익률(ROI) 높은 순</option>
-                  <option value="invest_desc">투자원가 높은 순</option>
+                  <option value="name">거래처명 ??/option>
+                  <option value="bep_asc">?��??�수 빠른 ??(BEP??</option>
+                  <option value="net_desc">???�마�??��? ??/option>
+                  <option value="roi_desc">?�자?�익�?ROI) ?��? ??/option>
+                  <option value="invest_desc">?�자?��? ?��? ??/option>
                 </select>
               </div>
             </div>
@@ -678,132 +670,132 @@
                   <tr>
                     <th style="width:45px;">번호</th>
                     <th>거래처명</th>
-                    <th>임대 장비</th>
-                    <th>장비 취득원가</th>
-                    <th>월 유지비용 (소모품/부품)</th>
-                    <th>월 렌탈수입</th>
-                    <th>월 순마진</th>
-                    <th style="width:160px;">원가 회수 시점 (BEP)</th>
-                    <th>계약기간 예상 순익</th>
+                    <th>?��? ?�비</th>
+                    <th>?�비 취득?��?</th>
+                    <th>???��?비용 (?�모??부??</th>
+                    <th>???�탈?�입</th>
+                    <th>???�마�?/th>
+                    <th style="width:160px;">?��? ?�수 ?�점 (BEP)</th>
+                    <th>계약기간 ?�상 ?�익</th>
                     <th>ROI</th>
-                    <th style="width:90px;">원가/비용 관리</th>
+                    <th style="width:90px;">?��?/비용 관�?/th>
                   </tr>
                 </thead>
                 <tbody id="profitTbody">
-                  <!-- JS 동적 렌더링 -->
+                  <!-- JS ?�적 ?�더�?-->
                 </tbody>
               </table>
             </div>
 
             <div class="empty-state" id="profitEmpty" style="display:none;">
               <i class="fa fa-calculator"></i>
-              <p>분석할 거래처 데이터가 없습니다.</p>
-              <span>거래처 관리에서 거래처 및 임대 장비를 먼저 등록해주세요.</span>
+              <p>분석??거래�??�이?��? ?�습?�다.</p>
+              <span>거래�?관리에??거래�?�??��? ?�비�?먼�? ?�록?�주?�요.</span>
             </div>
           </div>
         </section>
 
-        <!-- ====== 가입회원 관리 ====== -->
+        <!-- ====== 가?�회??관�?====== -->
         <section id="page-members" class="page-section">
           <div class="page-title">
-            <h2><i class="fa fa-users" style="margin-right:10px;color:var(--accent-primary);"></i>가입회원 관리</h2>
-            <p>홈페이지에 가입한 회원 목록을 조회하고 권한을 관리합니다.</p>
+            <h2><i class="fa fa-users" style="margin-right:10px;color:var(--accent-primary);"></i>가?�회??관�?/h2>
+            <p>?�페?��???가?�한 ?�원 목록??조회?�고 권한??관리합?�다.</p>
           </div>
           <div class="panel">
             <div class="panel-header">
-              <div class="panel-title">회원 목록</div>
-              <span style="font-size:13px;color:var(--text-muted);">총 0명</span>
+              <div class="panel-title">?�원 목록</div>
+              <span style="font-size:13px;color:var(--text-muted);">�?0�?/span>
             </div>
             <div class="empty-state">
               <i class="fa fa-users"></i>
-              <p>가입된 회원이 없습니다.</p>
-              <span>회원이 사이트에 가입하면 이 목록에 표시됩니다.</span>
+              <p>가?�된 ?�원???�습?�다.</p>
+              <span>?�원???�이?�에 가?�하�???목록???�시?�니??</span>
             </div>
           </div>
         </section>
 
-        <!-- ====== 상담 내역 확인 ====== -->
+        <!-- ====== ?�담 ?�역 ?�인 ====== -->
         <section id="page-consult" class="page-section">
           <div class="page-title">
-            <h2><i class="fa fa-headset" style="margin-right:10px;color:var(--accent-primary);"></i>상담 내역 확인</h2>
-            <p>홈페이지 게시판 및 간편견적 신청을 통해 접수된 상담 내역을 확인합니다.</p>
+            <h2><i class="fa fa-headset" style="margin-right:10px;color:var(--accent-primary);"></i>?�담 ?�역 ?�인</h2>
+            <p>?�페?��? 게시??�?간편견적 ?�청???�해 ?�수???�담 ?�역???�인?�니??</p>
           </div>
           <div class="panel">
             <div class="panel-header">
-              <div class="panel-title">상담 목록</div>
+              <div class="panel-title">?�담 목록</div>
               <div style="display:flex;gap:10px;">
-                <span class="status-badge status-pending">대기 0</span>
-                <span class="status-badge status-completed">완료 0</span>
+                <span class="status-badge status-pending">?��?0</span>
+                <span class="status-badge status-completed">?�료 0</span>
               </div>
             </div>
             <div class="table-wrapper">
               <table class="data-table">
                 <thead>
-                  <tr><th>번호</th><th>고객명</th><th>연락처</th><th>상담 내용</th><th>접수일</th><th>상태</th></tr>
+                  <tr><th>번호</th><th>고객�?/th><th>?�락�?/th><th>?�담 ?�용</th><th>?�수??/th><th>?�태</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">접수된 상담 내역이 없습니다.</td></tr>
+                  <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">?�수???�담 ?�역???�습?�다.</td></tr>
                 </tbody>
               </table>
             </div>
           </div>
         </section>
 
-        <!-- ====== 방문자 통계 ====== -->
+        <!-- ====== 방문???�계 ====== -->
         <section id="page-analytics" class="page-section">
           <div class="page-title">
-            <h2><i class="fa fa-eye" style="margin-right:10px;color:var(--accent-primary);"></i>방문자 통계</h2>
-            <p>사이트 방문자 수, 유입 경로, 인기 페이지 등의 통계를 확인합니다.</p>
+            <h2><i class="fa fa-eye" style="margin-right:10px;color:var(--accent-primary);"></i>방문???�계</h2>
+            <p>?�이??방문???? ?�입 경로, ?�기 ?�이지 ?�의 ?�계�??�인?�니??</p>
           </div>
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-icon primary"><i class="fa fa-eye"></i></div>
-              <div class="stat-details"><div class="stat-title">오늘 방문자</div><div class="stat-value">-</div><div class="stat-trend">GA 연동 필요</div></div>
+              <div class="stat-details"><div class="stat-title">?�늘 방문??/div><div class="stat-value">-</div><div class="stat-trend">GA ?�동 ?�요</div></div>
             </div>
             <div class="stat-card">
               <div class="stat-icon success"><i class="fa fa-calendar-week"></i></div>
-              <div class="stat-details"><div class="stat-title">이번 주 방문자</div><div class="stat-value">-</div><div class="stat-trend">GA 연동 필요</div></div>
+              <div class="stat-details"><div class="stat-title">?�번 �?방문??/div><div class="stat-value">-</div><div class="stat-trend">GA ?�동 ?�요</div></div>
             </div>
             <div class="stat-card">
               <div class="stat-icon warning"><i class="fa fa-mobile-alt"></i></div>
-              <div class="stat-details"><div class="stat-title">모바일 비율</div><div class="stat-value">-</div><div class="stat-trend">GA 연동 필요</div></div>
+              <div class="stat-details"><div class="stat-title">모바??비율</div><div class="stat-value">-</div><div class="stat-trend">GA ?�동 ?�요</div></div>
             </div>
           </div>
           <div class="panel">
-            <div class="panel-header"><div class="panel-title">방문자 추이 차트</div></div>
+            <div class="panel-header"><div class="panel-title">방문??추이 차트</div></div>
             <div class="chart-placeholder">
               <div style="text-align:center;">
                 <i class="fa fa-chart-area" style="font-size:32px;margin-bottom:12px;display:block;"></i>
-                Google Analytics 4 연동 후 실시간 방문자 데이터가 표시됩니다.<br>
-                <a href="https://analytics.google.com" target="_blank" style="color:var(--accent-primary);margin-top:8px;display:inline-block;">GA4 설정 바로가기 →</a>
+                Google Analytics 4 ?�동 ???�시�?방문???�이?��? ?�시?�니??<br>
+                <a href="https://analytics.google.com" target="_blank" style="color:var(--accent-primary);margin-top:8px;display:inline-block;">GA4 ?�정 바로가�???/a>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- ====== 사용자 관리 ====== -->
+        <!-- ====== ?�용??관�?====== -->
         <section id="page-users" class="page-section">
           <div class="page-title">
-            <h2><i class="fa fa-user-shield" style="margin-right:10px;color:var(--accent-primary);"></i>사용자 관리</h2>
-            <p>이 대시보드에 접근 가능한 관리자 계정을 관리합니다.</p>
+            <h2><i class="fa fa-user-shield" style="margin-right:10px;color:var(--accent-primary);"></i>?�용??관�?/h2>
+            <p>???�?�보?�에 ?�근 가?�한 관리자 계정??관리합?�다.</p>
           </div>
           <div class="panel">
             <div class="panel-header">
               <div class="panel-title">관리자 계정 목록</div>
-              <button class="btn-primary-sm"><i class="fa fa-user-plus"></i> 계정 추가</button>
+              <button class="btn-primary-sm"><i class="fa fa-user-plus"></i> 계정 추�?</button>
             </div>
             <div class="table-wrapper">
               <table class="data-table">
                 <thead>
-                  <tr><th>이름</th><th>아이디</th><th>권한</th><th>최근 로그인</th><th>관리</th></tr>
+                  <tr><th>?�름</th><th>?�이??/th><th>권한</th><th>최근 로그??/th><th>관�?/th></tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td><strong>최고 관리자</strong></td>
                     <td>admin</td>
                     <td><span class="status-badge" style="background:rgba(59,130,246,0.15);color:var(--accent-primary);">최고관리자</span></td>
-                    <td>방금 전</td>
-                    <td><button class="btn-icon-edit" onclick="alert('최고관리자 계정은 수정할 수 없습니다.')"><i class="fa fa-edit"></i></button></td>
+                    <td>방금 ??/td>
+                    <td><button class="btn-icon-edit" onclick="alert('최고관리자 계정?� ?�정?????�습?�다.')"><i class="fa fa-edit"></i></button></td>
                   </tr>
                 </tbody>
               </table>
@@ -815,11 +807,11 @@
     </div>
   </div>
 
-  <!-- ==================== 거래처 등록/수정 모달 ==================== -->
+  <!-- ==================== 거래�??�록/?�정 모달 ==================== -->
   <div class="modal-backdrop" id="clientModal" style="display:none;">
     <div class="modal-container modal-lg">
       <div class="modal-header">
-        <h3 id="clientModalTitle"><i class="fa fa-building"></i> 거래처 및 임대 장비 등록</h3>
+        <h3 id="clientModalTitle"><i class="fa fa-building"></i> 거래�?�??��? ?�비 ?�록</h3>
         <button class="modal-close" onclick="ClientManager.closeModal()">&times;</button>
       </div>
       
@@ -827,107 +819,106 @@
         <form id="clientForm" onsubmit="ClientManager.saveClient(event);">
           <input type="hidden" id="clientId">
 
-          <!-- 1. 거래처 기본 정보 섹션 -->
+          <!-- 1. 거래�?기본 ?�보 ?�션 -->
           <div class="form-section-card">
-            <div class="form-section-title"><i class="fa fa-id-card"></i> 거래처 기본 정보</div>
+            <div class="form-section-title"><i class="fa fa-id-card"></i> 거래�?기본 ?�보</div>
             <div class="form-grid-3">
               <div class="form-group">
-                <label for="clName">거래처명 (상호) <span class="req">*</span></label>
-                <input type="text" id="clName" placeholder="예: (주)프린터솔루션" required>
+                <label for="clName">거래처명 (?�호) <span class="req">*</span></label>
+                <input type="text" id="clName" placeholder="?? (�??�린?�솔루션" required>
               </div>
               <div class="form-group">
-                <label for="clBizNum">사업자등록번호</label>
+                <label for="clBizNum">?�업?�등록번??/label>
                 <input type="text" id="clBizNum" placeholder="000-00-00000">
               </div>
               <div class="form-group">
-                <label for="clCeo">대표자명</label>
-                <input type="text" id="clCeo" placeholder="대표자 성명">
+                <label for="clCeo">?�?�자�?/label>
+                <input type="text" id="clCeo" placeholder="?�?�자 ?�명">
               </div>
             </div>
 
             <div class="form-grid-3" style="margin-top:10px;">
               <div class="form-group">
-                <label for="clPhone">연락처 (전화번호) <span class="req">*</span></label>
-                <input type="text" id="clPhone" placeholder="010-0000-0000 또는 02-..." required>
+                <label for="clPhone">?�락�?(?�화번호) <span class="req">*</span></label>
+                <input type="text" id="clPhone" placeholder="010-0000-0000 ?�는 02-..." required>
               </div>
               <div class="form-group">
-                <label for="clEmail">이메일</label>
+                <label for="clEmail">?�메??/label>
                 <input type="email" id="clEmail" placeholder="example@domain.com">
               </div>
               <div class="form-group">
-                <label for="clContractDate">계약 시작 일시</label>
+                <label for="clContractDate">계약 ?�작 ?�시</label>
                 <input type="date" id="clContractDate">
               </div>
             </div>
 
             <div class="form-grid-2" style="margin-top:10px;">
               <div class="form-group">
-                <label for="clAddress">사업장 주소</label>
-                <input type="text" id="clAddress" placeholder="설치 및 사업장 소재지 주소">
+                <label for="clAddress">?�업??주소</label>
+                <input type="text" id="clAddress" placeholder="?�치 �??�업???�재지 주소">
               </div>
               <div class="form-group">
-                <label for="clTotalPaid">지금까지 총 결제한 금액 (원)</label>
+                <label for="clTotalPaid">지금까지 �?결제??금액 (??</label>
                 <input type="number" id="clTotalPaid" placeholder="0" min="0" value="0">
               </div>
             </div>
 
             <div class="form-group" style="margin-top:10px;">
-              <label for="clMemo">비고 / 특이사항</label>
-              <input type="text" id="clMemo" placeholder="정기점검 주기, 청구서 발송 조건, 담당자 등">
+              <label for="clMemo">비고 / ?�이?�항</label>
+              <input type="text" id="clMemo" placeholder="?�기?��? 주기, �?��??발송 조건, ?�당????>
             </div>
           </div>
 
-          <!-- 2. 임대 장비 목록 섹션 (1:N 다중 등록 지원) -->
+          <!-- 2. ?��? ?�비 목록 ?�션 (1:N ?�중 ?�록 지?? -->
           <div class="form-section-card" style="margin-top:16px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-              <div class="form-section-title" style="margin-bottom:0;"><i class="fa fa-print"></i> 임대 장비 정보 및 요금 기준</div>
+              <div class="form-section-title" style="margin-bottom:0;"><i class="fa fa-print"></i> ?��? ?�비 ?�보 �??�금 기�?</div>
               <button type="button" class="btn-primary-sm" style="background:#0284c7;" onclick="ClientManager.addDeviceRow()">
-                <i class="fa fa-plus"></i> + 장비 추가
+                <i class="fa fa-plus"></i> + ?�비 추�?
               </button>
             </div>
 
             <div id="clientDeviceFormList">
-              <!-- 장비 카드들이 동적으로 추가됨 -->
+              <!-- ?�비 카드?�이 ?�적?�로 추�???-->
             </div>
           </div>
 
-          <!-- 3. 실시간 자동 정산 미리보기 섹션 -->
+          <!-- 3. ?�시�??�동 ?�산 미리보기 ?�션 -->
           <div class="form-section-card summary-calc-box" style="margin-top:16px;background:#f8fafc;border:1.5px solid #cbd5e1;">
-            <div class="form-section-title" style="color:#0f172a;"><i class="fa fa-calculator"></i> 이번 달 청구 금액 실시간 정산</div>
+            <div class="form-section-title" style="color:#0f172a;"><i class="fa fa-calculator"></i> ?�번 ??�?�� 금액 ?�시�??�산</div>
             <div class="calc-preview-grid">
               <div class="calc-item">
-                <span class="calc-label">기본 임대료 합계</span>
-                <span class="calc-val" id="prevBaseRent">0원</span>
+                <span class="calc-label">기본 ?��?�??�계</span>
+                <span class="calc-val" id="prevBaseRent">0??/span>
               </div>
               <div class="calc-item">
-                <span class="calc-label">흑백 추가금액</span>
-                <span class="calc-val" id="prevBwExtra">0원</span>
+                <span class="calc-label">?�백 추�?금액</span>
+                <span class="calc-val" id="prevBwExtra">0??/span>
               </div>
               <div class="calc-item">
-                <span class="calc-label">컬러 추가금액</span>
-                <span class="calc-val" id="prevColorExtra">0원</span>
+                <span class="calc-label">컬러 추�?금액</span>
+                <span class="calc-val" id="prevColorExtra">0??/span>
               </div>
               <div class="calc-item">
-                <span class="calc-label">합계금액 (공급가)</span>
-                <span class="calc-val bold" id="prevSupply">0원</span>
+                <span class="calc-label">?�계금액 (공급가)</span>
+                <span class="calc-val bold" id="prevSupply">0??/span>
               </div>
               <div class="calc-item">
                 <span class="calc-label">V.A.T (10%)</span>
-                <span class="calc-val" id="prevVat">0원</span>
+                <span class="calc-val" id="prevVat">0??/span>
               </div>
               <div class="calc-item total">
-                <span class="calc-label">이번달 총 임대료</span>
-                <span class="calc-val highlight" id="prevTotalBill">0원</span>
+                <span class="calc-label">?�번??�??��?�?/span>
+                <span class="calc-val highlight" id="prevTotalBill">0??/span>
               </div>
             </div>
           </div>
 
-          <!-- 모달 하단 액션 버튼 -->
+          <!-- 모달 ?�단 ?�션 버튼 -->
           <div class="modal-footer" style="margin-top:20px;display:flex;justify-content:flex-end;gap:10px;">
             <button type="button" class="btn-secondary" onclick="ClientManager.closeModal()">취소</button>
             <button type="button" class="btn-primary-sm" style="padding:10px 24px;font-size:14px;" onclick="ClientManager.saveClient(event)">
-              <i class="fa fa-save"></i> 저장하기
-            </button>
+              <i class="fa fa-save"></i> ?�?�하�?            </button>
           </div>
         </form>
       </div>
@@ -935,13 +926,13 @@
   </div>
 
   <!-- ============================================
-       이번달 검침내역 수정 및 정산 모달
+       ?�번??검침내???�정 �??�산 모달
        ============================================ -->
   <div class="modal-overlay" id="meterEditModal" style="display:none;">
     <div class="modal-card" style="max-width:850px;width:95%;">
       <div class="modal-header">
         <div class="modal-title" id="meterEditModalTitle">
-          <i class="fa fa-calendar-check" style="color:#059669;margin-right:8px;"></i> 이번달 검침내역 수정 및 청구 정산
+          <i class="fa fa-calendar-check" style="color:#059669;margin-right:8px;"></i> ?�번??검침내???�정 �?�?�� ?�산
         </div>
         <button class="modal-close" onclick="ClientManager.closeMeterModal()">&times;</button>
       </div>
@@ -949,128 +940,126 @@
         <form id="meterEditForm" onsubmit="ClientManager.saveMeterEdit(event);">
           <input type="hidden" id="meterEditClientId">
 
-          <!-- 상단 거래처 정보 및 검침 연월 선택 바 -->
+          <!-- ?�단 거래�??�보 �?검�??�월 ?�택 �?-->
           <div style="background:#f1f5f9;border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
             <div>
-              <span style="font-size:12px;color:#64748b;font-weight:600;">거래처</span>
+              <span style="font-size:12px;color:#64748b;font-weight:600;">거래�?/span>
               <div style="font-size:16px;font-weight:800;color:#0f172a;" id="meterEditClientName">-</div>
             </div>
             <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
               <div>
-                <label for="meterEditMonth" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">검침 기준 연월</label>
+                <label for="meterEditMonth" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">검�?기�? ?�월</label>
                 <input type="month" id="meterEditMonth" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-weight:700;color:#0f172a;" onchange="ClientManager.loadMeterRecordForSelectedMonth()">
               </div>
               <div>
-                <label for="meterEditDate" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">검침 일자</label>
+                <label for="meterEditDate" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">검�??�자</label>
                 <input type="date" id="meterEditDate" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;color:#0f172a;">
               </div>
             </div>
           </div>
 
           <div style="font-size:13px;color:#64748b;margin-bottom:10px;">
-            <i class="fa fa-info-circle" style="color:#0284c7;"></i> 당월 누적 계수기를 수정하면 <strong>전월 대비 이번달 사용량과 초과 추가요금이 자동 계산</strong>됩니다.
+            <i class="fa fa-info-circle" style="color:#0284c7;"></i> ?�월 ?�적 계수기�? ?�정?�면 <strong>?�월 ?��??�번???�용?�과 초과 추�??�금???�동 계산</strong>?�니??
           </div>
 
-          <!-- 기기별 검침 입력 리스트 -->
+          <!-- 기기�?검�??�력 리스??-->
           <div id="meterEditDeviceList"></div>
 
-          <!-- 실시간 청구 합계 프리뷰 -->
+          <!-- ?�시�?�?�� ?�계 ?�리�?-->
           <div class="calc-preview-card" style="margin-top:20px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:16px;">
             <div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:10px;">
-              <i class="fa fa-receipt" style="color:#059669;"></i> 이번달 최종 청구 정산 합계
+              <i class="fa fa-receipt" style="color:#059669;"></i> ?�번??최종 �?�� ?�산 ?�계
             </div>
             <div class="calc-preview-grid">
               <div class="calc-item">
-                <span class="calc-label">기본 임대료</span>
-                <span class="calc-val" id="meterPrevBaseRent">0원</span>
+                <span class="calc-label">기본 ?��?�?/span>
+                <span class="calc-val" id="meterPrevBaseRent">0??/span>
               </div>
               <div class="calc-item">
-                <span class="calc-label">흑백 추가금</span>
-                <span class="calc-val" id="meterPrevBwExtra">0원</span>
+                <span class="calc-label">?�백 추�?�?/span>
+                <span class="calc-val" id="meterPrevBwExtra">0??/span>
               </div>
               <div class="calc-item">
-                <span class="calc-label">컬러 추가금</span>
-                <span class="calc-val" id="meterPrevColorExtra">0원</span>
+                <span class="calc-label">컬러 추�?�?/span>
+                <span class="calc-val" id="meterPrevColorExtra">0??/span>
               </div>
               <div class="calc-item">
-                <span class="calc-label">공급가액</span>
-                <span class="calc-val bold" id="meterPrevSupply">0원</span>
+                <span class="calc-label">공급가??/span>
+                <span class="calc-val bold" id="meterPrevSupply">0??/span>
               </div>
               <div class="calc-item">
                 <span class="calc-label">V.A.T (10%)</span>
-                <span class="calc-val" id="meterPrevVat">0원</span>
+                <span class="calc-val" id="meterPrevVat">0??/span>
               </div>
               <div class="calc-item total">
-                <span class="calc-label">이번달 총 청구금액</span>
-                <span class="calc-val highlight" id="meterPrevTotalBill">0원</span>
+                <span class="calc-label">?�번??�?�?��금액</span>
+                <span class="calc-val highlight" id="meterPrevTotalBill">0??/span>
               </div>
-              <!-- 할인금액 차감 영역 -->
+              <!-- ?�인금액 차감 ?�역 -->
               <div class="calc-item" style="background:rgba(245,158,11,0.07);border-radius:8px;padding:8px 12px;margin-top:4px;">
-                <span class="calc-label" style="color:#b45309;font-weight:700;"><i class="fa fa-tag"></i> 할인 금액 차감 <small style="font-weight:400;color:#92400e;">(공급가액 기준, 부가세 적용 전)</small></span>
+                <span class="calc-label" style="color:#b45309;font-weight:700;"><i class="fa fa-tag"></i> ?�인 금액 차감 <small style="font-weight:400;color:#92400e;">(공급가??기�?, 부가???�용 ??</small></span>
                 <div style="display:flex;align-items:center;gap:8px;">
-                  <input type="number" id="meterDiscountAmount" min="0" step="1000"
+                  <input type="number" id="meterDiscountAmount" min="0" step="1"
                     class="form-input" style="width:150px;font-weight:700;color:#b45309;background:#fffbeb;border-color:#fbbf24;text-align:right;"
-                    placeholder="할인금액 입력"
+                    placeholder="?�인금액 ?�력"
                     oninput="ClientManager.updateMeterModalPreview()">
-                  <span style="font-size:12px;color:#78716c;">원 차감</span>
+                  <span style="font-size:12px;color:#78716c;">??차감</span>
                 </div>
               </div>
               <div class="calc-item total" style="background:rgba(16,185,129,0.08);border-radius:8px;padding:8px 12px;margin-top:2px;">
-                <span class="calc-label" style="color:#059669;font-weight:800;"><i class="fa fa-calculator"></i> 최종 정산금액 <small style="font-size:11px;font-weight:400;color:#047857;">(공급가액 - 할인) × 1.1</small></span>
-                <span class="calc-val highlight" id="meterFinalBill" style="color:#059669;font-size:18px;">0원</span>
+                <span class="calc-label" style="color:#059669;font-weight:800;"><i class="fa fa-calculator"></i> 최종 ?�산금액 <small style="font-size:11px;font-weight:400;color:#047857;">(공급가??- ?�인) × 1.1</small></span>
+                <span class="calc-val highlight" id="meterFinalBill" style="color:#059669;font-size:18px;">0??/span>
               </div>
             </div>
           </div>
 
-          <!-- 수금(입금/미수금) 및 세금계산서 정산 관리 -->
+          <!-- ?�금(?�금/미수�? �??�금계산???�산 관�?-->
           <div style="margin-top:16px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;padding:16px;">
             <div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:12px;display:flex;align-items:center;gap:6px;">
-              <i class="fa fa-hand-holding-usd" style="color:#2563eb;"></i> 당월 수금(입금/미수금) 및 세금계산서 발행 관리
-            </div>
+              <i class="fa fa-hand-holding-usd" style="color:#2563eb;"></i> ?�월 ?�금(?�금/미수�? �??�금계산??발행 관�?            </div>
             <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;">
               <div>
-                <label for="meterPaidAmount" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">당월 입금액 (원)</label>
-                <input type="number" id="meterPaidAmount" min="0" step="1000" class="form-input" style="font-weight:700;color:#059669;" placeholder="입금된 금액" oninput="ClientManager.updateMeterModalPreview()">
+                <label for="meterPaidAmount" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">?�월 ?�금??(??</label>
+                <input type="number" id="meterPaidAmount" min="0" step="1000" class="form-input" style="font-weight:700;color:#059669;" placeholder="?�금??금액" oninput="ClientManager.updateMeterModalPreview()">
               </div>
               <div>
-                <label for="meterUnpaidAmount" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">당월 미수금 (원)</label>
-                <input type="text" id="meterUnpaidAmount" class="form-input" style="font-weight:700;color:#dc2626;background:#fef2f2;" readonly value="0원">
+                <label for="meterUnpaidAmount" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">?�월 미수�?(??</label>
+                <input type="text" id="meterUnpaidAmount" class="form-input" style="font-weight:700;color:#dc2626;background:#fef2f2;" readonly value="0??>
               </div>
               <div>
-                <label for="meterPaidDate" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">입금 확인일자</label>
+                <label for="meterPaidDate" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">?�금 ?�인?�자</label>
                 <input type="date" id="meterPaidDate" class="form-input">
               </div>
               <div>
-                <label for="meterTaxStatus" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">세금계산서 발행 상태</label>
+                <label for="meterTaxStatus" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">?�금계산??발행 ?�태</label>
                 <select id="meterTaxStatus" class="form-input" style="font-weight:700;">
-                  <option value="unissued">미발행</option>
-                  <option value="issued">발행완료</option>
-                  <option value="cashReceipt">현금영수증</option>
-                  <option value="na">영수(해당없음)</option>
+                  <option value="unissued">미발??/option>
+                  <option value="issued">발행?�료</option>
+                  <option value="cashReceipt">?�금?�수�?/option>
+                  <option value="na">?�수(?�당?�음)</option>
                 </select>
               </div>
               <div>
-                <label for="meterTaxDate" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">세금계산서 발행일자</label>
+                <label for="meterTaxDate" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">?�금계산??발행?�자</label>
                 <input type="date" id="meterTaxDate" class="form-input">
               </div>
             </div>
           </div>
 
-          <!-- 액션 버튼 -->
+          <!-- ?�션 버튼 -->
           <div class="modal-footer" style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
             <div style="display:flex;gap:8px;">
               <button type="button" class="btn-primary-sm" style="background:#059669;" onclick="ClientManager.exportCurrentMeterModalExcel()">
-                <i class="fa fa-file-excel"></i> 이 검침서 엑셀 받기
+                <i class="fa fa-file-excel"></i> ??검침서 ?��? 받기
               </button>
               <button type="button" class="btn-primary-sm" style="background:#dc2626;" onclick="ClientManager.printCurrentMeterModalReport()">
-                <i class="fa fa-file-pdf"></i> PDF / 인쇄
+                <i class="fa fa-file-pdf"></i> PDF / ?�쇄
               </button>
             </div>
             <div style="display:flex;gap:8px;">
-              <button type="button" class="btn-secondary" onclick="ClientManager.closeMeterModal()">닫기</button>
+              <button type="button" class="btn-secondary" onclick="ClientManager.closeMeterModal()">?�기</button>
               <button type="submit" class="btn-primary-sm" style="padding:10px 22px;background:#0284c7;font-size:14px;">
-                <i class="fa fa-check"></i> 검침내역 저장하기
-              </button>
+                <i class="fa fa-check"></i> 검침내???�?�하�?              </button>
             </div>
           </div>
         </form>
@@ -1079,13 +1068,13 @@
   </div>
 
   <!-- ============================================
-       렌탈 수익성 분석 - 원가 및 비용 상세 입력 모달
+       ?�탈 ?�익??분석 - ?��? �?비용 ?�세 ?�력 모달
        ============================================ -->
   <div class="modal-overlay" id="profitEditModal" style="display:none;">
     <div class="modal-card" style="max-width:760px;width:95%;">
       <div class="modal-header">
         <div class="modal-title">
-          <i class="fa fa-calculator" style="color:#7c3aed;margin-right:8px;"></i> 렌탈 수익성 분석 - 원가 및 비용 설정
+          <i class="fa fa-calculator" style="color:#7c3aed;margin-right:8px;"></i> ?�탈 ?�익??분석 - ?��? �?비용 ?�정
         </div>
         <button class="modal-close" onclick="ProfitManager.closeModal()">&times;</button>
       </div>
@@ -1093,24 +1082,24 @@
         <form id="profitForm" onsubmit="ProfitManager.saveProfitCost(event);">
           <input type="hidden" id="profitClientId">
 
-          <!-- 안내 배너 -->
+          <!-- ?�내 배너 -->
           <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:#991b1b;display:flex;align-items:center;gap:8px;">
             <i class="fa fa-shield-alt" style="font-size:16px;"></i>
-            <span><strong>대외비 보안:</strong> 본 입력 정보(기기 원가, 소모품/부품 매입가)는 관리자 전용이며, 고객 견적서에 절대 노출되지 않습니다.</span>
+            <span><strong>?�?�비 보안:</strong> �??�력 ?�보(기기 ?��?, ?�모??부??매입가)??관리자 ?�용?�며, 고객 견적?�에 ?��? ?�출?��? ?�습?�다.</span>
           </div>
 
           <div style="background:#f8fafc;border-radius:8px;padding:12px 16px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
             <div>
-              <span style="font-size:12px;color:#64748b;">대상 거래처</span>
+              <span style="font-size:12px;color:#64748b;">?�??거래�?/span>
               <div style="font-size:16px;font-weight:700;color:#0f172a;" id="profitClientName">-</div>
             </div>
             <div style="text-align:right;">
-              <span style="font-size:12px;color:#64748b;">월 렌탈 매출 (기본+추가)</span>
+              <span style="font-size:12px;color:#64748b;">???�탈 매출 (기본+추�?)</span>
               <div style="font-size:16px;font-weight:700;color:#0284c7;" id="profitMonthlyRevenue">-</div>
             </div>
           </div>
 
-          <!-- 기본 계약 정보 (계약기간 & 비고) -->
+          <!-- 기본 계약 ?�보 (계약기간 & 비고) -->
           <div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:14px;background:#fff;">
             <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
               <div>
@@ -1118,181 +1107,180 @@
                 <input type="number" id="profitContractMonths" min="1" max="120" value="36" class="form-input" placeholder="기본 36" required oninput="ProfitManager.updateModalPreview()">
               </div>
               <div>
-                <label for="profitMemo" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">비고 및 관리 메모</label>
-                <input type="text" id="profitMemo" class="form-input" placeholder="예: 재생토너 계약, 2대 통합정산 등">
+                <label for="profitMemo" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">비고 �?관�?메모</label>
+                <input type="text" id="profitMemo" class="form-input" placeholder="?? ?�생?�너 계약, 2?� ?�합?�산 ??>
               </div>
             </div>
           </div>
 
-          <!-- 1. 기기별 장비 취득원가 및 초기비용 분리 입력 (2대 이상 지원) -->
+          <!-- 1. 기기�??�비 취득?��? �?초기비용 분리 ?�력 (2?� ?�상 지?? -->
           <div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:14px;background:#fff;">
             <div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
               <span style="display:flex;align-items:center;gap:6px;">
-                <i class="fa fa-print" style="color:#0284c7;"></i> 1. 기기별 원가 분리 입력 (2대 이상 각각 원가/설치비/잔존가치 관리)
+                <i class="fa fa-print" style="color:#0284c7;"></i> 1. 기기�??��? 분리 ?�력 (2?� ?�상 각각 ?��?/?�치�??�존가�?관�?
               </span>
-              <span style="font-size:11px;color:#64748b;" id="profitDeviceCountBadge">등록 기기: 0대</span>
+              <span style="font-size:11px;color:#64748b;" id="profitDeviceCountBadge">?�록 기기: 0?�</span>
             </div>
 
-            <!-- 기기별 카드 목록 동적 렌더링 컨테이너 -->
+            <!-- 기기�?카드 목록 ?�적 ?�더�?컨테?�너 -->
             <div id="profitDeviceCostList">
-              <!-- JS로 기기별 입력 카드 렌더링 -->
+              <!-- JS�?기기�??�력 카드 ?�더�?-->
             </div>
 
-            <!-- 투자 총합계 요약 바 -->
+            <!-- ?�자 총합�??�약 �?-->
             <div class="maint-summary-bar" style="margin-top:10px;">
               <div>
-                <div style="font-size:11px;color:#64748b;">기기 총 취득원가</div>
-                <div style="font-size:14px;font-weight:700;color:#0f172a;" id="profitTotalDevCostDisplay">0원</div>
+                <div style="font-size:11px;color:#64748b;">기기 �?취득?��?</div>
+                <div style="font-size:14px;font-weight:700;color:#0f172a;" id="profitTotalDevCostDisplay">0??/div>
               </div>
               <div>
-                <div style="font-size:11px;color:#64748b;">총 초기설치/물류비</div>
-                <div style="font-size:14px;font-weight:700;color:#0284c7;" id="profitTotalSetupDisplay">0원</div>
+                <div style="font-size:11px;color:#64748b;">�?초기?�치/물류�?/div>
+                <div style="font-size:14px;font-weight:700;color:#0284c7;" id="profitTotalSetupDisplay">0??/div>
               </div>
               <div>
-                <div style="font-size:11px;color:#64748b;">총 만료잔존가치</div>
-                <div style="font-size:14px;font-weight:700;color:#059669;" id="profitTotalResidualDisplay">0원</div>
+                <div style="font-size:11px;color:#64748b;">�?만료?�존가�?/div>
+                <div style="font-size:14px;font-weight:700;color:#059669;" id="profitTotalResidualDisplay">0??/div>
               </div>
               <div>
-                <div style="font-size:11px;color:#64748b;">총 순투자비용</div>
-                <div style="font-size:14px;font-weight:800;color:#7c3aed;" id="profitNetInvestDisplay">0원</div>
+                <div style="font-size:11px;color:#64748b;">�??�투?�비??/div>
+                <div style="font-size:14px;font-weight:800;color:#7c3aed;" id="profitNetInvestDisplay">0??/div>
               </div>
             </div>
 
-            <!-- 하위 호환용 hidden/sync inputs -->
+            <!-- ?�위 ?�환??hidden/sync inputs -->
             <input type="hidden" id="profitDevCost" value="0">
             <input type="hidden" id="profitInitialSetup" value="0">
             <input type="hidden" id="profitResidualValue" value="0">
           </div>
 
-          <!-- 2. 소모품 & 부품 건별 지출 장부 (날짜별 등록 & 합계 확인) -->
+          <!-- 2. ?�모??& 부??건별 지�??��? (?�짜�??�록 & ?�계 ?�인) -->
           <div class="maint-log-wrap">
             <div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
               <span style="display:flex;align-items:center;gap:6px;">
-                <i class="fa fa-tools" style="color:#d97706;"></i> 2. 소모품·부품 및 정기 유지비용 (날짜별 건별 입력 & 합계)
+                <i class="fa fa-tools" style="color:#d97706;"></i> 2. ?�모?�·�???�??�기 ?��?비용 (?�짜�?건별 ?�력 & ?�계)
               </span>
-              <span style="font-size:11px;color:#059669;font-weight:600;"><i class="fa fa-check-circle"></i> 건별 지출 이력 영구 보관</span>
+              <span style="font-size:11px;color:#059669;font-weight:600;"><i class="fa fa-check-circle"></i> 건별 지�??�력 ?�구 보�?</span>
             </div>
 
-            <!-- 건별 입력 폼 -->
+            <!-- 건별 ?�력 ??-->
             <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:10px;">
               <div style="display:grid;grid-template-columns:130px 140px 1fr 130px 1fr auto;gap:8px;align-items:end;">
                 <div>
-                  <label for="maintInputDate" style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">발생일자</label>
+                  <label for="maintInputDate" style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">발생?�자</label>
                   <input type="date" id="maintInputDate" class="form-input" style="padding:6px 8px;font-size:12px;">
                 </div>
                 <div>
                   <label for="maintInputCategory" style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">비용 구분</label>
                   <select id="maintInputCategory" class="form-input" style="padding:6px 8px;font-size:12px;">
-                    <option value="supplies">소모품(토너/드럼)</option>
-                    <option value="repairs">부품수리(헤드/롤러)</option>
-                    <option value="service">정기점검/출장비</option>
+                    <option value="supplies">?�모???�너/?�럼)</option>
+                    <option value="repairs">부?�수�??�드/롤러)</option>
+                    <option value="service">?�기?��?/출장�?/option>
                   </select>
                 </div>
                 <div>
-                  <label for="maintInputName" style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">품목/수리내역</label>
-                  <input type="text" id="maintInputName" class="form-input" style="padding:6px 8px;font-size:12px;" placeholder="예: K/C 토너 교체">
+                  <label for="maintInputName" style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">?�목/?�리?�역</label>
+                  <input type="text" id="maintInputName" class="form-input" style="padding:6px 8px;font-size:12px;" placeholder="?? K/C ?�너 교체">
                 </div>
                 <div>
-                  <label for="maintInputAmount" style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">비용(원)</label>
-                  <input type="number" id="maintInputAmount" min="0" step="1000" class="form-input" style="padding:6px 8px;font-size:12px;" placeholder="금액 입력">
+                  <label for="maintInputAmount" style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">비용(??</label>
+                  <input type="number" id="maintInputAmount" min="0" step="1000" class="form-input" style="padding:6px 8px;font-size:12px;" placeholder="금액 ?�력">
                 </div>
                 <div>
                   <label for="maintInputMemo" style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">메모/기기</label>
-                  <input type="text" id="maintInputMemo" class="form-input" style="padding:6px 8px;font-size:12px;" placeholder="기기명 또는 비고">
+                  <input type="text" id="maintInputMemo" class="form-input" style="padding:6px 8px;font-size:12px;" placeholder="기기�??�는 비고">
                 </div>
                 <div>
                   <button type="button" class="btn-primary-sm" style="background:#d97706;padding:7px 14px;font-size:12px;height:35px;" onclick="ProfitManager.addMaintenanceLog()">
-                    <i class="fa fa-plus"></i> 등록
+                    <i class="fa fa-plus"></i> ?�록
                   </button>
                 </div>
               </div>
             </div>
 
-            <!-- 건별 등록 내역 목록 테이블 -->
+            <!-- 건별 ?�록 ?�역 목록 ?�이�?-->
             <div style="max-height:160px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:6px;">
               <table class="maint-log-table">
                 <thead>
                   <tr>
-                    <th style="width:90px;">일자</th>
+                    <th style="width:90px;">?�자</th>
                     <th style="width:110px;">구분</th>
-                    <th>품목 / 수리 내역</th>
-                    <th style="width:110px;">비용(원)</th>
+                    <th>?�목 / ?�리 ?�역</th>
+                    <th style="width:110px;">비용(??</th>
                     <th>비고</th>
-                    <th style="width:50px;">삭제</th>
+                    <th style="width:50px;">??��</th>
                   </tr>
                 </thead>
                 <tbody id="maintLogsTableBody">
-                  <tr><td colspan="6" style="color:#94a3b8;padding:16px;">등록된 건별 지출 내역이 없습니다.</td></tr>
+                  <tr><td colspan="6" style="color:#94a3b8;padding:16px;">?�록??건별 지�??�역???�습?�다.</td></tr>
                 </tbody>
               </table>
             </div>
 
-            <!-- 건별 합계 요약 바 -->
+            <!-- 건별 ?�계 ?�약 �?-->
             <div class="maint-summary-bar">
               <div>
-                <div style="font-size:11px;color:#64748b;">소모품 누적 합계</div>
-                <div style="font-size:13px;font-weight:700;color:#0284c7;" id="maintSumSupplies">0원</div>
+                <div style="font-size:11px;color:#64748b;">?�모???�적 ?�계</div>
+                <div style="font-size:13px;font-weight:700;color:#0284c7;" id="maintSumSupplies">0??/div>
               </div>
               <div>
-                <div style="font-size:11px;color:#64748b;">부품수리 누적 합계</div>
-                <div style="font-size:13px;font-weight:700;color:#d97706;" id="maintSumRepairs">0원</div>
+                <div style="font-size:11px;color:#64748b;">부?�수�??�적 ?�계</div>
+                <div style="font-size:13px;font-weight:700;color:#d97706;" id="maintSumRepairs">0??/div>
               </div>
               <div>
-                <div style="font-size:11px;color:#64748b;">정기점검/기타 누적</div>
-                <div style="font-size:13px;font-weight:700;color:#059669;" id="maintSumService">0원</div>
+                <div style="font-size:11px;color:#64748b;">?�기?��?/기�? ?�적</div>
+                <div style="font-size:13px;font-weight:700;color:#059669;" id="maintSumService">0??/div>
               </div>
               <div style="background:#fee2e2;border-radius:6px;padding:4px;">
-                <div style="font-size:11px;color:#991b1b;font-weight:700;">총 건별 지출 합계</div>
-                <div style="font-size:15px;font-weight:800;color:#b91c1c;" id="maintSumTotal">0원</div>
+                <div style="font-size:11px;color:#991b1b;font-weight:700;">�?건별 지�??�계</div>
+                <div style="font-size:15px;font-weight:800;color:#b91c1c;" id="maintSumTotal">0??/div>
               </div>
             </div>
 
-            <!-- 실제 건별 장부 합계 월 환산 자동 반영 옵션 -->
+            <!-- ?�제 건별 ?��? ?�계 ???�산 ?�동 반영 ?�션 -->
             <div style="margin-top:12px;padding:10px 14px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
               <label for="profitUseActualLogs" style="font-size:12px;font-weight:700;color:#92400e;display:flex;align-items:center;gap:6px;cursor:pointer;">
                 <input type="checkbox" id="profitUseActualLogs" onchange="ProfitManager.toggleUseActualLogs(this.checked)">
-                <span>위 건별 지출 합계를 월 환산하여 수익성 분석에 자동 반영</span>
+                <span>??건별 지�??�계�????�산?�여 ?�익??분석???�동 반영</span>
               </label>
-              <span style="font-size:11px;color:#78350f;">체크 해제 시 아래 월평균 수동 입력값이 적용됩니다.</span>
+              <span style="font-size:11px;color:#78350f;">체크 ?�제 ???�래 ?�평�??�동 ?�력값이 ?�용?�니??</span>
             </div>
 
-            <!-- 월평균 수동 입력 (건별 지출 자동반영 미선택 시 사용) -->
+            <!-- ?�평�??�동 ?�력 (건별 지�??�동반영 미선?????�용) -->
             <div id="profitManualCostsWrap" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-top:10px;">
               <div>
-                <label for="profitMonthlySupplies" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">월평균 소모품비 (원)</label>
-                <input type="number" id="profitMonthlySupplies" min="0" step="1000" class="form-input" placeholder="예: 15000" oninput="ProfitManager.updateModalPreview()">
+                <label for="profitMonthlySupplies" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">?�평�??�모?�비 (??</label>
+                <input type="number" id="profitMonthlySupplies" min="0" step="1000" class="form-input" placeholder="?? 15000" oninput="ProfitManager.updateModalPreview()">
               </div>
               <div>
-                <label for="profitMonthlyRepairs" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">월평균 부품수리비 (원)</label>
-                <input type="number" id="profitMonthlyRepairs" min="0" step="1000" class="form-input" placeholder="예: 5000" oninput="ProfitManager.updateModalPreview()">
+                <label for="profitMonthlyRepairs" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">?�평�?부?�수리비 (??</label>
+                <input type="number" id="profitMonthlyRepairs" min="0" step="1000" class="form-input" placeholder="?? 5000" oninput="ProfitManager.updateModalPreview()">
               </div>
               <div>
-                <label for="profitMonthlyService" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">월평균 점검/인건비 (원)</label>
-                <input type="number" id="profitMonthlyService" min="0" step="1000" class="form-input" placeholder="예: 5000" oninput="ProfitManager.updateModalPreview()">
+                <label for="profitMonthlyService" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">?�평�??��?/?�건�?(??</label>
+                <input type="number" id="profitMonthlyService" min="0" step="1000" class="form-input" placeholder="?? 5000" oninput="ProfitManager.updateModalPreview()">
               </div>
             </div>
           </div>
 
-          <!-- 실시간 수익성 분석 계산 결과 프리뷰 -->
+          <!-- ?�시�??�익??분석 계산 결과 ?�리�?-->
           <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:16px;margin-bottom:18px;">
             <div style="font-size:14px;font-weight:700;color:#166534;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
-              <i class="fa fa-chart-pie"></i> 실시간 손익분기점(BEP) 및 예상 수익 시뮬레이션
-            </div>
+              <i class="fa fa-chart-pie"></i> ?�시�??�익분기??BEP) �??�상 ?�익 ?��??�이??            </div>
             <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px;text-align:center;">
               <div style="background:#fff;padding:10px;border-radius:8px;border:1px solid #bbf7d0;">
-                <div style="font-size:11px;color:#64748b;">월 순마진</div>
-                <div style="font-size:16px;font-weight:800;color:#059669;" id="prevProfitMonthlyNet">0원</div>
+                <div style="font-size:11px;color:#64748b;">???�마�?/div>
+                <div style="font-size:16px;font-weight:800;color:#059669;" id="prevProfitMonthlyNet">0??/div>
               </div>
               <div style="background:#fff;padding:10px;border-radius:8px;border:1px solid #bbf7d0;">
-                <div style="font-size:11px;color:#64748b;">원가 회수 시점 (BEP)</div>
+                <div style="font-size:11px;color:#64748b;">?��? ?�수 ?�점 (BEP)</div>
                 <div style="font-size:16px;font-weight:800;color:#d97706;" id="prevProfitBepMonths">0.0개월</div>
               </div>
               <div style="background:#fff;padding:10px;border-radius:8px;border:1px solid #bbf7d0;">
-                <div style="font-size:11px;color:#64748b;">계약기간 총 예상순익</div>
-                <div style="font-size:16px;font-weight:800;color:#1e40af;" id="prevProfitTotalNet">0원</div>
+                <div style="font-size:11px;color:#64748b;">계약기간 �??�상?�익</div>
+                <div style="font-size:16px;font-weight:800;color:#1e40af;" id="prevProfitTotalNet">0??/div>
               </div>
               <div style="background:#fff;padding:10px;border-radius:8px;border:1px solid #bbf7d0;">
-                <div style="font-size:11px;color:#64748b;">투자수익률 (ROI)</div>
+                <div style="font-size:11px;color:#64748b;">?�자?�익�?(ROI)</div>
                 <div style="font-size:16px;font-weight:800;color:#7e22ce;" id="prevProfitRoi">0%</div>
               </div>
             </div>
@@ -1301,8 +1289,7 @@
           <div class="modal-footer" style="display:flex;justify-content:flex-end;gap:10px;">
             <button type="button" class="btn-secondary" onclick="ProfitManager.closeModal()">취소</button>
             <button type="submit" class="btn-primary-sm" style="padding:10px 24px;font-size:14px;background:#7c3aed;">
-              <i class="fa fa-save"></i> 원가/비용 설정 저장
-            </button>
+              <i class="fa fa-save"></i> ?��?/비용 ?�정 ?�??            </button>
           </div>
         </form>
       </div>
@@ -1310,7 +1297,7 @@
   </div>
 
   <!-- ============================================
-       월별 정산 내역 히스토리 & 비교 차트 모달
+       ?�별 ?�산 ?�역 ?�스?�리 & 비교 차트 모달
        ============================================ -->
   <div id="settlementHistoryModal" class="modal-overlay" style="display:none;">
     <div class="modal-box" style="max-width:980px;max-height:90vh;display:flex;flex-direction:column;">
@@ -1320,63 +1307,62 @@
             <i class="fa fa-chart-line"></i>
           </div>
           <div>
-            <h3 style="margin:0;font-size:17px;font-weight:700;color:#1e293b;">월별 정산 내역 히스토리 & 비교 차트</h3>
-            <p style="margin:0;font-size:12px;color:#64748b;">월별 매출·수금 비교, 미수금 관리 및 출력량 추이 시각화</p>
+            <h3 style="margin:0;font-size:17px;font-weight:700;color:#1e293b;">?�별 ?�산 ?�역 ?�스?�리 & 비교 차트</h3>
+            <p style="margin:0;font-size:12px;color:#64748b;">?�별 매출·?�금 비교, 미수�?관�?�?출력??추이 ?�각??/p>
           </div>
         </div>
         <button type="button" class="modal-close" onclick="SettlementHistoryManager.closeModal()" style="font-size:22px;border:none;background:none;cursor:pointer;color:#94a3b8;">&times;</button>
       </div>
 
       <div class="modal-body" style="padding:20px;overflow-y:auto;flex:1;">
-        <!-- 상단 툴바: 거래처 필터 -->
+        <!-- ?�단 ?�바: 거래�??�터 -->
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;background:#f1f5f9;padding:12px 16px;border-radius:8px;">
           <div style="display:flex;align-items:center;gap:8px;">
-            <label for="settlementClientFilter" style="font-size:13px;font-weight:700;color:#334155;">조회 대상 거래처:</label>
+            <label for="settlementClientFilter" style="font-size:13px;font-weight:700;color:#334155;">조회 ?�??거래�?</label>
             <select id="settlementClientFilter" class="form-input" style="padding:6px 12px;font-size:13px;min-width:220px;" onchange="SettlementHistoryManager.onClientFilterChange()">
-              <option value="ALL">전체 거래처 통합 정산</option>
+              <option value="ALL">?�체 거래�??�합 ?�산</option>
             </select>
           </div>
           <div style="font-size:12px;color:#64748b;">
-            <i class="fa fa-info-circle"></i> 검침 저장 시 기록된 당월 정산 데이터가 자동으로 누적됩니다.
+            <i class="fa fa-info-circle"></i> 검�??�????기록???�월 ?�산 ?�이?��? ?�동?�로 ?�적?�니??
           </div>
         </div>
 
-        <!-- 핵심 지표 요약 카드 -->
+        <!-- ?�심 지???�약 카드 -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-bottom:20px;">
           <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;text-align:center;">
-            <div style="font-size:11px;color:#1e40af;font-weight:600;">총 누적 청구액</div>
-            <div style="font-size:18px;font-weight:800;color:#1d4ed8;margin-top:2px;" id="settleSumBilled">0원</div>
+            <div style="font-size:11px;color:#1e40af;font-weight:600;">�??�적 �?��??/div>
+            <div style="font-size:18px;font-weight:800;color:#1d4ed8;margin-top:2px;" id="settleSumBilled">0??/div>
           </div>
           <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 16px;text-align:center;">
-            <div style="font-size:11px;color:#15803d;font-weight:600;">총 실제 입금액</div>
-            <div style="font-size:18px;font-weight:800;color:#16a34a;margin-top:2px;" id="settleSumPaid">0원</div>
+            <div style="font-size:11px;color:#15803d;font-weight:600;">�??�제 ?�금??/div>
+            <div style="font-size:18px;font-weight:800;color:#16a34a;margin-top:2px;" id="settleSumPaid">0??/div>
           </div>
           <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 16px;text-align:center;">
-            <div style="font-size:11px;color:#b91c1c;font-weight:600;">총 미수금 잔액</div>
-            <div style="font-size:18px;font-weight:800;color:#dc2626;margin-top:2px;" id="settleSumUnpaid">0원</div>
+            <div style="font-size:11px;color:#b91c1c;font-weight:600;">�?미수�??�액</div>
+            <div style="font-size:18px;font-weight:800;color:#dc2626;margin-top:2px;" id="settleSumUnpaid">0??/div>
           </div>
           <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:12px 16px;text-align:center;">
-            <div style="font-size:11px;color:#7e22ce;font-weight:600;">세금계산서 발행률</div>
+            <div style="font-size:11px;color:#7e22ce;font-weight:600;">?�금계산??발행�?/div>
             <div style="font-size:18px;font-weight:800;color:#9333ea;margin-top:2px;" id="settleTaxRate">0%</div>
           </div>
         </div>
 
-        <!-- 탭 네비게이션 -->
+        <!-- ???�비게이??-->
         <div class="settlement-tabs">
           <button class="settlement-tab-btn active" id="tabBtnCharts" onclick="SettlementHistoryManager.switchTab('charts')">
-            <i class="fa fa-chart-bar"></i> 정산 & 사용량 비교 차트
+            <i class="fa fa-chart-bar"></i> ?�산 & ?�용??비교 차트
           </button>
           <button class="settlement-tab-btn" id="tabBtnTable" onclick="SettlementHistoryManager.switchTab('table')">
-            <i class="fa fa-table"></i> 월별 정산 상세 이력표
-          </button>
+            <i class="fa fa-table"></i> ?�별 ?�산 ?�세 ?�력??          </button>
         </div>
 
-        <!-- 탭 1: 비교 차트 영역 -->
+        <!-- ??1: 비교 차트 ?�역 -->
         <div id="settlementTabCharts">
           <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(400px, 1fr));gap:16px;">
             <div class="chart-container-box">
               <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
-                <i class="fa fa-chart-bar" style="color:#4f46e5;"></i> 월별 청구액 vs 실제 입금액 비교
+                <i class="fa fa-chart-bar" style="color:#4f46e5;"></i> ?�별 �?��??vs ?�제 ?�금??비교
               </div>
               <div style="position:relative;height:240px;">
                 <canvas id="settlementRevenueChart"></canvas>
@@ -1384,7 +1370,7 @@
             </div>
             <div class="chart-container-box">
               <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
-                <i class="fa fa-chart-line" style="color:#0284c7;"></i> 월별 사용량(흑백/컬러) 추이
+                <i class="fa fa-chart-line" style="color:#0284c7;"></i> ?�별 ?�용???�백/컬러) 추이
               </div>
               <div style="position:relative;height:240px;">
                 <canvas id="settlementVolumeChart"></canvas>
@@ -1393,24 +1379,24 @@
           </div>
         </div>
 
-        <!-- 탭 2: 월별 상세 이력표 영역 -->
+        <!-- ??2: ?�별 ?�세 ?�력???�역 -->
         <div id="settlementTabTable" style="display:none;">
           <div style="max-height:360px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;">
             <table class="maint-log-table" style="margin-top:0;">
               <thead>
                 <tr>
-                  <th style="width:75px;">정산월</th>
+                  <th style="width:75px;">?�산??/th>
                   <th>거래처명</th>
-                  <th style="width:100px;">청구금액</th>
-                  <th style="width:100px;">실제입금액</th>
-                  <th style="width:100px;">미수금</th>
-                  <th style="width:85px;">수금상태</th>
-                  <th style="width:90px;">세금계산서</th>
-                  <th style="width:95px;">입금/발행일</th>
+                  <th style="width:100px;">�?��금액</th>
+                  <th style="width:100px;">?�제?�금??/th>
+                  <th style="width:100px;">미수�?/th>
+                  <th style="width:85px;">?�금?�태</th>
+                  <th style="width:90px;">?�금계산??/th>
+                  <th style="width:95px;">?�금/발행??/th>
                 </tr>
               </thead>
               <tbody id="settlementHistoryTbody">
-                <tr><td colspan="8" style="color:#94a3b8;padding:24px;">정산 내역이 존재하지 않습니다.</td></tr>
+                <tr><td colspan="8" style="color:#94a3b8;padding:24px;">?�산 ?�역??존재?��? ?�습?�다.</td></tr>
               </tbody>
             </table>
           </div>
@@ -1419,16 +1405,16 @@
       </div>
 
       <div class="modal-footer" style="padding:14px 20px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;">
-        <button type="button" class="btn-secondary" onclick="SettlementHistoryManager.closeModal()">닫기</button>
+        <button type="button" class="btn-secondary" onclick="SettlementHistoryManager.closeModal()">?�기</button>
       </div>
     </div>
   </div>
 
   <!-- ============================================
-       인쇄 및 PDF 생성용 오버레이 컨테이너
+       ?�쇄 �?PDF ?�성???�버?�이 컨테?�너
        ============================================ -->
   <div id="meterPrintArea" style="display:none;"></div>
   <script src="../board/board.js"></script>
-  <script src="dashboard.js?v=20260918_006"></script>
+  <script src="dashboard.js?v=20260918_007"></script>
 </body>
 </html>

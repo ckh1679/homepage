@@ -1657,7 +1657,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span style="font-size:13px;font-weight:700;color:#92400e;">장비 할인금액</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:180px;">
-            <input type="number" class="dev-discount" value="${dev.discount !== undefined ? dev.discount : 0}" min="0" step="1000"
+            <input type="number" class="dev-discount" value="${dev.discount !== undefined ? dev.discount : 0}" min="0" step="1"
               style="flex:1;max-width:200px;font-weight:700;color:#b45309;background:#fffbeb;border:1.5px solid #fbbf24;border-radius:6px;padding:6px 10px;text-align:right;"
               placeholder="0"
               oninput="ClientManager.updateCalcPreview()">
