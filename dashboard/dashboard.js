@@ -3716,18 +3716,18 @@ document.addEventListener('DOMContentLoaded', () => {
                   </div>
                 </div>
                 <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:10px;">
-                  <div>
-                    <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">기기 매입/취득원가(원)</label>
-                    <input type="number" class="form-input dev-cost-input" value="${curDevCost}" min="0" step="10000" placeholder="원가 입력" oninput="ProfitManager.updateDeviceCostTotals()">
-                  </div>
-                  <div>
-                    <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">초기 설치/물류비(원)</label>
-                    <input type="number" class="form-input dev-setup-input" value="${curSetup}" min="0" step="5000" placeholder="설치비 입력" oninput="ProfitManager.updateDeviceCostTotals()">
-                  </div>
-                  <div>
-                    <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">만료 잔존가치(원)</label>
-                    <input type="number" class="form-input dev-residual-input" value="${curResidual}" min="0" step="10000" placeholder="잔존가치 입력" oninput="ProfitManager.updateDeviceCostTotals()">
-                  </div>
+                  <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">
+                    기기 매입/취득원가(원)
+                    <input type="number" id="devCostInput_${dIdx}" class="form-input dev-cost-input" value="${curDevCost}" min="0" step="10000" placeholder="원가 입력" oninput="ProfitManager.updateDeviceCostTotals()" style="margin-top:3px;">
+                  </label>
+                  <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">
+                    초기 설치/물류비(원)
+                    <input type="number" id="devSetupInput_${dIdx}" class="form-input dev-setup-input" value="${curSetup}" min="0" step="5000" placeholder="설치비 입력" oninput="ProfitManager.updateDeviceCostTotals()" style="margin-top:3px;">
+                  </label>
+                  <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">
+                    만료 잔존가치(원)
+                    <input type="number" id="devResidualInput_${dIdx}" class="form-input dev-residual-input" value="${curResidual}" min="0" step="10000" placeholder="잔존가치 입력" oninput="ProfitManager.updateDeviceCostTotals()" style="margin-top:3px;">
+                  </label>
                 </div>
               </div>
             `;

@@ -376,11 +376,11 @@
               <div class="form-section-label">기본 정보</div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>발행일자</label>
+                  <label for="stDate">발행일자</label>
                   <input type="date" id="stDate" oninput="stUpdatePreview()">
                 </div>
                 <div class="form-group">
-                  <label>거래처명</label>
+                  <label for="stClient">거래처명</label>
                   <input type="text" id="stClient" placeholder="(주)○○" oninput="stUpdatePreview()">
                 </div>
               </div>
@@ -389,35 +389,35 @@
               <div class="form-section-label" style="margin-top:16px;">공급자 정보</div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>상호</label>
+                  <label for="stSupName">상호</label>
                   <input type="text" id="stSupName" value="렌탈사무기" oninput="stUpdatePreview()">
                 </div>
                 <div class="form-group">
-                  <label>대표자</label>
+                  <label for="stSupCeo">대표자</label>
                   <input type="text" id="stSupCeo" value="최○○" oninput="stUpdatePreview()">
                 </div>
               </div>
               <div class="form-group" style="margin-bottom:10px;">
-                <label>주소</label>
+                <label for="stSupAddr">주소</label>
                 <input type="text" id="stSupAddr" value="서울 강동구 아리수로64길 11 1층 렌탈사무기" oninput="stUpdatePreview()">
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>업태</label>
+                  <label for="stSupBiz">업태</label>
                   <input type="text" id="stSupBiz" value="도소매 외" oninput="stUpdatePreview()">
                 </div>
                 <div class="form-group">
-                  <label>종목</label>
+                  <label for="stSupType">종목</label>
                   <input type="text" id="stSupType" value="사무기기 외" oninput="stUpdatePreview()">
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>전화</label>
+                  <label for="stSupTel">전화</label>
                   <input type="text" id="stSupTel" value="010-5922-3650" oninput="stUpdatePreview()">
                 </div>
                 <div class="form-group">
-                  <label>팩스</label>
+                  <label for="stSupFax">팩스</label>
                   <input type="text" id="stSupFax" value="-" oninput="stUpdatePreview()">
                 </div>
               </div>
@@ -426,16 +426,16 @@
               <div class="form-section-label" style="margin-top:16px;">합계 정보</div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>전잔금 (원)</label>
+                  <label for="stPrevBalance">전잔금 (원)</label>
                   <input type="number" id="stPrevBalance" value="0" oninput="stUpdatePreview()">
                 </div>
                 <div class="form-group">
-                  <label>입금 (원)</label>
+                  <label for="stPayment">입금 (원)</label>
                   <input type="number" id="stPayment" value="0" oninput="stUpdatePreview()">
                 </div>
               </div>
               <div class="form-group" style="margin-top:8px;">
-                <label>계좌 안내 (하단 표시)</label>
+                <label for="stBankInfo">계좌 안내 (하단 표시)</label>
                 <input type="text" id="stBankInfo" value="우리은행 1002-000-000000 렌탈사무기(최○○)" oninput="stUpdatePreview()">
               </div>
 
@@ -479,21 +479,21 @@
               <div class="form-section-label">기본 정보</div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>견적번호</label>
+                  <label for="qNo">견적번호</label>
                   <input type="text" id="qNo" value="RQ-20260909-0001" oninput="updatePreview()">
                 </div>
                 <div class="form-group">
-                  <label>견적일자</label>
+                  <label for="qDate">견적일자</label>
                   <input type="date" id="qDate" oninput="updatePreview()">
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>수신 (거래처명)</label>
+                  <label for="qReceiver">수신 (거래처명)</label>
                   <input type="text" id="qReceiver" placeholder="(주)○○ 귀중" oninput="updatePreview()">
                 </div>
                 <div class="form-group">
-                  <label>견적 유효일</label>
+                  <label for="qExpiry">견적 유효일</label>
                   <input type="date" id="qExpiry" oninput="updatePreview()">
                 </div>
               </div>
@@ -502,11 +502,11 @@
               <div class="form-section-label" style="margin-top:16px;">계약 조건</div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>계약기간 (개월)</label>
+                  <label for="qPeriod">계약기간 (개월)</label>
                   <input type="number" id="qPeriod" value="36" oninput="updatePreview()">
                 </div>
                 <div class="form-group">
-                  <label>부가세</label>
+                  <label for="qVat">부가세</label>
                   <select id="qVat" onchange="updatePreview()">
                     <option value="별도">부가세 별도</option>
                     <option value="포함">부가세 포함</option>
@@ -515,7 +515,7 @@
               </div>
               <div class="form-row">
                 <div class="form-group" style="flex:1;">
-                  <label>설치장소</label>
+                  <label for="qInstallPlace">설치장소</label>
                   <input type="text" id="qInstallPlace" value="거래처 지정 장소" oninput="updatePreview()">
                 </div>
               </div>
@@ -524,27 +524,27 @@
               <div class="form-section-label" style="margin-top:16px;">공급자 정보 (우측 인감 영역)</div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>상호</label>
+                  <label for="qSupName">상호</label>
                   <input type="text" id="qSupName" value="렌탈사무기" oninput="updatePreview()">
                 </div>
                 <div class="form-group">
-                  <label>대표자</label>
+                  <label for="qSupCeo">대표자</label>
                   <input type="text" id="qSupCeo" value="최○○" oninput="updatePreview()">
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-group" style="flex:1;">
-                  <label>주소</label>
+                  <label for="qSupAddr">주소</label>
                   <input type="text" id="qSupAddr" value="서울 강동구 아리수로64길 11 1층 렌탈사무기" oninput="updatePreview()">
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>전화</label>
+                  <label for="qSupTel">전화</label>
                   <input type="text" id="qSupTel" value="010-5922-3650" oninput="updatePreview()">
                 </div>
                 <div class="form-group">
-                  <label>팩스</label>
+                  <label for="qSupFax">팩스</label>
                   <input type="text" id="qSupFax" value="-" oninput="updatePreview()">
                 </div>
               </div>
@@ -557,12 +557,12 @@
               <div class="form-section-label" style="margin-top:16px;">합계 정보</div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>임대보증금 (원)</label>
+                  <label for="qDeposit">임대보증금 (원)</label>
                   <input type="number" id="qDeposit" value="0" oninput="updatePreview()">
                 </div>
               </div>
               <div class="form-group" style="margin-top:8px;">
-                <label>유지보수 조건</label>
+                <label for="qMaintenance">유지보수 조건</label>
                 <textarea id="qMaintenance" rows="3" style="width:100%;background:rgba(0,0,0,0.2);border:1px solid var(--border-color);color:var(--text-primary);border-radius:8px;padding:10px;font-family:inherit;font-size:13px;resize:vertical;" oninput="updatePreview()">토너 부품 출장비 등 유지보수 비용 포함, 복사손지 제외</textarea>
               </div>
             </div>
@@ -832,47 +832,47 @@
             <div class="form-section-title"><i class="fa fa-id-card"></i> 거래처 기본 정보</div>
             <div class="form-grid-3">
               <div class="form-group">
-                <label>거래처명 (상호) <span class="req">*</span></label>
+                <label for="clName">거래처명 (상호) <span class="req">*</span></label>
                 <input type="text" id="clName" placeholder="예: (주)프린터솔루션" required>
               </div>
               <div class="form-group">
-                <label>사업자등록번호</label>
+                <label for="clBizNum">사업자등록번호</label>
                 <input type="text" id="clBizNum" placeholder="000-00-00000">
               </div>
               <div class="form-group">
-                <label>대표자명</label>
+                <label for="clCeo">대표자명</label>
                 <input type="text" id="clCeo" placeholder="대표자 성명">
               </div>
             </div>
 
             <div class="form-grid-3" style="margin-top:10px;">
               <div class="form-group">
-                <label>연락처 (전화번호) <span class="req">*</span></label>
+                <label for="clPhone">연락처 (전화번호) <span class="req">*</span></label>
                 <input type="text" id="clPhone" placeholder="010-0000-0000 또는 02-..." required>
               </div>
               <div class="form-group">
-                <label>이메일</label>
+                <label for="clEmail">이메일</label>
                 <input type="email" id="clEmail" placeholder="example@domain.com">
               </div>
               <div class="form-group">
-                <label>계약 시작 일시</label>
+                <label for="clContractDate">계약 시작 일시</label>
                 <input type="date" id="clContractDate">
               </div>
             </div>
 
             <div class="form-grid-2" style="margin-top:10px;">
               <div class="form-group">
-                <label>사업장 주소</label>
+                <label for="clAddress">사업장 주소</label>
                 <input type="text" id="clAddress" placeholder="설치 및 사업장 소재지 주소">
               </div>
               <div class="form-group">
-                <label>지금까지 총 결제한 금액 (원)</label>
+                <label for="clTotalPaid">지금까지 총 결제한 금액 (원)</label>
                 <input type="number" id="clTotalPaid" placeholder="0" min="0" value="0">
               </div>
             </div>
 
             <div class="form-group" style="margin-top:10px;">
-              <label>비고 / 특이사항</label>
+              <label for="clMemo">비고 / 특이사항</label>
               <input type="text" id="clMemo" placeholder="정기점검 주기, 청구서 발송 조건, 담당자 등">
             </div>
           </div>
@@ -953,11 +953,11 @@
             </div>
             <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
               <div>
-                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">검침 기준 연월</label>
+                <label for="meterEditMonth" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">검침 기준 연월</label>
                 <input type="month" id="meterEditMonth" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-weight:700;color:#0f172a;" onchange="ClientManager.loadMeterRecordForSelectedMonth()">
               </div>
               <div>
-                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">검침 일자</label>
+                <label for="meterEditDate" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">검침 일자</label>
                 <input type="date" id="meterEditDate" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;color:#0f172a;">
               </div>
             </div>
@@ -1010,19 +1010,19 @@
             </div>
             <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;">
               <div>
-                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">당월 입금액 (원)</label>
+                <label for="meterPaidAmount" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">당월 입금액 (원)</label>
                 <input type="number" id="meterPaidAmount" min="0" step="1000" class="form-input" style="font-weight:700;color:#059669;" placeholder="입금된 금액" oninput="ClientManager.updateMeterModalPreview()">
               </div>
               <div>
-                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">당월 미수금 (원)</label>
+                <label for="meterUnpaidAmount" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">당월 미수금 (원)</label>
                 <input type="text" id="meterUnpaidAmount" class="form-input" style="font-weight:700;color:#dc2626;background:#fef2f2;" readonly value="0원">
               </div>
               <div>
-                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">입금 확인일자</label>
+                <label for="meterPaidDate" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">입금 확인일자</label>
                 <input type="date" id="meterPaidDate" class="form-input">
               </div>
               <div>
-                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">세금계산서 발행 상태</label>
+                <label for="meterTaxStatus" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">세금계산서 발행 상태</label>
                 <select id="meterTaxStatus" class="form-input" style="font-weight:700;">
                   <option value="unissued">미발행</option>
                   <option value="issued">발행완료</option>
@@ -1031,7 +1031,7 @@
                 </select>
               </div>
               <div>
-                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">세금계산서 발행일자</label>
+                <label for="meterTaxDate" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">세금계산서 발행일자</label>
                 <input type="date" id="meterTaxDate" class="form-input">
               </div>
             </div>
@@ -1095,11 +1095,11 @@
           <div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:14px;background:#fff;">
             <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
               <div>
-                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">계약 기간 (개월)</label>
+                <label for="profitContractMonths" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">계약 기간 (개월)</label>
                 <input type="number" id="profitContractMonths" min="1" max="120" value="36" class="form-input" placeholder="기본 36" required oninput="ProfitManager.updateModalPreview()">
               </div>
               <div>
-                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">비고 및 관리 메모</label>
+                <label for="profitMemo" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">비고 및 관리 메모</label>
                 <input type="text" id="profitMemo" class="form-input" placeholder="예: 재생토너 계약, 2대 통합정산 등">
               </div>
             </div>
@@ -1158,11 +1158,11 @@
             <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:10px;">
               <div style="display:grid;grid-template-columns:130px 140px 1fr 130px 1fr auto;gap:8px;align-items:end;">
                 <div>
-                  <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">발생일자</label>
+                  <label for="maintInputDate" style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">발생일자</label>
                   <input type="date" id="maintInputDate" class="form-input" style="padding:6px 8px;font-size:12px;">
                 </div>
                 <div>
-                  <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">비용 구분</label>
+                  <label for="maintInputCategory" style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">비용 구분</label>
                   <select id="maintInputCategory" class="form-input" style="padding:6px 8px;font-size:12px;">
                     <option value="supplies">소모품(토너/드럼)</option>
                     <option value="repairs">부품수리(헤드/롤러)</option>
@@ -1170,15 +1170,15 @@
                   </select>
                 </div>
                 <div>
-                  <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">품목/수리내역</label>
+                  <label for="maintInputName" style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">품목/수리내역</label>
                   <input type="text" id="maintInputName" class="form-input" style="padding:6px 8px;font-size:12px;" placeholder="예: K/C 토너 교체">
                 </div>
                 <div>
-                  <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">비용(원)</label>
+                  <label for="maintInputAmount" style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">비용(원)</label>
                   <input type="number" id="maintInputAmount" min="0" step="1000" class="form-input" style="padding:6px 8px;font-size:12px;" placeholder="금액 입력">
                 </div>
                 <div>
-                  <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">메모/기기</label>
+                  <label for="maintInputMemo" style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">메모/기기</label>
                   <input type="text" id="maintInputMemo" class="form-input" style="padding:6px 8px;font-size:12px;" placeholder="기기명 또는 비고">
                 </div>
                 <div>
@@ -1230,7 +1230,7 @@
 
             <!-- 실제 건별 장부 합계 월 환산 자동 반영 옵션 -->
             <div style="margin-top:12px;padding:10px 14px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-              <label style="font-size:12px;font-weight:700;color:#92400e;display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <label for="profitUseActualLogs" style="font-size:12px;font-weight:700;color:#92400e;display:flex;align-items:center;gap:6px;cursor:pointer;">
                 <input type="checkbox" id="profitUseActualLogs" onchange="ProfitManager.toggleUseActualLogs(this.checked)">
                 <span>위 건별 지출 합계를 월 환산하여 수익성 분석에 자동 반영</span>
               </label>
@@ -1240,15 +1240,15 @@
             <!-- 월평균 수동 입력 (건별 지출 자동반영 미선택 시 사용) -->
             <div id="profitManualCostsWrap" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-top:10px;">
               <div>
-                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">월평균 소모품비 (원)</label>
+                <label for="profitMonthlySupplies" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">월평균 소모품비 (원)</label>
                 <input type="number" id="profitMonthlySupplies" min="0" step="1000" class="form-input" placeholder="예: 15000" oninput="ProfitManager.updateModalPreview()">
               </div>
               <div>
-                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">월평균 부품수리비 (원)</label>
+                <label for="profitMonthlyRepairs" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">월평균 부품수리비 (원)</label>
                 <input type="number" id="profitMonthlyRepairs" min="0" step="1000" class="form-input" placeholder="예: 5000" oninput="ProfitManager.updateModalPreview()">
               </div>
               <div>
-                <label style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">월평균 점검/인건비 (원)</label>
+                <label for="profitMonthlyService" style="font-size:12px;color:#475569;font-weight:600;display:block;margin-bottom:4px;">월평균 점검/인건비 (원)</label>
                 <input type="number" id="profitMonthlyService" min="0" step="1000" class="form-input" placeholder="예: 5000" oninput="ProfitManager.updateModalPreview()">
               </div>
             </div>
@@ -1312,7 +1312,7 @@
         <!-- 상단 툴바: 거래처 필터 -->
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;background:#f1f5f9;padding:12px 16px;border-radius:8px;">
           <div style="display:flex;align-items:center;gap:8px;">
-            <label style="font-size:13px;font-weight:700;color:#334155;">조회 대상 거래처:</label>
+            <label for="settlementClientFilter" style="font-size:13px;font-weight:700;color:#334155;">조회 대상 거래처:</label>
             <select id="settlementClientFilter" class="form-input" style="padding:6px 12px;font-size:13px;min-width:220px;" onchange="SettlementHistoryManager.onClientFilterChange()">
               <option value="ALL">전체 거래처 통합 정산</option>
             </select>
@@ -1410,6 +1410,6 @@
        ============================================ -->
   <div id="meterPrintArea" style="display:none;"></div>
   <script src="../board/board.js"></script>
-  <script src="dashboard.js?v=20260918_001"></script>
+  <script src="dashboard.js?v=20260918_002"></script>
 </body>
 </html>
