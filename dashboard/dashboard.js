@@ -2654,10 +2654,12 @@ document.addEventListener('DOMContentLoaded', () => {
       setEl('meterPrevVat', sumVat);
       setEl('meterPrevTotalBill', sumTotal);
 
-      // 할인금액 차감 → 최종 정산금액 계산
+      // 할인금액을 부가세 적용 이전(공급가액) 단계에서 차감
       const discountInput = document.getElementById('meterDiscountAmount');
       const discountAmount = Math.max(0, Number(discountInput ? discountInput.value : 0) || 0);
-      const finalBill = Math.max(0, sumTotal - discountAmount);
+      const discountedSupply = Math.max(0, sumSupply - discountAmount); // 할인 후 공급가액
+      const finalVat = Math.round(discountedSupply * 0.1);              // 할인 후 공급가액에 VAT 10%
+      const finalBill = discountedSupply + finalVat;                    // 최종 정산금액
       const finalBillEl = document.getElementById('meterFinalBill');
       if (finalBillEl) finalBillEl.textContent = finalBill.toLocaleString() + '원';
 
@@ -2740,9 +2742,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const sumVat = Math.round(sumSupply * 0.1);
       const sumTotal = sumSupply + sumVat;
 
-      // 할인금액 차감 → 최종 정산금액 계산
+      // 할인금액을 부가세 적용 이전(공급가액) 단계에서 차감
       const discountAmount = Math.max(0, Number(document.getElementById('meterDiscountAmount')?.value) || 0);
-      const finalBill = Math.max(0, sumTotal - discountAmount);
+      const discountedSupply = Math.max(0, sumSupply - discountAmount); // 할인 후 공급가액
+      const finalVat = Math.round(discountedSupply * 0.1);              // 할인 후 공급가액에 VAT 10%
+      const finalBill = discountedSupply + finalVat;                    // 최종 정산금액
 
       // 당월 수금 및 세금계산서 정산 정보 (최종 정산금액 기준)
       const paidAmount = Number(document.getElementById('meterPaidAmount')?.value) || 0;
@@ -2758,7 +2762,9 @@ document.addEventListener('DOMContentLoaded', () => {
         taxStatus,
         taxDate,
         discountAmount,
-        finalBill
+        discountedSupply, // 할인 후 공급가액
+        finalVat,         // 할인 후 VAT
+        finalBill         // 할인 후 최종 정산금액
       };
 
       const history = this.getMeterHistory();
@@ -2779,11 +2785,13 @@ document.addEventListener('DOMContentLoaded', () => {
           totalExtra: sumBwExtra + sumColorExtra,
           totalBwExtra: sumBwExtra,
           totalColorExtra: sumColorExtra,
-          totalSupply: sumSupply,
-          totalVat: sumVat,
-          totalBill: sumTotal,       // 할인 전 청구금액
-          discountAmount,            // 할인금액
-          finalBill,                 // 할인 후 최종 정산금액
+          totalSupply: sumSupply,       // 할인 전 공급가액
+          totalVat: sumVat,             // 할인 전 VAT
+          totalBill: sumTotal,          // 할인 전 쫘구금액 (VAT포함)
+          discountAmount,               // 할인금액
+          discountedSupply,             // 할인 후 공급가액
+          finalVat,                     // 할인 후 VAT
+          finalBill,                    // 할인 후 최종 정산금액
           totalPaid: client.totalPaid || 0
         },
         settlement,
