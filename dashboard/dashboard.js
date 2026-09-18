@@ -1234,6 +1234,11 @@ document.addEventListener('DOMContentLoaded', () => {
       let html = '';
       const curMonth = this.getCurrentMonthStr();
       filtered.forEach((client, idx) => {
+        // 원본 clients 배열에서의 실제 인덱스 (순서 이동용)
+        const realIdx = clients.findIndex(c => String(c.id) === String(client.id));
+        const isFirst = realIdx === 0;
+        const isLast = realIdx === clients.length - 1;
+
         const totals = this.calcClientTotals(client);
         const devices = client.devices || [];
 
@@ -1305,6 +1310,15 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${totals.totalPaid.toLocaleString()}원</td>
             <td onclick="event.stopPropagation();">
               <div style="display:flex;gap:5px;align-items:center;">
+                <!-- 순서 이동 버튼 -->
+                <div style="display:flex;flex-direction:column;gap:2px;">
+                  <button class="btn-action-icon" style="color:#94a3b8;padding:2px 5px;font-size:10px;${isFirst ? 'opacity:0.3;cursor:default;' : ''}" title="위로 이동" onclick="ClientManager.moveClient('${client.id}', 'up')" ${isFirst ? 'disabled' : ''}>
+                    <i class="fa fa-chevron-up"></i>
+                  </button>
+                  <button class="btn-action-icon" style="color:#94a3b8;padding:2px 5px;font-size:10px;${isLast ? 'opacity:0.3;cursor:default;' : ''}" title="아래로 이동" onclick="ClientManager.moveClient('${client.id}', 'down')" ${isLast ? 'disabled' : ''}>
+                    <i class="fa fa-chevron-down"></i>
+                  </button>
+                </div>
                 <button class="btn-action-icon" style="color:#059669;" title="이번달 검침내역 수정 및 수금/세금계산서 정산" onclick="ClientManager.openMeterEditModal('${client.id}', null, event)">
                   <i class="fa fa-calendar-check"></i>
                 </button>
@@ -1419,6 +1433,22 @@ document.addEventListener('DOMContentLoaded', () => {
         parentRow.classList.add('expanded');
         subRow.style.display = 'table-row';
       }
+    },
+
+    // 거래처 순서 이동 (위/아래)
+    moveClient(clientId, direction) {
+      const clients = this.getClients();
+      const idx = clients.findIndex(c => String(c.id) === String(clientId));
+      if (idx === -1) return;
+
+      if (direction === 'up' && idx === 0) return;          // 이미 최상위
+      if (direction === 'down' && idx === clients.length - 1) return; // 이미 최하위
+
+      const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+      // 두 항목 위치 교환
+      [clients[idx], clients[swapIdx]] = [clients[swapIdx], clients[idx]];
+
+      this.saveClients(clients);
     },
 
     // 실시간 검색 필터
@@ -2404,6 +2434,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (taxStatusInput) taxStatusInput.value = st.taxStatus || 'unissued';
       if (taxDateInput) taxDateInput.value = st.taxDate || '';
 
+      // 기존 저장된 할인금액 복원
+      const discountInput = document.getElementById('meterDiscountAmount');
+      if (discountInput) discountInput.value = (st.discountAmount !== undefined && st.discountAmount > 0) ? st.discountAmount : '';
+
       const devices = (record.devices && record.devices.length > 0) ? record.devices : (client.devices || []);
 
       if (listEl) {
@@ -2584,11 +2618,18 @@ document.addEventListener('DOMContentLoaded', () => {
       setEl('meterPrevVat', sumVat);
       setEl('meterPrevTotalBill', sumTotal);
 
-      // 당월 수금 / 미수금 실시간 계산 연동
+      // 할인금액 차감 → 최종 정산금액 계산
+      const discountInput = document.getElementById('meterDiscountAmount');
+      const discountAmount = Math.max(0, Number(discountInput ? discountInput.value : 0) || 0);
+      const finalBill = Math.max(0, sumTotal - discountAmount);
+      const finalBillEl = document.getElementById('meterFinalBill');
+      if (finalBillEl) finalBillEl.textContent = finalBill.toLocaleString() + '원';
+
+      // 당월 수금 / 미수금 실시간 계산 연동 (최종 정산금액 기준)
       const paidInput = document.getElementById('meterPaidAmount');
       const unpaidEl = document.getElementById('meterUnpaidAmount');
       const paidAmount = Number(paidInput ? paidInput.value : 0) || 0;
-      const unpaidAmount = Math.max(0, sumTotal - paidAmount);
+      const unpaidAmount = Math.max(0, finalBill - paidAmount);
       if (unpaidEl) unpaidEl.value = unpaidAmount.toLocaleString() + '원';
     },
 
@@ -2663,9 +2704,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const sumVat = Math.round(sumSupply * 0.1);
       const sumTotal = sumSupply + sumVat;
 
-      // 당월 수금 및 세금계산서 정산 정보
+      // 할인금액 차감 → 최종 정산금액 계산
+      const discountAmount = Math.max(0, Number(document.getElementById('meterDiscountAmount')?.value) || 0);
+      const finalBill = Math.max(0, sumTotal - discountAmount);
+
+      // 당월 수금 및 세금계산서 정산 정보 (최종 정산금액 기준)
       const paidAmount = Number(document.getElementById('meterPaidAmount')?.value) || 0;
-      const unpaidAmount = Math.max(0, sumTotal - paidAmount);
+      const unpaidAmount = Math.max(0, finalBill - paidAmount);
       const paidDate = document.getElementById('meterPaidDate')?.value || '';
       const taxStatus = document.getElementById('meterTaxStatus')?.value || 'unissued';
       const taxDate = document.getElementById('meterTaxDate')?.value || '';
@@ -2675,7 +2720,9 @@ document.addEventListener('DOMContentLoaded', () => {
         unpaidAmount,
         paidDate,
         taxStatus,
-        taxDate
+        taxDate,
+        discountAmount,
+        finalBill
       };
 
       const history = this.getMeterHistory();
@@ -2698,7 +2745,9 @@ document.addEventListener('DOMContentLoaded', () => {
           totalColorExtra: sumColorExtra,
           totalSupply: sumSupply,
           totalVat: sumVat,
-          totalBill: sumTotal,
+          totalBill: sumTotal,       // 할인 전 청구금액
+          discountAmount,            // 할인금액
+          finalBill,                 // 할인 후 최종 정산금액
           totalPaid: client.totalPaid || 0
         },
         settlement,
