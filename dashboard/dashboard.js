@@ -1649,6 +1649,22 @@ document.addEventListener('DOMContentLoaded', () => {
             컬러 이번달: 0장 | 추가사용료: 0원
           </div>
         </div>
+
+        <!-- 장비별 할인금액 -->
+        <div style="margin-top:10px;background:rgba(245,158,11,0.06);padding:12px 14px;border-radius:8px;border:1px solid rgba(245,158,11,0.2);display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <i class="fa fa-tag" style="color:#b45309;"></i>
+            <span style="font-size:13px;font-weight:700;color:#92400e;">장비 할인금액</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:180px;">
+            <input type="number" class="dev-discount" value="${dev.discount !== undefined ? dev.discount : 0}" min="0" step="1000"
+              style="flex:1;max-width:200px;font-weight:700;color:#b45309;background:#fffbeb;border:1.5px solid #fbbf24;border-radius:6px;padding:6px 10px;text-align:right;"
+              placeholder="0"
+              oninput="ClientManager.updateCalcPreview()">
+            <span style="font-size:12px;color:#78716c;white-space:nowrap;">원 할인 차감</span>
+          </div>
+          <div class="dev-discount-tag" style="font-size:11px;color:#b45309;padding:3px 8px;background:rgba(245,158,11,0.12);border-radius:4px;">할인 0원 적용</div>
+        </div>
       `;
 
       devList.appendChild(card);
@@ -1718,6 +1734,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let sumBaseRent   = 0;
       let sumBwExtra    = 0;
       let sumColorExtra = 0;
+      let sumDiscount   = 0; // 장비별 할인금액 합계
 
       cards.forEach(card => {
         const baseRent  = Number(card.querySelector('.dev-baseRent')?.value) || 0;
@@ -1738,8 +1755,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const colorOver = Math.max(0, colorUsed - colorBase);
         const colorExtra = colorOver * colorUnit;
 
+        // 장비별 할인금액
+        const devDiscount = Math.max(0, Number(card.querySelector('.dev-discount')?.value) || 0);
+
         const devExtraTotal = bwExtra + colorExtra;
-        const devSupply = baseRent + devExtraTotal;
+        const devSupplyBeforeDiscount = baseRent + devExtraTotal;
+        const devSupply = Math.max(0, devSupplyBeforeDiscount - devDiscount); // 할인 차감
         const devTotal = Math.round(devSupply * 1.1);
 
         const devTotalUsage = bwTotal + colorTotal;
@@ -1763,6 +1784,13 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
 
+        // 할인금액 안내 태그
+        const discountTag = card.querySelector('.dev-discount-tag');
+        if (discountTag) {
+          discountTag.textContent = devDiscount > 0 ? `할인 -${devDiscount.toLocaleString()}원 적용` : '할인 없음';
+          discountTag.style.color = devDiscount > 0 ? '#b45309' : '#94a3b8';
+        }
+
         const usageBadge = card.querySelector('.dev-card-total-usage');
         if (usageBadge) usageBadge.textContent = devTotalUsage.toLocaleString() + '장';
 
@@ -1770,14 +1798,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (extraBadge) extraBadge.textContent = devExtraTotal.toLocaleString() + '원';
 
         const totalBadge = card.querySelector('.dev-card-total');
-        if (totalBadge) totalBadge.textContent = `${devSupply.toLocaleString()}원 (VAT포함 ${devTotal.toLocaleString()}원)`;
+        if (totalBadge) {
+          totalBadge.textContent = devDiscount > 0
+            ? `${devSupplyBeforeDiscount.toLocaleString()}원 → 할인 후 ${devSupply.toLocaleString()}원 (VAT포함 ${devTotal.toLocaleString()}원)`
+            : `${devSupply.toLocaleString()}원 (VAT포함 ${devTotal.toLocaleString()}원)`;
+        }
 
         sumBaseRent   += baseRent;
         sumBwExtra    += bwExtra;
         sumColorExtra += colorExtra;
+        sumDiscount   += devDiscount;
       });
 
-      const sumSupply = sumBaseRent + sumBwExtra + sumColorExtra;
+      const sumSupplyBeforeDiscount = sumBaseRent + sumBwExtra + sumColorExtra;
+      const sumDiscount_ = sumDiscount; // alias
+      const sumSupply = Math.max(0, sumSupplyBeforeDiscount - sumDiscount_);
       const sumVat    = Math.round(sumSupply * 0.1);
       const sumTotal  = sumSupply + sumVat;
 
@@ -1880,7 +1915,8 @@ document.addEventListener('DOMContentLoaded', () => {
           colorUnit: Number(card.querySelector('.dev-colorUnit')?.value) || 0,
           colorPrev: Number(card.querySelector('.dev-colorPrev')?.value) || 0,
           colorTotal: Number(card.querySelector('.dev-colorTotal')?.value) || 0,
-          colorUsed: Number(card.querySelector('.dev-colorUsed')?.value) || 0
+          colorUsed: Number(card.querySelector('.dev-colorUsed')?.value) || 0,
+          discount: Math.max(0, Number(card.querySelector('.dev-discount')?.value) || 0)
         });
       }
 
