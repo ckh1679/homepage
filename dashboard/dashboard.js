@@ -3633,105 +3633,125 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 원가 설정 모달 열기
     openEditModal(clientId) {
-      const modal = document.getElementById('profitEditModal');
-      if (!modal) return;
+      try {
+        const modal = document.getElementById('profitEditModal');
+        if (!modal) {
+          console.error('[ProfitManager] profitEditModal 요소를 찾을 수 없습니다.');
+          return;
+        }
 
-      const clients = ClientManager.getClients();
-      const client = clients.find(c => String(c.id) === String(clientId));
-      if (!client) {
-        alert('거래처 정보를 찾을 수 없습니다.');
-        return;
-      }
+        const clients = ClientManager.getClients();
+        const client = clients.find(c => String(c.id) === String(clientId));
+        if (!client) {
+          alert('거래처 정보를 찾을 수 없습니다. (ID: ' + clientId + ')');
+          return;
+        }
 
-      const cost = this.getClientCost(clientId);
-      const totals = ClientManager.calcClientTotals(client);
+        // ★ 모달을 먼저 표시 (이후 로직에서 오류가 나도 모달은 열림)
+        modal.style.display = 'flex';
 
-      const idEl = document.getElementById('profitClientId');
-      const nameEl = document.getElementById('profitClientName');
-      const revEl = document.getElementById('profitMonthlyRevenue');
+        const cost = this.getClientCost(clientId);
 
-      if (idEl) idEl.value = clientId;
-      if (nameEl) nameEl.textContent = client.name;
-      const supAmt = (totals.totalSupply || 0).toLocaleString();
-      const billAmt = (totals.totalMonthBill || totals.totalBill || 0).toLocaleString();
-      if (revEl) revEl.textContent = `${supAmt}원 (VAT포함 ${billAmt}원)`;
+        // 기본 정보 세팅
+        const idEl = document.getElementById('profitClientId');
+        const nameEl = document.getElementById('profitClientName');
+        const revEl = document.getElementById('profitMonthlyRevenue');
+        if (idEl) idEl.value = clientId;
+        if (nameEl) nameEl.textContent = client.name;
 
-      const setVal = (id, v) => {
-        const el = document.getElementById(id);
-        if (el) el.value = (v !== undefined && v !== null) ? v : '';
-      };
+        try {
+          const totals = ClientManager.calcClientTotals(client);
+          const supAmt = (totals.totalSupply || 0).toLocaleString();
+          const billAmt = (totals.totalMonthBill || totals.totalBill || 0).toLocaleString();
+          if (revEl) revEl.textContent = `${supAmt}원 (VAT포함 ${billAmt}원)`;
+        } catch (e) {
+          if (revEl) revEl.textContent = '계산 불가';
+          console.warn('[ProfitManager] calcClientTotals 오류:', e);
+        }
 
-      setVal('profitContractMonths', cost.contractMonths || 36);
-      setVal('profitMonthlySupplies', cost.monthlySupplies);
-      setVal('profitMonthlyRepairs', cost.monthlyRepairs);
-      setVal('profitMonthlyService', cost.monthlyService);
-      setVal('profitMemo', cost.memo);
+        const setVal = (id, v) => {
+          const el = document.getElementById(id);
+          if (el) el.value = (v !== undefined && v !== null) ? v : '';
+        };
 
-      // 1. 기기별 원가 분리 입력 카드 렌더링
-      const devCostListEl = document.getElementById('profitDeviceCostList');
-      const devCountBadge = document.getElementById('profitDeviceCountBadge');
-      const devices = (client.devices && client.devices.length > 0) ? client.devices : [
-        { id: 'dev_default', name: client.name + ' 임대 복합기', location: '메인 사무실', serial: '-' }
-      ];
-      if (devCountBadge) devCountBadge.textContent = `등록 기기: ${devices.length}대`;
+        setVal('profitContractMonths', cost.contractMonths || 36);
+        setVal('profitMonthlySupplies', cost.monthlySupplies);
+        setVal('profitMonthlyRepairs', cost.monthlyRepairs);
+        setVal('profitMonthlyService', cost.monthlyService);
+        setVal('profitMemo', cost.memo);
 
-      const savedDevCosts = cost.devCosts || {};
-      if (devCostListEl) {
-        devCostListEl.innerHTML = devices.map((d, dIdx) => {
-          const dSaved = savedDevCosts[d.id] || {};
-          const defDevCost = dIdx === 0 ? (cost.devCost || 1800000) : 1200000;
-          const defSetup = dIdx === 0 ? (cost.initialSetup || 50000) : 30000;
-          const defResidual = dIdx === 0 ? (cost.residualValue || 200000) : 100000;
+        // 1. 기기별 원가 분리 입력 카드 렌더링
+        const devCostListEl = document.getElementById('profitDeviceCostList');
+        const devCountBadge = document.getElementById('profitDeviceCountBadge');
+        const devices = (client.devices && client.devices.length > 0) ? client.devices : [
+          { id: 'dev_default', name: client.name + ' 임대 복합기', location: '메인 사무실', serial: '-' }
+        ];
+        if (devCountBadge) devCountBadge.textContent = `등록 기기: ${devices.length}대`;
 
-          const curDevCost = dSaved.devCost !== undefined ? dSaved.devCost : defDevCost;
-          const curSetup = dSaved.initialSetup !== undefined ? dSaved.initialSetup : defSetup;
-          const curResidual = dSaved.residualValue !== undefined ? dSaved.residualValue : defResidual;
-          const subtotal = Math.max(0, curDevCost + curSetup - curResidual);
+        const savedDevCosts = cost.devCosts || {};
+        if (devCostListEl) {
+          devCostListEl.innerHTML = devices.map((d, dIdx) => {
+            const dSaved = savedDevCosts[d.id] || {};
+            const defDevCost = dIdx === 0 ? (cost.devCost || 1800000) : 1200000;
+            const defSetup = dIdx === 0 ? (cost.initialSetup || 50000) : 30000;
+            const defResidual = dIdx === 0 ? (cost.residualValue || 200000) : 100000;
 
-          return `
-            <div class="profit-dev-cost-card" data-dev-id="${d.id}">
-              <div class="profit-dev-cost-header">
-                <div>
-                  <strong style="font-size:13px;color:#1e293b;">
-                    <i class="fa fa-print" style="color:#0284c7;margin-right:4px;"></i>
-                    [기기 #${dIdx + 1}] ${ClientManager.escapeHtml(d.name || '복합기')}
-                  </strong>
-                  <span style="font-size:11px;color:#64748b;margin-left:6px;">(${ClientManager.escapeHtml(d.location || '사무실')} / S/N: ${ClientManager.escapeHtml(d.serial || '-')})</span>
+            const curDevCost = dSaved.devCost !== undefined ? dSaved.devCost : defDevCost;
+            const curSetup = dSaved.initialSetup !== undefined ? dSaved.initialSetup : defSetup;
+            const curResidual = dSaved.residualValue !== undefined ? dSaved.residualValue : defResidual;
+            const subtotal = Math.max(0, curDevCost + curSetup - curResidual);
+
+            return `
+              <div class="profit-dev-cost-card" data-dev-id="${escapeHtml(String(d.id))}">
+                <div class="profit-dev-cost-header">
+                  <div>
+                    <strong style="font-size:13px;color:#1e293b;">
+                      <i class="fa fa-print" style="color:#0284c7;margin-right:4px;"></i>
+                      [기기 #${dIdx + 1}] ${escapeHtml(d.name || '복합기')}
+                    </strong>
+                    <span style="font-size:11px;color:#64748b;margin-left:6px;">(${escapeHtml(d.location || '사무실')} / S/N: ${escapeHtml(d.serial || '-')})</span>
+                  </div>
+                  <div style="font-size:11px;color:#7c3aed;font-weight:700;">
+                    기기 순투자: <span class="dev-subtotal-val">${subtotal.toLocaleString()}원</span>
+                  </div>
                 </div>
-                <div style="font-size:11px;color:#7c3aed;font-weight:700;">
-                  기기 순투자: <span class="dev-subtotal-val">${subtotal.toLocaleString()}원</span>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:10px;">
+                  <div>
+                    <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">기기 매입/취득원가(원)</label>
+                    <input type="number" class="form-input dev-cost-input" value="${curDevCost}" min="0" step="10000" placeholder="원가 입력" oninput="ProfitManager.updateDeviceCostTotals()">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">초기 설치/물류비(원)</label>
+                    <input type="number" class="form-input dev-setup-input" value="${curSetup}" min="0" step="5000" placeholder="설치비 입력" oninput="ProfitManager.updateDeviceCostTotals()">
+                  </div>
+                  <div>
+                    <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">만료 잔존가치(원)</label>
+                    <input type="number" class="form-input dev-residual-input" value="${curResidual}" min="0" step="10000" placeholder="잔존가치 입력" oninput="ProfitManager.updateDeviceCostTotals()">
+                  </div>
                 </div>
               </div>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:10px;">
-                <div>
-                  <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">기기 매입/취득원가(원)</label>
-                  <input type="number" class="form-input dev-cost-input" value="${curDevCost}" min="0" step="10000" placeholder="원가 입력" oninput="ProfitManager.updateDeviceCostTotals()">
-                </div>
-                <div>
-                  <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">초기 설치/물류비(원)</label>
-                  <input type="number" class="form-input dev-setup-input" value="${curSetup}" min="0" step="5000" placeholder="설치비 입력" oninput="ProfitManager.updateDeviceCostTotals()">
-                </div>
-                <div>
-                  <label style="font-size:11px;color:#475569;font-weight:600;display:block;margin-bottom:3px;">만료 잔존가치(원)</label>
-                  <input type="number" class="form-input dev-residual-input" value="${curResidual}" min="0" step="10000" placeholder="잔존가치 입력" oninput="ProfitManager.updateDeviceCostTotals()">
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('');
+            `;
+          }).join('');
+        }
+
+        try { this.updateDeviceCostTotals(); } catch(e) { console.warn('[ProfitManager] updateDeviceCostTotals 오류:', e); }
+
+        // 2. 소모품·부품 건별 지출 장부 렌더링
+        const dateInp = document.getElementById('maintInputDate');
+        if (dateInp) dateInp.value = ClientManager.getTodayStr ? ClientManager.getTodayStr() : new Date().toISOString().split('T')[0];
+        const useActualChk = document.getElementById('profitUseActualLogs');
+        if (useActualChk) useActualChk.checked = !!cost.useActualLogs;
+
+        try { this.renderMaintenanceLogs(clientId); } catch(e) { console.warn('[ProfitManager] renderMaintenanceLogs 오류:', e); }
+        try { this.toggleUseActualLogs(!!cost.useActualLogs); } catch(e) { console.warn('[ProfitManager] toggleUseActualLogs 오류:', e); }
+        try { this.updateModalPreview(); } catch(e) { console.warn('[ProfitManager] updateModalPreview 오류:', e); }
+
+      } catch (err) {
+        console.error('[ProfitManager] openEditModal 오류:', err);
+        // 오류가 나도 모달은 표시 시도
+        const modal = document.getElementById('profitEditModal');
+        if (modal) modal.style.display = 'flex';
       }
-      this.updateDeviceCostTotals();
-
-      // 2. 소모품·부품 건별 지출 장부 렌더링
-      const dateInp = document.getElementById('maintInputDate');
-      if (dateInp) dateInp.value = ClientManager.getTodayStr();
-      const useActualChk = document.getElementById('profitUseActualLogs');
-      if (useActualChk) useActualChk.checked = !!cost.useActualLogs;
-      this.renderMaintenanceLogs(clientId);
-      this.toggleUseActualLogs(!!cost.useActualLogs);
-
-      modal.style.display = 'flex';
-      this.updateModalPreview();
     },
 
     // 원가 모달 닫기
