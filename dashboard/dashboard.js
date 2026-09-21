@@ -1095,7 +1095,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const totalUsage = bwTotal + colorTotal; // 기기 총 누적 인쇄 매수
 
       const extraTotal = bwExtra + colorExtra;
-      const supply     = baseRent + extraTotal;
+      const rawSupply  = baseRent + extraTotal;
+      const discount   = Math.max(0, Number(dev.discount) || 0);
+      const supply     = Math.max(0, rawSupply - discount);
       const vat        = Math.round(supply * 0.1);
       const total      = supply + vat;
 
@@ -1105,6 +1107,8 @@ document.addEventListener('DOMContentLoaded', () => {
         colorBase, colorUnit, colorPrev, colorTotal, colorUsed, colorOver, colorExtra,
         totalUsage,
         extraTotal,
+        rawSupply,
+        discount,
         supply,
         vat,
         total
@@ -1118,6 +1122,8 @@ document.addEventListener('DOMContentLoaded', () => {
       let totalBwExtra    = 0;
       let totalColorExtra = 0;
       let totalExtra      = 0;
+      let totalRawSupply  = 0;
+      let totalDiscount   = 0;
       let totalSupply     = 0;
       let totalVat        = 0;
       let totalMonthBill  = 0;
@@ -1129,6 +1135,8 @@ document.addEventListener('DOMContentLoaded', () => {
         totalBwExtra    += c.bwExtra;
         totalColorExtra += c.colorExtra;
         totalExtra      += c.extraTotal;
+        totalRawSupply  += c.rawSupply;
+        totalDiscount   += c.discount;
         totalSupply     += c.supply;
         totalVat        += c.vat;
         totalMonthBill  += c.total;
@@ -1141,6 +1149,8 @@ document.addEventListener('DOMContentLoaded', () => {
         totalBwExtra,
         totalColorExtra,
         totalExtra,
+        totalRawSupply,
+        totalDiscount,
         totalSupply,
         totalVat,
         totalMonthBill,
@@ -1201,10 +1211,15 @@ document.addEventListener('DOMContentLoaded', () => {
       let statTotalMonthBill = 0;
       let statTotalPaid = 0;
 
+      const curMonth = this.getCurrentMonthStr();
       clients.forEach(c => {
         const t = this.calcClientTotals(c);
+        const rec = this.getMeterRecord(c.id, curMonth);
+        const bill = (rec && rec.summary && rec.summary.finalBill !== undefined)
+          ? rec.summary.finalBill
+          : ((rec && rec.summary && rec.summary.totalBill !== undefined) ? rec.summary.totalBill : t.totalMonthBill);
         statTotalDevices   += t.deviceCount;
-        statTotalMonthBill += t.totalMonthBill;
+        statTotalMonthBill += bill;
         statTotalPaid      += t.totalPaid;
       });
 
@@ -1232,7 +1247,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (tableWrapper) tableWrapper.style.display = 'block';
 
       let html = '';
-      const curMonth = this.getCurrentMonthStr();
       filtered.forEach((client, idx) => {
         // 원본 clients 배열에서의 실제 인덱스 (순서 이동용)
         const realIdx = clients.findIndex(c => String(c.id) === String(client.id));
@@ -1244,14 +1258,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 당월 검침 및 정산 레코드 조회
         const curRecord = this.getMeterRecord(client.id, curMonth);
-        const curBill = (curRecord && curRecord.summary) ? (curRecord.summary.totalBill || totals.totalMonthBill) : totals.totalMonthBill;
+        const meterSummary = curRecord && curRecord.summary ? curRecord.summary : null;
+
+        // 정산 모달 또는 거래처 장비별 할인금액 산출
+        const discountAmount = (meterSummary && meterSummary.discountAmount !== undefined)
+          ? meterSummary.discountAmount
+          : (curRecord && curRecord.settlement && curRecord.settlement.discountAmount !== undefined
+              ? curRecord.settlement.discountAmount
+              : totals.totalDiscount);
+
+        // 공급가액 (할인 전 및 부가세 적용 전 할인 차감 후)
+        const rawSupply = (meterSummary && meterSummary.totalSupply !== undefined)
+          ? meterSummary.totalSupply
+          : (totals.totalRawSupply || (totals.totalBaseRent + totals.totalExtra));
+
+        const dispSupply = (meterSummary && meterSummary.discountedSupply !== undefined)
+          ? meterSummary.discountedSupply
+          : Math.max(0, rawSupply - discountAmount);
+
+        // V.A.T (할인 후 공급가액 기준 10%)
+        const dispVat = (meterSummary && meterSummary.finalVat !== undefined)
+          ? meterSummary.finalVat
+          : Math.round(dispSupply * 0.1);
+
+        // 이번달 최종 청구금액
+        const curBill = (meterSummary && meterSummary.finalBill !== undefined)
+          ? meterSummary.finalBill
+          : (dispSupply + dispVat);
+
         const st = (curRecord && curRecord.settlement) ? curRecord.settlement : {
           paidAmount: 0,
           unpaidAmount: curBill,
           taxStatus: 'unissued',
           paidDate: '',
-          taxDate: ''
+          taxDate: '',
+          discountAmount: discountAmount,
+          discountedSupply: dispSupply,
+          finalVat: dispVat,
+          finalBill: curBill
         };
+
+        const unpaidAmount = (st.unpaidAmount !== undefined && st.finalBill === curBill)
+          ? st.unpaidAmount
+          : Math.max(0, curBill - (st.paidAmount || 0));
 
         // 세금계산서 배지
         let taxBadge = '';
@@ -1270,9 +1319,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (st.paidAmount >= curBill && curBill > 0) {
           payBadge = `<span class="badge-pay paid"><i class="fa fa-check"></i> 완납</span>`;
         } else if (st.paidAmount > 0) {
-          payBadge = `<span class="badge-pay partial" title="입금: ${st.paidAmount.toLocaleString()}원"><i class="fa fa-adjust"></i> 부분 (${st.unpaidAmount.toLocaleString()}원 미수)</span>`;
+          payBadge = `<span class="badge-pay partial" title="입금: ${st.paidAmount.toLocaleString()}원"><i class="fa fa-adjust"></i> 부분 (${unpaidAmount.toLocaleString()}원 미수)</span>`;
         } else {
-          payBadge = `<span class="badge-pay unpaid" title="미납 잔액: ${curBill.toLocaleString()}원"><i class="fa fa-exclamation-circle"></i> 미납 (${curBill.toLocaleString()}원)</span>`;
+          payBadge = `<span class="badge-pay unpaid" title="미납 총액: ${unpaidAmount.toLocaleString()}원"><i class="fa fa-exclamation-circle"></i> 미납 (${unpaidAmount.toLocaleString()}원)</span>`;
         }
 
         // 주 행 (Parent Row)
@@ -1300,8 +1349,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <td style="color:${totals.totalExtra > 0 ? '#f59e0b' : 'inherit'};font-weight:${totals.totalExtra > 0 ? '600' : 'normal'};">
               ${totals.totalExtra > 0 ? '+' : ''}${totals.totalExtra.toLocaleString()}원
             </td>
-            <td><strong>${totals.totalSupply.toLocaleString()}원</strong></td>
-            <td style="color:var(--text-muted);">${totals.totalVat.toLocaleString()}원</td>
+            <td>
+              <strong>${dispSupply.toLocaleString()}원</strong>
+              ${discountAmount > 0 ? `<div style="font-size:11px;color:#f59e0b;font-weight:600;"><i class="fa fa-tag"></i> -${discountAmount.toLocaleString()}원 할인</div>` : ''}
+            </td>
+            <td style="color:var(--text-muted);">${dispVat.toLocaleString()}원</td>
             <td style="color:#60a5fa;font-weight:700;font-size:15px;">
               ${curBill.toLocaleString()}원
             </td>
@@ -1376,6 +1428,10 @@ document.addEventListener('DOMContentLoaded', () => {
                       const dc = this.calcDevice(d);
                       const loc = d.location || (d.serial && d.serial.includes('/') ? d.serial.split('/')[1].trim() : '') || '메인 사무실';
                       const sn = d.serial && d.serial.includes('/') ? d.serial.split('/')[0].trim() : (d.serial || '-');
+                      const effectiveDevDiscount = dc.discount > 0 ? dc.discount : (devices.length === 1 ? discountAmount : 0);
+                      const effectiveDevSupply = Math.max(0, dc.rawSupply - effectiveDevDiscount);
+                      const effectiveDevVat = Math.round(effectiveDevSupply * 0.1);
+                      const effectiveDevTotal = effectiveDevSupply + effectiveDevVat;
                       return `
                         <tr>
                           <td>${dIdx + 1}</td>
@@ -1403,7 +1459,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div style="font-weight:700;color:#38bdf8;font-size:13px;">${dc.totalUsage.toLocaleString()}장</div>
                             <div style="font-size:10px;color:var(--text-muted);">흑백 ${dc.bwTotal.toLocaleString()} | 컬러 ${dc.colorTotal.toLocaleString()}</div>
                           </td>
-                          <td><strong style="color:#60a5fa;">${dc.total.toLocaleString()}원</strong> <span style="font-size:10px;color:var(--text-muted);">(VAT포함)</span></td>
+                          <td>
+                            <strong style="color:#60a5fa;">${effectiveDevTotal.toLocaleString()}원</strong> <span style="font-size:10px;color:var(--text-muted);">(VAT포함)</span>
+                            ${effectiveDevDiscount > 0 ? `<div style="font-size:11px;color:#f59e0b;font-weight:600;"><i class="fa fa-tag"></i> -${effectiveDevDiscount.toLocaleString()}원 할인</div>` : ''}
+                          </td>
                         </tr>
                       `;
                     }).join('')}
@@ -3131,7 +3190,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
               <div class="print-summary-box">
                 <div>
-                  <div style="font-size:12px;color:#64748b;">총 공급가액: <strong>${(summary.totalSupply || 0).toLocaleString()}원</strong> | 부가세(VAT 10%): <strong>${(summary.totalVat || 0).toLocaleString()}원</strong></div>
+                  <div style="font-size:12px;color:#64748b;">
+                    총 공급가액: <strong>${((summary.discountedSupply !== undefined ? summary.discountedSupply : summary.totalSupply) || 0).toLocaleString()}원</strong>
+                    ${(summary.discountAmount || 0) > 0 ? `<span style="color:#d97706;font-weight:700;"> (할인 -${Number(summary.discountAmount).toLocaleString()}원 차감)</span>` : ''} | 부가세(VAT 10%): <strong>${((summary.finalVat !== undefined ? summary.finalVat : summary.totalVat) || 0).toLocaleString()}원</strong>
+                  </div>
                   <div style="font-size:11px;color:#0284c7;margin-top:3px;">입금계좌: 우리은행 1002-000-000000 (예금주: 최○○ / 프린터모아)</div>
                   <div style="margin-top:5px;font-size:11px;color:#334155;display:flex;gap:12px;flex-wrap:wrap;">
                     <span>세금계산서: <strong>${rec.settlement?.taxStatus === 'issued' ? '발행완료 (' + (rec.settlement.taxDate || '발행') + ')' : (rec.settlement?.taxStatus === 'cashReceipt' ? '현금영수증' : '미발행')}</strong></span>
@@ -3140,7 +3202,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div style="text-align:right;">
                   <span style="font-size:13px;color:#475569;font-weight:600;">이번달 총 청구금액(VAT포함):</span>
-                  <div style="font-size:22px;font-weight:800;color:#0f172a;">${(summary.totalBill || 0).toLocaleString()} 원</div>
+                  <div style="font-size:22px;font-weight:800;color:#0f172a;">${((summary.finalBill !== undefined ? summary.finalBill : summary.totalBill) || 0).toLocaleString()} 원</div>
                 </div>
               </div>
 
@@ -4110,7 +4172,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let issuedCount = 0;
 
       records.forEach(r => {
-        const billed = r.summary?.totalBill || r.summary?.totalMonthBill || 0;
+        const billed = r.summary?.finalBill !== undefined ? r.summary.finalBill : (r.summary?.totalBill || r.summary?.totalMonthBill || 0);
         const paid = r.settlement?.paidAmount !== undefined ? r.settlement.paidAmount : billed;
         const unpaid = r.settlement?.unpaidAmount !== undefined ? r.settlement.unpaidAmount : Math.max(0, billed - paid);
 
@@ -4154,7 +4216,7 @@ document.addEventListener('DOMContentLoaded', () => {
             colorTotal: 0
           };
         }
-        const billed = r.summary?.totalBill || r.summary?.totalMonthBill || 0;
+        const billed = r.summary?.finalBill !== undefined ? r.summary.finalBill : (r.summary?.totalBill || r.summary?.totalMonthBill || 0);
         const paid = r.settlement?.paidAmount !== undefined ? r.settlement.paidAmount : billed;
         const unpaid = r.settlement?.unpaidAmount !== undefined ? r.settlement.unpaidAmount : Math.max(0, billed - paid);
 
@@ -4305,7 +4367,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // 내림차순(최신순) 표시
       const descList = [...records].reverse();
       tbody.innerHTML = descList.map(r => {
-        const billed = r.summary?.totalBill || r.summary?.totalMonthBill || 0;
+        const billed = r.summary?.finalBill !== undefined ? r.summary.finalBill : (r.summary?.totalBill || r.summary?.totalMonthBill || 0);
         const paid = r.settlement?.paidAmount !== undefined ? r.settlement.paidAmount : billed;
         const unpaid = r.settlement?.unpaidAmount !== undefined ? r.settlement.unpaidAmount : Math.max(0, billed - paid);
 
