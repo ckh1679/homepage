@@ -1345,11 +1345,6 @@ document.addEventListener('DOMContentLoaded', () => {
               <strong style="font-size:14px;color:#fff;">${escapeHtml(client.name)}</strong>
               ${client.memo ? `<div style="font-size:11px;color:var(--text-muted);">${escapeHtml(client.memo)}</div>` : ''}
             </td>
-            <td><code style="background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;color:#cbd5e1;">${escapeHtml(client.bizNum || '-')}</code></td>
-            <td>
-              <div>${escapeHtml(client.ceo || '-')}</div>
-              <div style="font-size:12px;color:var(--text-muted);">${escapeHtml(client.phone || '-')}</div>
-            </td>
             <td style="text-align:center;">
               <span class="status-badge" style="background:rgba(59,130,246,0.15);color:var(--accent-primary);font-weight:700;">
                 <i class="fa fa-print"></i> ${totals.deviceCount}대
@@ -1407,7 +1402,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           <!-- 아코디언 하위 행 (Subtable Row) -->
           <tr class="device-subtable-row" id="sub-${client.id}" style="display:none;">
-            <td colspan="15">
+            <td colspan="13">
               <div class="device-subtable-wrap">
                 <div class="device-subtable-title" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                   <span><i class="fa fa-layer-group"></i> [${escapeHtml(client.name)}] 임대 장비 상세 내역 (${devices.length}대)</span>

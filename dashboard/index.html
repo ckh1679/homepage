@@ -296,16 +296,14 @@
               </div>
             </div>
 
-            <!-- 거래처 목록 테이블 -->
-            <div class="table-wrapper" id="clientTableWrapper">
-              <table class="data-table client-table" id="clientTable">
+            <!-- 거래처 목록 테이블 (가로 스크롤 가능) -->
+            <div class="table-wrapper" id="clientTableWrapper" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+              <table class="data-table client-table" id="clientTable" style="min-width:1100px;">
                 <thead>
                   <tr>
                     <th style="width:40px;text-align:center;"></th>
                     <th style="width:45px;text-align:center;">번호</th>
                     <th style="min-width:140px;text-align:left;">거래처명 (상호)</th>
-                    <th style="min-width:110px;text-align:center;">사업자번호</th>
-                    <th style="min-width:110px;text-align:left;">대표자 / 연락처</th>
                     <th style="min-width:85px;text-align:center;">임대장비</th>
                     <th style="min-width:90px;text-align:right;">기본임대료</th>
                     <th style="min-width:95px;text-align:right;">추가금액</th>
