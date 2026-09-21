@@ -447,10 +447,17 @@ ul { list-style: none; }
 }
 
 .status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 11px;
   font-weight: 600;
+  white-space: nowrap;
+  min-width: 52px;
+  box-sizing: border-box;
 }
 .status-completed { background: rgba(16, 185, 129, 0.1); color: var(--accent-success); }
 .status-pending { background: rgba(245, 158, 11, 0.1); color: var(--accent-warning); }
@@ -797,13 +804,17 @@ ul { list-style: none; }
 .client-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 1360px;
 }
 .client-table th {
   background: rgba(255, 255, 255, 0.02);
   white-space: nowrap;
+  padding: 10px 12px;
 }
 .client-table td {
   vertical-align: middle;
+  white-space: nowrap;
+  padding: 11px 12px;
 }
 .client-table tr.accordion-parent {
   cursor: pointer;
@@ -1328,11 +1339,15 @@ ul { list-style: none; }
 .badge-tax {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: 12px;
   font-size: 11px;
   font-weight: 700;
+  white-space: nowrap;
+  min-width: 78px;
+  box-sizing: border-box;
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
@@ -1355,11 +1370,15 @@ ul { list-style: none; }
 .badge-pay {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: 12px;
   font-size: 11px;
   font-weight: 700;
+  white-space: nowrap;
+  min-width: 95px;
+  box-sizing: border-box;
 }
 .badge-pay.paid {
   background: #dcfce7;

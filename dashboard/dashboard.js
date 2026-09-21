@@ -1209,7 +1209,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let statTotalClients = clients.length;
       let statTotalDevices = 0;
       let statTotalMonthBill = 0;
-      let statTotalPaid = 0;
+      let statTotalMonthPaid = 0; // 금월 누적 결제금액 (완납 업체 청구금액 합산)
 
       const curMonth = this.getCurrentMonthStr();
       clients.forEach(c => {
@@ -1218,9 +1218,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const bill = (rec && rec.summary && rec.summary.finalBill !== undefined)
           ? rec.summary.finalBill
           : ((rec && rec.summary && rec.summary.totalBill !== undefined) ? rec.summary.totalBill : t.totalMonthBill);
+        
+        const settlement = (rec && rec.settlement) ? rec.settlement : null;
+        const paidAmount = settlement ? (settlement.paidAmount || 0) : 0;
+        
+        // 완납처리된 업체들의 청구금액 합산 (부분입금은 실 입금액 합산)
+        if (paidAmount >= bill && bill > 0) {
+          statTotalMonthPaid += bill;
+        } else if (paidAmount > 0) {
+          statTotalMonthPaid += paidAmount;
+        }
+
         statTotalDevices   += t.deviceCount;
         statTotalMonthBill += bill;
-        statTotalPaid      += t.totalPaid;
       });
 
       // 상단 4대 카드 UI 갱신
@@ -1233,7 +1243,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (elTotal)     elTotal.textContent     = statTotalClients.toLocaleString();
       if (elDevices)   elDevices.textContent   = statTotalDevices.toLocaleString() + '대';
       if (elMonthBill) elMonthBill.textContent = statTotalMonthBill.toLocaleString() + '원';
-      if (elTotalPaid) elTotalPaid.textContent = statTotalPaid.toLocaleString() + '원';
+      if (elTotalPaid) elTotalPaid.textContent = statTotalMonthPaid.toLocaleString() + '원';
       if (elBadge)     elBadge.textContent     = `${filtered.length}개사`;
 
       if (filtered.length === 0) {
@@ -1340,26 +1350,34 @@ document.addEventListener('DOMContentLoaded', () => {
               <div>${escapeHtml(client.ceo || '-')}</div>
               <div style="font-size:12px;color:var(--text-muted);">${escapeHtml(client.phone || '-')}</div>
             </td>
-            <td>
+            <td style="text-align:center;">
               <span class="status-badge" style="background:rgba(59,130,246,0.15);color:var(--accent-primary);font-weight:700;">
                 <i class="fa fa-print"></i> ${totals.deviceCount}대
               </span>
             </td>
-            <td>${totals.totalBaseRent.toLocaleString()}원</td>
-            <td style="color:${totals.totalExtra > 0 ? '#f59e0b' : 'inherit'};font-weight:${totals.totalExtra > 0 ? '600' : 'normal'};">
+            <td style="text-align:right;">${totals.totalBaseRent.toLocaleString()}원</td>
+            <td style="text-align:right;color:${totals.totalExtra > 0 ? '#f59e0b' : 'inherit'};font-weight:${totals.totalExtra > 0 ? '600' : 'normal'};">
               ${totals.totalExtra > 0 ? '+' : ''}${totals.totalExtra.toLocaleString()}원
             </td>
-            <td>
+            <td style="text-align:right;">
               <strong>${dispSupply.toLocaleString()}원</strong>
-              ${discountAmount > 0 ? `<div style="font-size:11px;color:#f59e0b;font-weight:600;"><i class="fa fa-tag"></i> -${discountAmount.toLocaleString()}원 할인</div>` : ''}
+              ${discountAmount > 0 ? `<div style="font-size:11px;color:#f59e0b;font-weight:600;white-space:nowrap;margin-top:2px;"><i class="fa fa-tag"></i> -${discountAmount.toLocaleString()}원 할인</div>` : ''}
             </td>
-            <td style="color:var(--text-muted);">${dispVat.toLocaleString()}원</td>
-            <td style="color:#60a5fa;font-weight:700;font-size:15px;">
+            <td style="text-align:right;color:var(--text-muted);">${dispVat.toLocaleString()}원</td>
+            <td style="text-align:right;color:#60a5fa;font-weight:700;font-size:15px;">
               ${curBill.toLocaleString()}원
             </td>
-            <td onclick="event.stopPropagation();">${taxBadge}</td>
-            <td>${payBadge}</td>
-            <td>${totals.totalPaid.toLocaleString()}원</td>
+            <td style="text-align:center;" onclick="event.stopPropagation();">${taxBadge}</td>
+            <td style="text-align:center;">${payBadge}</td>
+            <td style="text-align:right;">
+              ${(st.paidAmount >= curBill && curBill > 0)
+                ? `<strong style="color:#10b981;font-weight:700;">${curBill.toLocaleString()}원</strong>`
+                : (st.paidAmount > 0
+                    ? `<span style="color:#0284c7;font-weight:600;">${st.paidAmount.toLocaleString()}원</span>`
+                    : `<span style="color:var(--text-muted);">0원</span>`
+                  )
+              }
+            </td>
             <td onclick="event.stopPropagation();">
               <div style="display:flex;gap:5px;align-items:center;">
                 <!-- 순서 이동 버튼 -->

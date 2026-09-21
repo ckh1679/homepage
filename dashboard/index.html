@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>프린터모아 - 관리자 대시보드</title>
-  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="dashboard.css?v=20260921_002">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- SheetJS (Excel xlsx 업로드/다운로드 라이브러리) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -32,7 +32,7 @@
         <!-- 거래 관리 -->
         <div class="menu-label">거래 관리</div>
         <div class="menu-item" data-page="clients">
-          <i class="fa fa-building"></i> 거래처 관리
+          <i class="fa fa-building"></i> 월별 거래처관리
         </div>
         <div class="menu-item" data-page="items">
           <i class="fa fa-boxes"></i> 품목 관리
@@ -204,8 +204,8 @@
         <!-- ====== 거래처 관리 ====== -->
         <section id="page-clients" class="page-section">
           <div class="page-title">
-            <h2><i class="fa fa-building" style="margin-right:10px;color:var(--accent-primary);"></i>거래처 관리</h2>
-            <p>복합기/프린터 렌탈 거래처와 다중 임대 장비, 이번달 사용량 및 정산 금액을 통합 관리합니다.</p>
+            <h2><i class="fa fa-building" style="margin-right:10px;color:var(--accent-primary);"></i>월별 거래처관리</h2>
+            <p>복합기·프린터 렌탈 거래처와 다중 임대 장비, 이번달 사용량 및 정산 금액을 통합 관리합니다.</p>
           </div>
 
           <!-- 통계 지표 카드 4종 -->
@@ -237,9 +237,9 @@
             <div class="stat-card">
               <div class="stat-icon warning"><i class="fa fa-receipt"></i></div>
               <div class="stat-details">
-                <div class="stat-title">총 누적 결제금액</div>
+                <div class="stat-title">금월 누적 결제금액</div>
                 <div class="stat-value" id="clientStatTotalPaid">0원</div>
-                <div class="stat-trend">거래처 전체 누적 입금합계</div>
+                <div class="stat-trend trend-up">완납 업체 결제합계</div>
               </div>
             </div>
           </div>
@@ -301,21 +301,21 @@
               <table class="data-table client-table" id="clientTable">
                 <thead>
                   <tr>
-                    <th style="width:40px;"></th>
-                    <th style="width:45px;">번호</th>
-                    <th>거래처명 (상호)</th>
-                    <th>사업자번호</th>
-                    <th>대표자 / 연락처</th>
-                    <th>임대장비</th>
-                    <th>기본임대료</th>
-                    <th>추가금액</th>
-                    <th>합계(공급가)</th>
-                    <th>V.A.T</th>
-                    <th style="color:#2563eb;">이번달 청구액</th>
-                    <th>세금계산서</th>
-                    <th>수금 / 미수금</th>
-                    <th>총 누적결제액</th>
-                    <th style="width:145px;">관리</th>
+                    <th style="width:40px;text-align:center;"></th>
+                    <th style="width:45px;text-align:center;">번호</th>
+                    <th style="min-width:140px;text-align:left;">거래처명 (상호)</th>
+                    <th style="min-width:110px;text-align:center;">사업자번호</th>
+                    <th style="min-width:110px;text-align:left;">대표자 / 연락처</th>
+                    <th style="min-width:85px;text-align:center;">임대장비</th>
+                    <th style="min-width:90px;text-align:right;">기본임대료</th>
+                    <th style="min-width:95px;text-align:right;">추가금액</th>
+                    <th style="min-width:110px;text-align:right;">합계(공급가)</th>
+                    <th style="min-width:90px;text-align:right;">V.A.T</th>
+                    <th style="color:#2563eb;min-width:115px;text-align:right;">이번달 청구액</th>
+                    <th style="min-width:95px;text-align:center;">세금계산서</th>
+                    <th style="min-width:115px;text-align:center;">수금 / 미수금</th>
+                    <th style="min-width:120px;text-align:right;color:#10b981;">금월 누적 결제금액</th>
+                    <th style="width:145px;text-align:center;">관리</th>
                   </tr>
                 </thead>
                 <tbody id="clientTbody">
@@ -1429,6 +1429,6 @@
        ============================================ -->
   <div id="meterPrintArea" style="display:none;"></div>
   <script src="../board/board.js"></script>
-  <script src="dashboard.js?v=20260921_001"></script>
+  <script src="dashboard.js?v=20260921_002"></script>
 </body>
 </html>
