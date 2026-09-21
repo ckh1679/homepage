@@ -661,6 +661,7 @@
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 <input type="text" id="profitSearchInput" placeholder="거래처명, 장비명 검색..." style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;width:200px;" oninput="ProfitManager.renderTable()">
                 <select id="profitSortSelect" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;" onchange="ProfitManager.renderTable()">
+                  <option value="order" selected>거래처관리 순서</option>
                   <option value="name">거래처명 순</option>
                   <option value="bep_asc">원가회수 빠른 순 (BEP↑)</option>
                   <option value="net_desc">월 순마진 높은 순</option>

@@ -3495,14 +3495,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (empty) empty.style.display = 'none';
 
       const profitList = clients.map(c => this.calcProfit(c));
-      profitList.sort((a, b) => {
-        if (sortVal === 'name') return a.clientName.localeCompare(b.clientName);
-        if (sortVal === 'bep_asc') return a.bepMonths - b.bepMonths;
-        if (sortVal === 'net_desc') return b.monthlyNet - a.monthlyNet;
-        if (sortVal === 'roi_desc') return b.roi - a.roi;
-        if (sortVal === 'invest_desc') return b.grossInvestment - a.grossInvestment;
-        return 0;
-      });
+      // '거래처관리 순서'인 경우 sort 없이 getClients() 원본 순서를 그대로 사용
+      if (sortVal !== 'order') {
+        profitList.sort((a, b) => {
+          if (sortVal === 'name') return a.clientName.localeCompare(b.clientName);
+          if (sortVal === 'bep_asc') return a.bepMonths - b.bepMonths;
+          if (sortVal === 'net_desc') return b.monthlyNet - a.monthlyNet;
+          if (sortVal === 'roi_desc') return b.roi - a.roi;
+          if (sortVal === 'invest_desc') return b.grossInvestment - a.grossInvestment;
+          return 0;
+        });
+      }
 
       const html = profitList.map((p, idx) => {
         let bepBadge = '';
