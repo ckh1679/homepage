@@ -1014,6 +1014,7 @@ document.addEventListener('DOMContentLoaded', () => {
           colorOver: dc.colorOver,
           colorExtra: dc.colorExtra,
           totalUsage: dc.totalUsage,
+          discount: dc.discount, // 장비별 할인금액 포함
           supply: dc.supply,
           vat: dc.vat,
           total: dc.total
@@ -2700,16 +2701,45 @@ document.addEventListener('DOMContentLoaded', () => {
       if (taxStatusInput) taxStatusInput.value = st.taxStatus || 'unissued';
       if (taxDateInput) taxDateInput.value = st.taxDate || '';
 
-      // 기존 저장된 할인금액 복원 (settlement -> summary -> totals.totalDiscount 순서로 복원)
-      const discountInput = document.getElementById('meterDiscountAmount');
-      const initDiscount = (st.discountAmount !== undefined && st.discountAmount !== null && Number(st.discountAmount) > 0)
-        ? Number(st.discountAmount)
-        : ((record.summary?.discountAmount !== undefined && Number(record.summary.discountAmount) > 0)
-            ? Number(record.summary.discountAmount)
-            : (totals.totalDiscount || 0));
-      if (discountInput) discountInput.value = initDiscount > 0 ? initDiscount : '';
+      // 기존 저장된 할인금액 복원 (다중 폴백: settlement -> summary -> 장비별 할인합계 -> totals -> 거래처 할인)
+      const clientDevDiscount = (client.devices || []).reduce((sum, d) => sum + (Number(d.discount) || 0), 0);
+      const recordDevDiscount = (record.devices || []).reduce((sum, d) => sum + (Number(d.discount) || 0), 0);
+      const clientDiscount = Number(client.discount) || 0;
+      const settlementDiscount = (st.discountAmount !== undefined && st.discountAmount !== null) ? Number(st.discountAmount) : 0;
+      const summaryDiscount = Number(record.summary?.discountAmount || record.summary?.totalDiscount) || 0;
+      const totalsDiscount = Number(totals.totalDiscount || totals.discountAmount) || 0;
 
-      const devices = (record.devices && record.devices.length > 0) ? record.devices : (client.devices || []);
+      let initDiscount = 0;
+      if (settlementDiscount > 0) {
+        initDiscount = settlementDiscount;
+      } else if (summaryDiscount > 0) {
+        initDiscount = summaryDiscount;
+      } else if (clientDevDiscount > 0) {
+        initDiscount = clientDevDiscount;
+      } else if (recordDevDiscount > 0) {
+        initDiscount = recordDevDiscount;
+      } else if (totalsDiscount > 0) {
+        initDiscount = totalsDiscount;
+      } else if (clientDiscount > 0) {
+        initDiscount = clientDiscount;
+      }
+
+      const discountInput = document.getElementById('meterDiscountAmount');
+      if (discountInput) {
+        discountInput.value = initDiscount > 0 ? initDiscount : '';
+      }
+
+      const rawDevices = (record.devices && record.devices.length > 0) ? record.devices : (client.devices || []);
+      const devices = rawDevices.map(d => {
+        const matchedClientDev = (client.devices || []).find(cd => String(cd.id) === String(d.id));
+        const devDiscount = (d.discount !== undefined && d.discount !== null && Number(d.discount) > 0)
+          ? Number(d.discount)
+          : (matchedClientDev ? (Number(matchedClientDev.discount) || 0) : 0);
+        return {
+          ...d,
+          discount: devDiscount
+        };
+      });
 
       if (listEl) {
         listEl.innerHTML = devices.map((d, dIdx) => `
@@ -2718,6 +2748,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <div>
                 <strong style="color:#0f172a;font-size:14px;">장비 #${dIdx + 1}: ${escapeHtml(d.name || '-')}</strong>
                 <span style="font-size:12px;color:#64748b;margin-left:8px;">[설치장소: ${escapeHtml(d.location || '메인 사무실')} | S/N: ${escapeHtml(d.serial || '-')}]</span>
+                ${(d.discount || 0) > 0 ? `<span style="font-size:11px;color:#d97706;font-weight:700;margin-left:8px;background:#fef3c7;padding:2px 6px;border-radius:4px;"><i class="fa fa-tag"></i> 장비할인 -${Number(d.discount).toLocaleString()}원</span>` : ''}
               </div>
               <div style="font-size:13px;color:#0284c7;font-weight:700;">
                 월 기본료: ${Number(d.baseRent || 0).toLocaleString()}원
@@ -2727,6 +2758,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <input type="hidden" class="m-dev-loc" value="${escapeHtml(d.location || '')}">
             <input type="hidden" class="m-dev-sn" value="${escapeHtml(d.serial || '')}">
             <input type="hidden" class="m-dev-baseRent" value="${d.baseRent || 0}">
+            <input type="hidden" class="m-dev-discount" value="${d.discount || 0}">
 
             <div class="meter-grid-row" style="margin-top:10px;">
               <div class="meter-input-group">
@@ -2891,7 +2923,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // 할인금액을 부가세 적용 이전(공급가액) 단계에서 차감
       const discountInput = document.getElementById('meterDiscountAmount');
-      const discountAmount = Math.max(0, Number(discountInput ? discountInput.value : 0) || 0);
+      let discountAmount = Math.max(0, Number(discountInput ? discountInput.value : 0) || 0);
+
+      // 만약 입력창이 비어있다면, 각 장비 카드에 설정된 장비할인 합계를 감지하여 자동 세팅
+      if (discountAmount === 0 && discountInput && discountInput.value === '') {
+        let sumDevDiscount = 0;
+        cards.forEach(card => {
+          sumDevDiscount += Number(card.querySelector('.m-dev-discount')?.value) || 0;
+        });
+        if (sumDevDiscount > 0) {
+          discountAmount = sumDevDiscount;
+          discountInput.value = discountAmount;
+        }
+      }
+
       const discountedSupply = Math.max(0, sumSupply - discountAmount); // 할인 후 공급가액
       const finalVat = Math.round(discountedSupply * 0.1);              // 할인 후 공급가액에 VAT 10%
       const finalBill = discountedSupply + finalVat;                    // 최종 정산금액
@@ -2946,6 +2991,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const colorPrev = Number(card.querySelector('.m-dev-colorPrev')?.value) || 0;
         const colorTotal = Number(card.querySelector('.m-dev-colorTotal')?.value) || 0;
         const colorUsed = Number(card.querySelector('.m-dev-colorUsed')?.value) || 0;
+        const devDiscount = Number(card.querySelector('.m-dev-discount')?.value) || 0;
 
         const bwOver = Math.max(0, bwUsed - bwBase);
         const bwExtra = bwOver * bwUnit;
@@ -2969,6 +3015,7 @@ document.addEventListener('DOMContentLoaded', () => {
           bwBase, bwUnit, bwPrev, bwTotal, bwUsed, bwOver, bwExtra,
           colorBase, colorUnit, colorPrev, colorTotal, colorUsed, colorOver, colorExtra,
           totalUsage: bwTotal + colorTotal,
+          discount: devDiscount,
           supply, vat, total
         });
       });
