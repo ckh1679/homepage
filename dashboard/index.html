@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>프린터모아 - 관리자 대시보드</title>
-  <link rel="stylesheet" href="dashboard.css?v=20260921_003">
+  <link rel="stylesheet" href="dashboard.css?v=20260922_001">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- SheetJS (Excel xlsx 업로드/다운로드 라이브러리) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -35,7 +35,7 @@
           <i class="fa fa-building"></i> 월별 거래처관리
         </div>
         <div class="menu-item" data-page="items">
-          <i class="fa fa-boxes"></i> 품목 관리
+          <i class="fa fa-boxes-stacked"></i> 소모품관리
         </div>
         <div class="menu-item" data-page="statement">
           <i class="fa fa-file-invoice"></i> 거래명세서 작성
@@ -331,21 +331,143 @@
           </div>
         </section>
 
-        <!-- ====== 품목 관리 ====== -->
+        <!-- ====== 소모품관리 ====== -->
         <section id="page-items" class="page-section">
-          <div class="page-title">
-            <h2><i class="fa fa-boxes" style="margin-right:10px;color:var(--accent-primary);"></i>품목 관리</h2>
-            <p>렌탈 제품 및 소모품 품목 목록을 관리합니다.</p>
-          </div>
-          <div class="panel">
-            <div class="panel-header">
-              <div class="panel-title">품목 목록</div>
-              <button class="btn-primary-sm"><i class="fa fa-plus"></i> 품목 추가</button>
+          <div class="page-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+            <div>
+              <h2><i class="fa fa-boxes-stacked" style="margin-right:10px;color:var(--accent-primary);"></i>소모품관리</h2>
+              <p>소모품(토너, 드럼, 잉크, 부품 등)의 입고·출고 및 재고를 관리하고 월별 거래처 비용과 실시간 연동합니다.</p>
             </div>
-            <div class="empty-state">
-              <i class="fa fa-boxes"></i>
-              <p>등록된 품목이 없습니다.</p>
-              <span>상단 '품목 추가' 버튼을 클릭하여 제품을 등록해 주세요.</span>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-primary-sm" style="background:linear-gradient(135deg,#0284c7,#0369a1);" onclick="SuppliesManager.openModal('in')">
+                <i class="fa fa-arrow-down"></i> 소모품 입고
+              </button>
+              <button class="btn-primary-sm" style="background:linear-gradient(135deg,#f59e0b,#d97706);" onclick="SuppliesManager.openModal('out')">
+                <i class="fa fa-arrow-up"></i> 소모품 출고
+              </button>
+              <button class="btn-secondary" style="padding:7px 12px;font-size:13px;" onclick="SuppliesManager.exportCSV()">
+                <i class="fa fa-file-excel" style="color:#10b981;margin-right:4px;"></i> 엑셀 다운로드
+              </button>
+            </div>
+          </div>
+
+          <!-- 요약 통계 카드 4종 -->
+          <div class="stats-grid" style="margin-bottom:20px;">
+            <div class="stat-card">
+              <div class="stat-icon" style="background:rgba(2,132,199,0.12);color:#0284c7;">
+                <i class="fa fa-box"></i>
+              </div>
+              <div class="stat-info">
+                <div class="stat-title">관리 품목 종류</div>
+                <div class="stat-value" id="supStatTotalItems">0개</div>
+                <div class="stat-desc">등록된 총 소모품 품목수</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background:rgba(16,185,129,0.12);color:#10b981;">
+                <i class="fa fa-warehouse"></i>
+              </div>
+              <div class="stat-info">
+                <div class="stat-title">총 보유 재고</div>
+                <div class="stat-value" id="supStatTotalStock">0개</div>
+                <div class="stat-desc">현재 전체 잔여 재고 수량</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background:rgba(59,130,246,0.12);color:#3b82f6;">
+                <i class="fa fa-cart-arrow-down"></i>
+              </div>
+              <div class="stat-info">
+                <div class="stat-title">금월 입고 금액</div>
+                <div class="stat-value" id="supStatMonthInAmt">0원</div>
+                <div class="stat-desc" id="supStatMonthInCount">총 0건 입고</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b;">
+                <i class="fa fa-dolly"></i>
+              </div>
+              <div class="stat-info">
+                <div class="stat-title">금월 출고 금액</div>
+                <div class="stat-value" id="supStatMonthOutAmt">0원</div>
+                <div class="stat-desc" id="supStatMonthOutCount">총 0건 출고</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 탭 & 필터 패널 -->
+          <div class="panel">
+            <div class="panel-header" style="flex-wrap:wrap;gap:12px;">
+              <!-- 탭 버튼 -->
+              <div style="display:flex;gap:6px;border-bottom:none;">
+                <button class="btn-tab active" id="supTabRecords" onclick="SuppliesManager.switchTab('records')">
+                  <i class="fa fa-list"></i> 입·출고 전체 내역
+                </button>
+                <button class="btn-tab" id="supTabInventory" onclick="SuppliesManager.switchTab('inventory')">
+                  <i class="fa fa-boxes"></i> 품목별 현재고 현황
+                </button>
+              </div>
+
+              <!-- 검색 및 필터 컨트롤 -->
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <select id="supFilterType" class="form-input" style="padding:6px 10px;font-size:13px;width:auto;" onchange="SuppliesManager.render()">
+                  <option value="ALL">전체 구분 (입고+출고)</option>
+                  <option value="in">📥 입고 내역만</option>
+                  <option value="out">📤 출고 내역만</option>
+                </select>
+                <select id="supFilterPeriod" class="form-input" style="padding:6px 10px;font-size:13px;width:auto;" onchange="SuppliesManager.render()">
+                  <option value="ALL">전체 기간</option>
+                  <option value="THIS_MONTH" selected>이번 달</option>
+                  <option value="PREV_MONTH">지난 달</option>
+                  <option value="THIS_YEAR">올해 전체</option>
+                </select>
+                <div style="position:relative;min-width:200px;">
+                  <input type="text" id="supSearchInput" class="form-input" style="padding:6px 10px 6px 30px;font-size:13px;width:100%;" placeholder="품목명, 거래처/입고처 검색" oninput="SuppliesManager.render()">
+                  <i class="fa fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:12px;"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- 1. 입·출고 전체 내역 뷰 -->
+            <div id="supViewRecords" class="table-wrapper" style="overflow-x:auto;">
+              <table class="data-table" style="min-width:1050px;">
+                <thead>
+                  <tr>
+                    <th style="width:100px;">일자</th>
+                    <th style="width:85px;text-align:center;">구분</th>
+                    <th>품목명</th>
+                    <th style="width:200px;">거래처 / 입고처</th>
+                    <th style="width:110px;text-align:right;">단가 (가격)</th>
+                    <th style="width:80px;text-align:center;">수량</th>
+                    <th style="width:120px;text-align:right;">합계금액</th>
+                    <th style="width:220px;">비고 / 렌탈수익성 연동</th>
+                    <th style="width:70px;text-align:center;">삭제</th>
+                  </tr>
+                </thead>
+                <tbody id="supRecordsTbody">
+                  <!-- JS로 동적 렌더링 -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- 2. 품목별 재고 현황 뷰 -->
+            <div id="supViewInventory" class="table-wrapper" style="display:none;overflow-x:auto;">
+              <table class="data-table" style="min-width:850px;">
+                <thead>
+                  <tr>
+                    <th style="width:50px;text-align:center;">#</th>
+                    <th>품목명</th>
+                    <th style="width:130px;text-align:right;">총 입고 수량</th>
+                    <th style="width:130px;text-align:right;">총 출고 수량</th>
+                    <th style="width:140px;text-align:right;">현재고 수량</th>
+                    <th style="width:130px;text-align:center;">재고 상태</th>
+                    <th style="width:130px;text-align:center;">최근 거래일</th>
+                  </tr>
+                </thead>
+                <tbody id="supInventoryTbody">
+                  <!-- JS로 동적 렌더링 -->
+                </tbody>
+              </table>
             </div>
           </div>
         </section>
@@ -1424,10 +1546,138 @@
   </div>
 
   <!-- ============================================
+       소모품 입·출고 등록 모달
+       ============================================ -->
+  <div id="suppliesModal" class="modal-overlay" style="display:none;">
+    <div class="modal-card" style="max-width:600px;width:95%;">
+      <div class="modal-header" style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;padding:16px 20px;">
+        <div class="modal-title" style="display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:#0f172a;">
+          <i class="fa fa-boxes-stacked" style="color:var(--accent-primary);"></i>
+          <span id="supModalTitle">소모품 입·출고 등록</span>
+        </div>
+        <button type="button" class="modal-close" onclick="SuppliesManager.closeModal()" style="font-size:22px;border:none;background:none;cursor:pointer;color:#94a3b8;">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding:20px;max-height:80vh;overflow-y:auto;">
+        <form id="suppliesForm" onsubmit="SuppliesManager.saveRecord(event)">
+          <input type="hidden" id="supEditId" value="">
+
+          <!-- 입고 / 출고 전환 세그먼트 버튼 -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+            <button type="button" id="supTypeBtnIn" class="btn-segment active" onclick="SuppliesManager.toggleType('in')" style="padding:12px;font-size:14px;font-weight:700;border-radius:8px;border:2px solid #0284c7;background:#0284c7;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s;">
+              <i class="fa fa-arrow-down"></i> 📥 입고 등록
+            </button>
+            <button type="button" id="supTypeBtnOut" class="btn-segment" onclick="SuppliesManager.toggleType('out')" style="padding:12px;font-size:14px;font-weight:700;border-radius:8px;border:2px solid #e2e8f0;background:#f8fafc;color:#64748b;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all 0.2s;">
+              <i class="fa fa-arrow-up"></i> 📤 출고 등록
+            </button>
+          </div>
+
+          <!-- 품목명 입력 -->
+          <div class="form-group" style="margin-bottom:14px;">
+            <label for="supItemName" style="font-size:12.5px;font-weight:700;color:#334155;display:block;margin-bottom:4px;">
+              품목명 <span style="color:#ef4444;">*</span>
+            </label>
+            <input type="text" id="supItemName" class="form-input" list="supItemSuggestions" placeholder="예: 삼성 K504S 블랙 토너 / 신도 D410 드럼 등" required style="font-size:13.5px;">
+            <datalist id="supItemSuggestions"></datalist>
+          </div>
+
+          <!-- [입고 전용 필드]: 입고처 -->
+          <div id="supInFields" class="form-group" style="margin-bottom:14px;">
+            <label for="supSupplier" style="font-size:12.5px;font-weight:700;color:#334155;display:block;margin-bottom:4px;">
+              입고처 (구입·매입처) <span style="color:#ef4444;">*</span>
+            </label>
+            <input type="text" id="supSupplier" class="form-input" placeholder="예: 현대오피스, 영풍문고, 본사물류 등" style="font-size:13.5px;">
+          </div>
+
+          <!-- [출고 전용 필드]: 거래처 선택 (월별거래처 vs 기타업체) -->
+          <div id="supOutFields" style="display:none;margin-bottom:14px;background:#fffbeb;border:1px solid #fef3c7;border-radius:8px;padding:12px 14px;">
+            <label style="font-size:12.5px;font-weight:700;color:#92400e;display:block;margin-bottom:6px;">
+              출고 거래처 구분 <span style="color:#ef4444;">*</span>
+            </label>
+            <div style="display:flex;gap:16px;margin-bottom:10px;">
+              <label style="font-size:13px;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                <input type="radio" name="supClientType" value="client" checked onchange="SuppliesManager.toggleClientType('client')">
+                <strong>월별 거래처</strong> (수익성분석 자동 연동)
+              </label>
+              <label style="font-size:13px;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                <input type="radio" name="supClientType" value="other" onchange="SuppliesManager.toggleClientType('other')">
+                기타업체 (직접 입력)
+              </label>
+            </div>
+
+            <!-- 월별 거래처 선택 드롭다운 -->
+            <div id="supClientSelectWrap">
+              <select id="supClientId" class="form-input" style="font-size:13px;font-weight:600;background:#fff;">
+                <option value="">-- 월별 거래처를 선택하세요 --</option>
+              </select>
+              <div style="font-size:11.5px;color:#b45309;margin-top:5px;display:flex;align-items:center;gap:4px;">
+                <i class="fa fa-info-circle"></i> 선택 시 해당 업체의 [렌탈수익성분석 - 원가 및 비용 설정] 소모품비 지출 장부에 비용이 즉시 자동 반영됩니다.
+              </div>
+            </div>
+
+            <!-- 기타업체 직접 입력 -->
+            <div id="supOtherClientWrap" style="display:none;">
+              <input type="text" id="supOtherClientName" class="form-input" placeholder="기타업체명 또는 출고처 입력" style="font-size:13px;background:#fff;">
+            </div>
+          </div>
+
+          <!-- 가격(단가) & 수량 2열 그리드 -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+            <div class="form-group">
+              <label for="supPrice" style="font-size:12.5px;font-weight:700;color:#334155;display:block;margin-bottom:4px;">
+                가격 (단가, 원) <span style="color:#ef4444;">*</span>
+              </label>
+              <input type="number" id="supPrice" class="form-input" min="0" step="100" placeholder="0" required oninput="SuppliesManager.calcSubtotal()" style="font-size:14px;font-weight:600;">
+            </div>
+            <div class="form-group">
+              <label for="supQuantity" style="font-size:12.5px;font-weight:700;color:#334155;display:block;margin-bottom:4px;">
+                수량 (개) <span style="color:#ef4444;">*</span>
+              </label>
+              <input type="number" id="supQuantity" class="form-input" min="1" step="1" value="1" required oninput="SuppliesManager.calcSubtotal()" style="font-size:14px;font-weight:600;">
+            </div>
+          </div>
+
+          <!-- 합계금액 (자동 계산) & 일자 -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+            <div class="form-group">
+              <label for="supTotalAmount" style="font-size:12.5px;font-weight:700;color:#0284c7;display:block;margin-bottom:4px;">
+                합계금액 (원)
+              </label>
+              <input type="number" id="supTotalAmount" class="form-input" min="0" step="100" placeholder="0" style="font-size:14px;font-weight:700;color:#0f172a;background:#f8fafc;">
+            </div>
+            <div class="form-group">
+              <label for="supDate" style="font-size:12.5px;font-weight:700;color:#334155;display:block;margin-bottom:4px;">
+                <span id="supDateLabel">입고날짜</span> <span style="color:#ef4444;">*</span>
+              </label>
+              <input type="date" id="supDate" class="form-input" required style="font-size:13.5px;">
+            </div>
+          </div>
+
+          <!-- 메모/비고 -->
+          <div class="form-group" style="margin-bottom:16px;">
+            <label for="supMemo" style="font-size:12.5px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">
+              메모 / 비고 (선택)
+            </label>
+            <input type="text" id="supMemo" class="form-input" placeholder="특이사항, 기기명, 교체사유 등" style="font-size:13px;">
+          </div>
+
+          <!-- 모달 푸터 버튼 -->
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;border-top:1px solid #e2e8f0;padding-top:16px;">
+            <button type="button" class="btn-secondary" onclick="SuppliesManager.closeModal()">취소</button>
+            <button type="submit" id="supSubmitBtn" class="btn-primary-sm" style="padding:10px 22px;font-size:14px;background:#0284c7;">
+              <i class="fa fa-check"></i> <span id="supSubmitBtnText">입고 등록 완료</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
        인쇄 및 PDF 생성용 오버레이 컨테이너
        ============================================ -->
   <div id="meterPrintArea" style="display:none;"></div>
   <script src="../board/board.js"></script>
-  <script src="dashboard.js?v=20260921_002"></script>
+  <script src="dashboard.js?v=20260922_001"></script>
 </body>
 </html>

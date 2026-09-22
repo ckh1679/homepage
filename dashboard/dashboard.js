@@ -37,6 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (pageId === 'clients' && window.ClientManager) {
       window.ClientManager.renderTable();
     }
+    if (pageId === 'items' && window.SuppliesManager) {
+      window.SuppliesManager.render();
+    }
   }
   window.showPage = showPage;
 
@@ -4440,15 +4443,642 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // ============================================
+  // 소모품 관리 (SuppliesManager)
+  // 소모품 입·출고 등록, 재고 관리, 월별 거래처 렌탈수익성분석 비용 자동 연동
+  // ============================================
+  const SuppliesManager = {
+    STORAGE_KEY: 'pm_supplies_records',
+    currentTab: 'records', // 'records' | 'inventory'
+    currentType: 'in',     // 'in' | 'out'
+
+    getRecords() {
+      try {
+        const raw = localStorage.getItem(this.STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        console.error('소모품 데이터 로드 실패:', e);
+        return [];
+      }
+    },
+
+    saveRecords(records) {
+      try {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(records));
+      } catch (e) {
+        console.error('소모품 데이터 저장 실패:', e);
+      }
+    },
+
+    init() {
+      // 초기 기본 샘플 데이터 (비어있을 경우 현실적인 샘플 등록)
+      if (!localStorage.getItem(this.STORAGE_KEY)) {
+        const today = ClientManager.getTodayStr ? ClientManager.getTodayStr() : new Date().toISOString().split('T')[0];
+        const initialRecords = [
+          {
+            id: 'sup_' + Date.now() + '_1',
+            type: 'in',
+            itemName: '삼성 CLT-K504S 블랙 토너',
+            supplier: '현대오피스',
+            price: 38000,
+            quantity: 5,
+            totalAmount: 190000,
+            date: today,
+            memo: '정기 입고'
+          },
+          {
+            id: 'sup_' + Date.now() + '_2',
+            type: 'in',
+            itemName: '신도 D410 드럼 유닛',
+            supplier: '본사 물류센터',
+            price: 75000,
+            quantity: 3,
+            totalAmount: 225000,
+            date: today,
+            memo: '부품 확보'
+          }
+        ];
+        this.saveRecords(initialRecords);
+      }
+
+      // 모달 바깥 클릭 시 닫기
+      const modal = document.getElementById('suppliesModal');
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) this.closeModal();
+        });
+      }
+
+      this.render();
+    },
+
+    switchTab(tab) {
+      this.currentTab = tab;
+      const tabRec = document.getElementById('supTabRecords');
+      const tabInv = document.getElementById('supTabInventory');
+      const viewRec = document.getElementById('supViewRecords');
+      const viewInv = document.getElementById('supViewInventory');
+
+      if (tab === 'records') {
+        if (tabRec) tabRec.className = 'btn-tab active';
+        if (tabInv) tabInv.className = 'btn-tab';
+        if (viewRec) viewRec.style.display = 'block';
+        if (viewInv) viewInv.style.display = 'none';
+      } else {
+        if (tabRec) tabRec.className = 'btn-tab';
+        if (tabInv) tabInv.className = 'btn-tab active';
+        if (viewRec) viewRec.style.display = 'none';
+        if (viewInv) viewInv.style.display = 'block';
+      }
+      this.render();
+    },
+
+    openModal(type = 'in') {
+      const modal = document.getElementById('suppliesModal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+
+      const form = document.getElementById('suppliesForm');
+      if (form) form.reset();
+
+      const editId = document.getElementById('supEditId');
+      if (editId) editId.value = '';
+
+      const dateInp = document.getElementById('supDate');
+      if (dateInp) {
+        dateInp.value = ClientManager.getTodayStr ? ClientManager.getTodayStr() : new Date().toISOString().split('T')[0];
+      }
+
+      // 월별 거래처 드롭다운 구성
+      this.populateClientDropdown();
+
+      // 추천 품목명 datalist 갱신
+      this.updateItemSuggestions();
+
+      this.toggleType(type);
+    },
+
+    closeModal() {
+      const modal = document.getElementById('suppliesModal');
+      if (modal) modal.style.display = 'none';
+    },
+
+    toggleType(type) {
+      this.currentType = type;
+      const btnIn = document.getElementById('supTypeBtnIn');
+      const btnOut = document.getElementById('supTypeBtnOut');
+      const inFields = document.getElementById('supInFields');
+      const outFields = document.getElementById('supOutFields');
+      const dateLabel = document.getElementById('supDateLabel');
+      const submitText = document.getElementById('supSubmitBtnText');
+      const submitBtn = document.getElementById('supSubmitBtn');
+      const title = document.getElementById('supModalTitle');
+      const supplierInp = document.getElementById('supSupplier');
+
+      if (type === 'in') {
+        if (btnIn) {
+          btnIn.className = 'btn-segment active';
+          btnIn.style.borderColor = '#0284c7';
+          btnIn.style.background = '#0284c7';
+          btnIn.style.color = '#fff';
+        }
+        if (btnOut) {
+          btnOut.className = 'btn-segment';
+          btnOut.style.borderColor = '#e2e8f0';
+          btnOut.style.background = '#f8fafc';
+          btnOut.style.color = '#64748b';
+        }
+        if (inFields) inFields.style.display = 'block';
+        if (outFields) outFields.style.display = 'none';
+        if (dateLabel) dateLabel.textContent = '입고날짜';
+        if (submitText) submitText.textContent = '입고 등록 완료';
+        if (submitBtn) submitBtn.style.background = '#0284c7';
+        if (title) title.textContent = '소모품 입고 등록';
+        if (supplierInp) supplierInp.required = true;
+      } else {
+        if (btnOut) {
+          btnOut.className = 'btn-segment active';
+          btnOut.style.borderColor = '#f59e0b';
+          btnOut.style.background = '#f59e0b';
+          btnOut.style.color = '#fff';
+        }
+        if (btnIn) {
+          btnIn.className = 'btn-segment';
+          btnIn.style.borderColor = '#e2e8f0';
+          btnIn.style.background = '#f8fafc';
+          btnIn.style.color = '#64748b';
+        }
+        if (inFields) inFields.style.display = 'none';
+        if (outFields) outFields.style.display = 'block';
+        if (dateLabel) dateLabel.textContent = '출고날짜';
+        if (submitText) submitText.textContent = '출고 등록 완료';
+        if (submitBtn) submitBtn.style.background = '#d97706';
+        if (title) title.textContent = '소모품 출고 등록';
+        if (supplierInp) supplierInp.required = false;
+
+        this.toggleClientType('client');
+      }
+      this.calcSubtotal();
+    },
+
+    toggleClientType(type) {
+      const selectWrap = document.getElementById('supClientSelectWrap');
+      const otherWrap = document.getElementById('supOtherClientWrap');
+      const selectEl = document.getElementById('supClientId');
+      const otherEl = document.getElementById('supOtherClientName');
+
+      if (type === 'client') {
+        if (selectWrap) selectWrap.style.display = 'block';
+        if (otherWrap) otherWrap.style.display = 'none';
+        if (selectEl) selectEl.required = true;
+        if (otherEl) otherEl.required = false;
+      } else {
+        if (selectWrap) selectWrap.style.display = 'none';
+        if (otherWrap) otherWrap.style.display = 'block';
+        if (selectEl) selectEl.required = false;
+        if (otherEl) otherEl.required = true;
+      }
+    },
+
+    populateClientDropdown() {
+      const select = document.getElementById('supClientId');
+      if (!select) return;
+      const clients = ClientManager.getClients();
+      let html = '<option value="">-- 월별 거래처를 선택하세요 --</option>';
+      clients.forEach(c => {
+        const devCount = (c.devices || []).length;
+        html += `<option value="${escapeHtml(String(c.id))}">${escapeHtml(c.name)} (기기 ${devCount}대)</option>`;
+      });
+      select.innerHTML = html;
+    },
+
+    updateItemSuggestions() {
+      const datalist = document.getElementById('supItemSuggestions');
+      if (!datalist) return;
+      const records = this.getRecords();
+      const names = [...new Set(records.map(r => r.itemName).filter(Boolean))];
+      datalist.innerHTML = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+    },
+
+    calcSubtotal() {
+      const price = Number(document.getElementById('supPrice')?.value) || 0;
+      const qty = Number(document.getElementById('supQuantity')?.value) || 0;
+      const totalInp = document.getElementById('supTotalAmount');
+      if (totalInp) {
+        totalInp.value = price * qty;
+      }
+    },
+
+    saveRecord(e) {
+      if (e) e.preventDefault();
+
+      const type = this.currentType; // 'in' or 'out'
+      const itemName = (document.getElementById('supItemName')?.value || '').trim();
+      const price = Number(document.getElementById('supPrice')?.value) || 0;
+      const quantity = Number(document.getElementById('supQuantity')?.value) || 0;
+      const totalAmount = Number(document.getElementById('supTotalAmount')?.value) || (price * quantity);
+      const date = document.getElementById('supDate')?.value || ClientManager.getTodayStr();
+      const memo = (document.getElementById('supMemo')?.value || '').trim();
+
+      if (!itemName) {
+        alert('품목명을 입력해주세요.');
+        document.getElementById('supItemName')?.focus();
+        return;
+      }
+      if (price < 0) {
+        alert('올바른 가격(단가)을 입력해주세요.');
+        document.getElementById('supPrice')?.focus();
+        return;
+      }
+      if (quantity <= 0) {
+        alert('수량은 1개 이상 입력해주세요.');
+        document.getElementById('supQuantity')?.focus();
+        return;
+      }
+
+      let supplier = '';
+      let targetType = 'client';
+      let clientId = '';
+      let clientName = '';
+      let linkedLogId = '';
+
+      if (type === 'in') {
+        supplier = (document.getElementById('supSupplier')?.value || '').trim();
+        if (!supplier) {
+          alert('입고처를 입력해주세요.');
+          document.getElementById('supSupplier')?.focus();
+          return;
+        }
+      } else {
+        const clientTypeRadio = document.querySelector('input[name="supClientType"]:checked')?.value || 'client';
+        targetType = clientTypeRadio;
+
+        if (targetType === 'client') {
+          clientId = document.getElementById('supClientId')?.value;
+          if (!clientId) {
+            alert('월별 거래처를 선택해주세요.');
+            document.getElementById('supClientId')?.focus();
+            return;
+          }
+          const client = ClientManager.getClients().find(c => String(c.id) === String(clientId));
+          clientName = client ? client.name : '선택 거래처';
+
+          // ★ [핵심 요구사항] 렌탈수익성분석 - 원가 및 비용 설정 메뉴에 소모품 비용 자동 추가!
+          linkedLogId = 'sup_log_' + Date.now();
+          const logs = ProfitManager.getMaintenanceLogs(clientId);
+          logs.unshift({
+            id: linkedLogId,
+            date: date,
+            category: 'supplies', // 소모품
+            name: `${itemName} (출고 ${quantity}개)`,
+            amount: totalAmount,
+            memo: memo ? `소모품관리 출고 연동 - ${memo}` : '소모품관리 출고 연동',
+            source: 'supplies_mgmt'
+          });
+          ProfitManager.saveMaintenanceLogs(clientId, logs);
+
+        } else {
+          clientName = (document.getElementById('supOtherClientName')?.value || '').trim();
+          if (!clientName) {
+            alert('기타업체명을 입력해주세요.');
+            document.getElementById('supOtherClientName')?.focus();
+            return;
+          }
+        }
+      }
+
+      const newRecord = {
+        id: 'sup_' + Date.now(),
+        type,
+        itemName,
+        supplier: type === 'in' ? supplier : '',
+        targetType: type === 'out' ? targetType : '',
+        clientId: type === 'out' ? clientId : '',
+        clientName: type === 'out' ? clientName : '',
+        price,
+        quantity,
+        totalAmount,
+        date,
+        memo,
+        linkedLogId,
+        createdAt: new Date().toISOString()
+      };
+
+      const records = this.getRecords();
+      records.unshift(newRecord);
+      this.saveRecords(records);
+
+      this.closeModal();
+      this.render();
+
+      let successMsg = type === 'in'
+        ? `[입고 완료] "${itemName}" ${quantity}개가 성공적으로 입고 등록되었습니다.`
+        : `[출고 완료] "${itemName}" ${quantity}개가 성공적으로 출고 등록되었습니다.`;
+
+      if (type === 'out' && targetType === 'client') {
+        successMsg += `\n\n★ [연동 완료] "${clientName}"의 렌탈수익성분석 - 원가 및 비용 설정 지출 장부에 소모품 비용(${totalAmount.toLocaleString()}원)이 자동으로 추가되었습니다!`;
+      }
+      alert(successMsg);
+    },
+
+    deleteRecord(id) {
+      const records = this.getRecords();
+      const rec = records.find(r => r.id === id);
+      if (!rec) return;
+
+      const typeStr = rec.type === 'in' ? '입고' : '출고';
+      if (!confirm(`해당 ${typeStr} 내역("${rec.itemName}", ${rec.quantity}개)을 삭제하시겠습니까?`)) {
+        return;
+      }
+
+      // 출고 연동 로그가 있는 경우 ProfitManager 지출 장부에서도 자동 삭제
+      if (rec.type === 'out' && rec.clientId && rec.linkedLogId) {
+        let logs = ProfitManager.getMaintenanceLogs(rec.clientId);
+        logs = logs.filter(l => l.id !== rec.linkedLogId);
+        ProfitManager.saveMaintenanceLogs(rec.clientId, logs);
+      }
+
+      const filtered = records.filter(r => r.id !== id);
+      this.saveRecords(filtered);
+      this.render();
+    },
+
+    render() {
+      this.renderStats();
+      if (this.currentTab === 'records') {
+        this.renderRecordsTable();
+      } else {
+        this.renderInventoryTable();
+      }
+    },
+
+    renderStats() {
+      const records = this.getRecords();
+      const now = new Date();
+      const curYear = now.getFullYear();
+      const curMonth = String(now.getMonth() + 1).padStart(2, '0');
+      const curYearMonth = `${curYear}-${curMonth}`;
+
+      // 품목별 집계
+      const itemMap = {};
+      let totalStock = 0;
+      let monthInAmt = 0;
+      let monthInCount = 0;
+      let monthOutAmt = 0;
+      let monthOutCount = 0;
+
+      records.forEach(r => {
+        const itemKey = r.itemName;
+        if (!itemMap[itemKey]) {
+          itemMap[itemKey] = { inQty: 0, outQty: 0, stock: 0 };
+        }
+        const qty = Number(r.quantity) || 0;
+        const amt = Number(r.totalAmount) || 0;
+        const isThisMonth = (r.date || '').startsWith(curYearMonth);
+
+        if (r.type === 'in') {
+          itemMap[itemKey].inQty += qty;
+          itemMap[itemKey].stock += qty;
+          totalStock += qty;
+          if (isThisMonth) {
+            monthInAmt += amt;
+            monthInCount++;
+          }
+        } else {
+          itemMap[itemKey].outQty += qty;
+          itemMap[itemKey].stock -= qty;
+          totalStock -= qty;
+          if (isThisMonth) {
+            monthOutAmt += amt;
+            monthOutCount++;
+          }
+        }
+      });
+
+      const totalItemCount = Object.keys(itemMap).length;
+
+      const setEl = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+      };
+
+      setEl('supStatTotalItems', `${totalItemCount}개`);
+      setEl('supStatTotalStock', `${totalStock}개`);
+      setEl('supStatMonthInAmt', `${monthInAmt.toLocaleString()}원`);
+      setEl('supStatMonthInCount', `총 ${monthInCount}건 입고`);
+      setEl('supStatMonthOutAmt', `${monthOutAmt.toLocaleString()}원`);
+      setEl('supStatMonthOutCount', `총 ${monthOutCount}건 출고`);
+    },
+
+    renderRecordsTable() {
+      const tbody = document.getElementById('supRecordsTbody');
+      if (!tbody) return;
+
+      const records = this.getRecords();
+      const filterType = document.getElementById('supFilterType')?.value || 'ALL';
+      const filterPeriod = document.getElementById('supFilterPeriod')?.value || 'THIS_MONTH';
+      const keyword = (document.getElementById('supSearchInput')?.value || '').trim().toLowerCase();
+
+      const now = new Date();
+      const curYear = now.getFullYear();
+      const curMonth = String(now.getMonth() + 1).padStart(2, '0');
+      const curYearMonth = `${curYear}-${curMonth}`;
+
+      const prevD = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevYearMonth = `${prevD.getFullYear()}-${String(prevD.getMonth() + 1).padStart(2, '0')}`;
+
+      const filtered = records.filter(r => {
+        // 구분 필터
+        if (filterType !== 'ALL' && r.type !== filterType) return false;
+
+        // 기간 필터
+        if (filterPeriod === 'THIS_MONTH') {
+          if (!r.date || !r.date.startsWith(curYearMonth)) return false;
+        } else if (filterPeriod === 'PREV_MONTH') {
+          if (!r.date || !r.date.startsWith(prevYearMonth)) return false;
+        } else if (filterPeriod === 'THIS_YEAR') {
+          if (!r.date || !r.date.startsWith(String(curYear))) return false;
+        }
+
+        // 검색어 필터
+        if (keyword) {
+          const matchItem = (r.itemName || '').toLowerCase().includes(keyword);
+          const matchTarget = (r.supplier || r.clientName || '').toLowerCase().includes(keyword);
+          const matchMemo = (r.memo || '').toLowerCase().includes(keyword);
+          if (!matchItem && !matchTarget && !matchMemo) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:32px;">조건에 일치하는 입·출고 내역이 없습니다.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(r => {
+        const isIn = r.type === 'in';
+        const typeBadge = isIn
+          ? '<span class="badge-in"><i class="fa fa-arrow-down"></i> 입고</span>'
+          : '<span class="badge-out"><i class="fa fa-arrow-up"></i> 출고</span>';
+
+        let targetHtml = '';
+        if (isIn) {
+          targetHtml = `<span style="color:#0369a1;font-weight:600;"><i class="fa fa-truck" style="margin-right:4px;"></i>${escapeHtml(r.supplier || '-')}</span>`;
+        } else {
+          if (r.targetType === 'client') {
+            targetHtml = `<span class="badge-client" title="월별 거래처"><i class="fa fa-building"></i> ${escapeHtml(r.clientName || '-')}</span>`;
+          } else {
+            targetHtml = `<span class="badge-other" title="기타업체"><i class="fa fa-store"></i> ${escapeHtml(r.clientName || '-')}</span>`;
+          }
+        }
+
+        let linkHtml = '';
+        if (!isIn && r.targetType === 'client') {
+          linkHtml = '<span class="badge-sync-ok" title="렌탈수익성분석 원가/비용 설정에 자동 추가됨"><i class="fa fa-check-circle"></i> 렌탈수익성 연동</span>';
+        }
+
+        const memoText = r.memo ? escapeHtml(r.memo) : '-';
+
+        return `
+          <tr>
+            <td style="color:#64748b;font-size:12.5px;">${r.date || '-'}</td>
+            <td style="text-align:center;">${typeBadge}</td>
+            <td style="font-weight:700;color:#1e293b;">${escapeHtml(r.itemName)}</td>
+            <td>${targetHtml}</td>
+            <td style="text-align:right;color:#475569;">${Number(r.price).toLocaleString()}원</td>
+            <td style="text-align:center;font-weight:700;color:#0f172a;">${Number(r.quantity).toLocaleString()}개</td>
+            <td style="text-align:right;font-weight:700;color:#0284c7;">${Number(r.totalAmount).toLocaleString()}원</td>
+            <td style="font-size:12px;color:#64748b;">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span>${memoText}</span>
+                ${linkHtml}
+              </div>
+            </td>
+            <td style="text-align:center;">
+              <button type="button" class="btn-action-icon delete" title="삭제" onclick="SuppliesManager.deleteRecord('${r.id}')" style="color:#ef4444;background:none;border:none;cursor:pointer;font-size:14px;padding:4px 8px;">
+                <i class="fa fa-trash-alt"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    },
+
+    renderInventoryTable() {
+      const tbody = document.getElementById('supInventoryTbody');
+      if (!tbody) return;
+
+      const records = this.getRecords();
+      const keyword = (document.getElementById('supSearchInput')?.value || '').trim().toLowerCase();
+
+      const itemMap = {};
+      records.forEach(r => {
+        const name = r.itemName;
+        if (!itemMap[name]) {
+          itemMap[name] = {
+            name,
+            totalIn: 0,
+            totalOut: 0,
+            stock: 0,
+            lastDate: r.date || ''
+          };
+        }
+        const qty = Number(r.quantity) || 0;
+        if (r.type === 'in') {
+          itemMap[name].totalIn += qty;
+          itemMap[name].stock += qty;
+        } else {
+          itemMap[name].totalOut += qty;
+          itemMap[name].stock -= qty;
+        }
+        if (r.date && (!itemMap[name].lastDate || r.date > itemMap[name].lastDate)) {
+          itemMap[name].lastDate = r.date;
+        }
+      });
+
+      let items = Object.values(itemMap);
+      if (keyword) {
+        items = items.filter(it => it.name.toLowerCase().includes(keyword));
+      }
+
+      if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:32px;">등록된 품목 재고 정보가 없습니다.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = items.map((it, idx) => {
+        let statusBadge = '';
+        if (it.stock <= 0) {
+          statusBadge = '<span class="badge-stock-zero">재고 없음</span>';
+        } else if (it.stock <= 2) {
+          statusBadge = '<span class="badge-stock-low">재고 부족</span>';
+        } else {
+          statusBadge = '<span class="badge-stock-ok">재고 여유</span>';
+        }
+
+        return `
+          <tr>
+            <td style="text-align:center;color:#94a3b8;">${idx + 1}</td>
+            <td style="font-weight:700;color:#1e293b;">${escapeHtml(it.name)}</td>
+            <td style="text-align:right;color:#0284c7;font-weight:600;">${it.totalIn.toLocaleString()}개</td>
+            <td style="text-align:right;color:#d97706;font-weight:600;">${it.totalOut.toLocaleString()}개</td>
+            <td style="text-align:right;font-size:15px;font-weight:800;color:${it.stock <= 0 ? '#ef4444' : '#0f172a'};">${it.stock.toLocaleString()}개</td>
+            <td style="text-align:center;">${statusBadge}</td>
+            <td style="text-align:center;color:#64748b;font-size:12.5px;">${it.lastDate || '-'}</td>
+          </tr>
+        `;
+      }).join('');
+    },
+
+    exportCSV() {
+      const records = this.getRecords();
+      if (records.length === 0) {
+        alert('다운로드할 소모품 내역이 없습니다.');
+        return;
+      }
+
+      const headers = ['일자', '구분', '품목명', '거래처/입고처', '거래처구분', '단가', '수량', '합계금액', '비고'];
+      const rows = records.map(r => {
+        const isIn = r.type === 'in';
+        const typeStr = isIn ? '입고' : '출고';
+        const target = isIn ? (r.supplier || '') : (r.clientName || '');
+        const targetKind = isIn ? '입고처' : (r.targetType === 'client' ? '월별거래처(연동)' : '기타업체');
+        return [
+          r.date || '',
+          typeStr,
+          `"${(r.itemName || '').replace(/"/g, '""')}"`,
+          `"${target.replace(/"/g, '""')}"`,
+          targetKind,
+          r.price || 0,
+          r.quantity || 0,
+          r.totalAmount || 0,
+          `"${(r.memo || '').replace(/"/g, '""')}"`
+        ].join(',');
+      });
+
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `소모품_입출고내역_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   // 전역 노출
   window.ClientManager = ClientManager;
   window.ProfitManager = ProfitManager;
   window.SettlementHistoryManager = SettlementHistoryManager;
+  window.SuppliesManager = SuppliesManager;
 
   // 모듈 초기화 실행 (각 모듈 독립 실행 보장)
   try { ClientManager.init(); } catch (e) { console.error('ClientManager init error:', e); }
   try { ProfitManager.init(); } catch (e) { console.error('ProfitManager init error:', e); }
   try { SettlementHistoryManager.init(); } catch (e) { console.error('SettlementHistoryManager init error:', e); }
+  try { SuppliesManager.init(); } catch (e) { console.error('SuppliesManager init error:', e); }
 
   // 관리자 로그인 시 전화상담신청 새 글 알림 확인
   if (typeof Auth !== 'undefined' && Auth.isAdmin && Auth.isAdmin()) {
