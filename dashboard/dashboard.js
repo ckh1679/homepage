@@ -92,10 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let clientCount = 0;
     let rentalDeviceCount = 0;
     try {
-      const rawClients = localStorage.getItem('pm_clients');
-      let clients = rawClients ? JSON.parse(rawClients) : null;
-      if (!clients && window.ClientManager && window.ClientManager.defaultClients) {
-        clients = window.ClientManager.defaultClients;
+      let clients = null;
+      if (typeof window.ClientManager !== 'undefined' && typeof window.ClientManager.getClients === 'function') {
+        clients = window.ClientManager.getClients();
+      } else {
+        const rawClients = localStorage.getItem('pm_clients');
+        clients = rawClients ? JSON.parse(rawClients) : null;
       }
       if (clients && Array.isArray(clients)) {
         clientCount = clients.length;
@@ -6225,6 +6227,18 @@ document.addEventListener('DOMContentLoaded', () => {
   try { ProfitManager.init(); } catch (e) { console.error('ProfitManager init error:', e); }
   try { SettlementHistoryManager.init(); } catch (e) { console.error('SettlementHistoryManager init error:', e); }
   try { SuppliesManager.init(); } catch (e) { console.error('SuppliesManager init error:', e); }
+
+  // 모든 모듈 초기화 완료 후 대시보드 통계 및 최근내역 최종 동기화 (첫 접속 시에도 즉시 계산 반영)
+  try {
+    if (typeof updateGlobalDashboardStats === 'function') {
+      updateGlobalDashboardStats(true);
+    }
+    if (typeof renderHomeRecentConsults === 'function') {
+      renderHomeRecentConsults();
+    }
+  } catch (e) {
+    console.error('Final dashboard stats sync error:', e);
+  }
 
   // 관리자 로그인 시 전화상담신청 새 글 알림 확인
   if (typeof Auth !== 'undefined' && Auth.isAdmin && Auth.isAdmin()) {
