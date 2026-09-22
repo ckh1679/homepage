@@ -31,6 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('sidebar').classList.remove('active');
     }
 
+    if (pageId === 'home') {
+      window.updateGlobalDashboardStats && window.updateGlobalDashboardStats(false);
+      window.renderHomeRecentConsults && window.renderHomeRecentConsults();
+    }
     if (pageId === 'rental-analysis' && window.ProfitManager) {
       window.ProfitManager.render();
     }
@@ -39,6 +43,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (pageId === 'items' && window.SuppliesManager) {
       window.SuppliesManager.render();
+    }
+    if (pageId === 'members') {
+      window.renderMembersPage && window.renderMembersPage();
+    }
+    if (pageId === 'consult') {
+      window.renderConsultPage && window.renderConsultPage();
     }
   }
   window.showPage = showPage;
@@ -57,52 +67,438 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ──────────────────────────────────────────────────────
-  // 3. 대시보드 홈 통계 카운트업 애니메이션
+  // 3. 대시보드 홈 4대 핵심 통계 실시간 연동 및 카운트업
   // ──────────────────────────────────────────────────────
-  const stats = {
-    'stat-clients':  24,
-    'stat-rentals':  38,
-    'stat-consult':   7,
-    'stat-members':  142
-  };
-
-  function countUp(el, target, duration = 1200) {
+  function countUp(el, target, duration = 900) {
+    if (!el) return;
+    if (!target || target <= 0) {
+      el.textContent = '0';
+      return;
+    }
     let start = 0;
     const step = (ts) => {
       if (!start) start = ts;
       const progress = Math.min((ts - start) / duration, 1);
       el.textContent = Math.floor(progress * target).toLocaleString();
       if (progress < 1) requestAnimationFrame(step);
+      else el.textContent = target.toLocaleString();
     };
     requestAnimationFrame(step);
   }
-  Object.entries(stats).forEach(([id, val]) => {
-    const el = document.getElementById(id);
-    if (el) countUp(el, val);
-  });
+
+  // 실시간 통계 계산 함수
+  function calculateDashboardStats() {
+    // 1) 총 거래처 수 & 임대 진행 중(운용 장비) 수: 월별거래처 관리 데이터 기준
+    let clientCount = 0;
+    let rentalDeviceCount = 0;
+    try {
+      const rawClients = localStorage.getItem('pm_clients');
+      let clients = rawClients ? JSON.parse(rawClients) : null;
+      if (!clients && window.ClientManager && window.ClientManager.defaultClients) {
+        clients = window.ClientManager.defaultClients;
+      }
+      if (clients && Array.isArray(clients)) {
+        clientCount = clients.length;
+        clients.forEach(c => {
+          const devs = c.devices || [];
+          rentalDeviceCount += devs.length;
+        });
+      }
+    } catch (e) {
+      console.error('거래처 통계 집계 오류:', e);
+    }
+
+    // 2) 미처리 상담 수: 전화상담신청 새게시물 수 + 상담게시판 새게시물 수 각각
+    let unreadRequests = [];
+    let unreadConsults = [];
+    if (typeof Board !== 'undefined') {
+      if (typeof Board.getUnreadRequests === 'function') unreadRequests = Board.getUnreadRequests();
+      if (typeof Board.getUnreadConsults === 'function') unreadConsults = Board.getUnreadConsults();
+    } else {
+      try {
+        const posts = JSON.parse(localStorage.getItem('pm_board_posts') || '[]');
+        const readReqIds = JSON.parse(localStorage.getItem('pm_admin_read_requests') || '[]');
+        const readConsultIds = JSON.parse(localStorage.getItem('pm_admin_read_consults') || '[]');
+        unreadRequests = posts.filter(p => p.boardType === 'request' && !readReqIds.includes(p.id));
+        unreadConsults = posts.filter(p => p.boardType === 'consult' && !readConsultIds.includes(p.id));
+      } catch (e) {
+        console.error('상담 통계 집계 오류:', e);
+      }
+    }
+
+    const reqCount = unreadRequests.length;
+    const consultCount = unreadConsults.length;
+    const totalUnread = reqCount + consultCount;
+
+    // 3) 가입 회원 수: 실제 구글 로그인으로 가입된 아이디 수 파악
+    let googleMemberCount = 0;
+    try {
+      const rawUsers = localStorage.getItem('pm_users');
+      const users = rawUsers ? JSON.parse(rawUsers) : [];
+      const googleUsers = users.filter(u => {
+        if (!u) return false;
+        return (
+          u.provider === 'google' ||
+          Boolean(u.googleId) ||
+          (typeof u.id === 'string' && u.id.startsWith('google_')) ||
+          (u.email && typeof u.email === 'string' && u.email.includes('@'))
+        );
+      });
+      googleMemberCount = googleUsers.length;
+    } catch (e) {
+      console.error('회원 통계 집계 오류:', e);
+    }
+
+    return {
+      clientCount,
+      rentalDeviceCount,
+      reqCount,
+      consultCount,
+      totalUnread,
+      googleMemberCount
+    };
+  }
+
+  // 대시보드 홈 통계 UI 업데이트
+  function updateGlobalDashboardStats(animate = false) {
+    const stats = calculateDashboardStats();
+
+    const targets = [
+      { id: 'stat-clients', val: stats.clientCount },
+      { id: 'stat-rentals', val: stats.rentalDeviceCount },
+      { id: 'stat-consult', val: stats.totalUnread },
+      { id: 'stat-members', val: stats.googleMemberCount }
+    ];
+
+    targets.forEach(({ id, val }) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (animate) {
+        countUp(el, val);
+      } else {
+        el.textContent = val.toLocaleString();
+      }
+    });
+
+    // 4대 카드 하단 트렌드/설명 라벨 동적 갱신
+    const elClientsTrend = document.getElementById('stat-clients-trend');
+    const elRentalsTrend = document.getElementById('stat-rentals-trend');
+    const elConsultTrend = document.getElementById('stat-consult-trend');
+    const elMembersTrend = document.getElementById('stat-members-trend');
+
+    if (elClientsTrend) {
+      elClientsTrend.innerHTML = `<i class="fa fa-calendar-check"></i> 월별거래처 <strong>${stats.clientCount}개사</strong> 등록`;
+    }
+    if (elRentalsTrend) {
+      elRentalsTrend.innerHTML = `<i class="fa fa-print"></i> 운용 임대장비 <strong>${stats.rentalDeviceCount}대</strong> 가동`;
+    }
+    if (elConsultTrend) {
+      if (stats.totalUnread > 0) {
+        elConsultTrend.className = 'stat-trend trend-down';
+        elConsultTrend.innerHTML = `<i class="fa fa-bell"></i> 전화상담 <strong>${stats.reqCount}건</strong> · 온라인 <strong>${stats.consultCount}건</strong> 미처리`;
+      } else {
+        elConsultTrend.className = 'stat-trend trend-up';
+        elConsultTrend.innerHTML = `<i class="fa fa-check-circle"></i> 전화 0건 · 온라인 0건 (모두 확인 완료)`;
+      }
+    }
+    if (elMembersTrend) {
+      elMembersTrend.innerHTML = `<i class="fa fa-check-circle"></i> 구글 간편가입 회원 <strong>${stats.googleMemberCount}명</strong>`;
+    }
+  }
+  window.updateGlobalDashboardStats = updateGlobalDashboardStats;
 
   // ──────────────────────────────────────────────────────
-  // 4. 홈 최근 내역 테이블 더미 데이터
+  // 4. 홈 최근 내역 테이블 및 미처리 확인 로직
   // ──────────────────────────────────────────────────────
-  const recentData = [
-    { type:'렌탈 상담', name:'(주)미래소프트',  detail:'캐논 C3922 컬러복합기',     date:'2024.09.09', status:'pending',   label:'처리 중' },
-    { type:'견적 문의', name:'강동구 A학원',    detail:'렌탈 맞춤 견적 요청',        date:'2024.09.08', status:'pending',   label:'대기 중' },
-    { type:'임대 계약', name:'홍○○',          detail:'HP OfficeJet Pro 9010',    date:'2024.09.07', status:'completed', label:'완료'   },
-    { type:'상담 문의', name:'이○○',          detail:'잉크젯 vs 레이저 비교 상담', date:'2024.09.06', status:'completed', label:'완료'   },
-    { type:'임대 계약', name:'(주)ABC상사',     detail:'현대오피스 PK-612X',       date:'2024.09.05', status:'cancelled', label:'취소'   },
-  ];
-  const tbody = document.getElementById('homeRecentBody');
-  if (tbody) {
-    tbody.innerHTML = recentData.map(item => `
-      <tr>
-        <td><span class="status-badge" style="background:rgba(139,92,246,0.12);color:var(--accent-secondary);">${item.type}</span></td>
-        <td><strong>${item.name}</strong></td>
-        <td>${item.detail}</td>
-        <td>${item.date}</td>
-        <td><span class="status-badge status-${item.status}">${item.label}</span></td>
-      </tr>
-    `).join('');
+  function renderHomeRecentConsults() {
+    const tbody = document.getElementById('homeRecentBody');
+    if (!tbody) return;
+
+    let allPosts = [];
+    if (typeof Board !== 'undefined' && typeof Board.getAllPosts === 'function') {
+      allPosts = Board.getAllPosts();
+    } else {
+      try {
+        allPosts = JSON.parse(localStorage.getItem('pm_board_posts') || '[]');
+      } catch (e) {
+        allPosts = [];
+      }
+    }
+
+    const consultPosts = allPosts
+      .filter(p => p.boardType === 'request' || p.boardType === 'consult')
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 7);
+
+    if (consultPosts.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">최근 접수된 상담 내역이 없습니다.</td></tr>`;
+      return;
+    }
+
+    let readReqIds = [];
+    let readConsultIds = [];
+    if (typeof Board !== 'undefined') {
+      if (typeof Board.getReadRequestIds === 'function') readReqIds = Board.getReadRequestIds();
+      if (typeof Board.getReadConsultIds === 'function') readConsultIds = Board.getReadConsultIds();
+    } else {
+      try {
+        readReqIds = JSON.parse(localStorage.getItem('pm_admin_read_requests') || '[]');
+        readConsultIds = JSON.parse(localStorage.getItem('pm_admin_read_consults') || '[]');
+      } catch {}
+    }
+
+    tbody.innerHTML = consultPosts.map(item => {
+      const isRequest = item.boardType === 'request';
+      const typeLabel = isRequest ? '전화상담' : '온라인상담';
+      const typeBadgeBg = isRequest ? 'rgba(245,158,11,0.12)' : 'rgba(59,130,246,0.12)';
+      const typeColor = isRequest ? '#d97706' : '#2563eb';
+
+      const isRead = isRequest ? readReqIds.includes(item.id) : readConsultIds.includes(item.id);
+
+      let dateStr = item.createdAt ? item.createdAt.slice(0, 10).replace(/-/g, '.') : '-';
+      if (item.createdAt && item.createdAt.length >= 16) {
+        dateStr = `${item.createdAt.slice(0, 10).replace(/-/g, '.')} ${item.createdAt.slice(11, 16)}`;
+      }
+
+      const customerName = item.author || (item.authorEmail ? item.authorEmail.split('@')[0] : '고객');
+      const phoneDisplay = item.contactPhone ? `<span style="font-size:11px;color:#64748b;margin-left:4px;">(${escapeHtml(item.contactPhone)})</span>` : '';
+      const viewUrl = `../board/board-view.html?type=${item.boardType}&id=${encodeURIComponent(item.id)}`;
+
+      let statusHtml = '';
+      if (!isRead) {
+        statusHtml = `
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="status-badge status-pending" style="background:#fef3c7;color:#b45309;font-weight:700;">
+              <i class="fa fa-bell"></i> 미확인
+            </span>
+            <button type="button" class="btn-primary-sm" onclick="markDashboardItemRead('${item.id}', '${item.boardType}', event)" style="padding:2px 8px;font-size:11px;background:#0284c7;border-radius:4px;cursor:pointer;white-space:nowrap;" title="관리자 확인(미처리에서 차감)">
+              <i class="fa fa-check"></i> 확인
+            </button>
+          </div>
+        `;
+      } else {
+        statusHtml = `
+          <span class="status-badge status-completed" style="background:#f0fdf4;color:#166534;">
+            <i class="fa fa-check-double"></i> 확인완료
+          </span>
+        `;
+      }
+
+      return `
+        <tr style="cursor:pointer;" onclick="location.href='${viewUrl}'">
+          <td><span class="status-badge" style="background:${typeBadgeBg};color:${typeColor};font-weight:600;">${typeLabel}</span></td>
+          <td><strong>${escapeHtml(customerName)}</strong>${phoneDisplay}</td>
+          <td>
+            <a href="${viewUrl}" onclick="event.stopPropagation();" style="color:var(--text-primary);text-decoration:none;font-weight:500;">
+              ${escapeHtml(item.title)}
+            </a>
+          </td>
+          <td style="color:#64748b;font-size:12px;">${dateStr}</td>
+          <td onclick="event.stopPropagation();">${statusHtml}</td>
+        </tr>
+      `;
+    }).join('');
   }
+  window.renderHomeRecentConsults = renderHomeRecentConsults;
+
+  // 관리자가 게시물을 확인했을 때 읽음 처리 및 미처리 카운트 즉시 차감
+  function markDashboardItemRead(postId, boardType, event) {
+    if (event) event.stopPropagation();
+
+    if (typeof Board !== 'undefined') {
+      if (boardType === 'request' && typeof Board.markRequestsAsRead === 'function') {
+        Board.markRequestsAsRead(postId);
+      } else if (boardType === 'consult' && typeof Board.markConsultAsRead === 'function') {
+        Board.markConsultAsRead(postId);
+      }
+    } else {
+      const key = (boardType === 'request') ? 'pm_admin_read_requests' : 'pm_admin_read_consults';
+      try {
+        const readIds = JSON.parse(localStorage.getItem(key) || '[]');
+        if (!readIds.includes(postId)) {
+          readIds.push(postId);
+          localStorage.setItem(key, JSON.stringify(readIds));
+        }
+      } catch {}
+    }
+
+    // 미처리 상담수 즉시 -1 차감 반영 및 테이블 갱신
+    updateGlobalDashboardStats(false);
+    renderHomeRecentConsults();
+    if (document.getElementById('page-consult')?.classList.contains('active')) {
+      renderConsultPage();
+    }
+  }
+  window.markDashboardItemRead = markDashboardItemRead;
+
+  // ──────────────────────────────────────────────────────
+  // 4-1. 가입회원 관리 페이지 (#page-members) 렌더링
+  // ──────────────────────────────────────────────────────
+  function renderMembersPage() {
+    const tbody = document.getElementById('membersTableBody');
+    const empty = document.getElementById('membersEmptyState');
+    const tableWrapper = document.getElementById('membersTableWrapper');
+    const badge = document.getElementById('membersTotalBadge');
+    if (!tbody) return;
+
+    let users = [];
+    try {
+      const raw = localStorage.getItem('pm_users');
+      users = raw ? JSON.parse(raw) : [];
+    } catch {
+      users = [];
+    }
+
+    // 실제 구글 로그인 가입 회원 필터링
+    const googleUsers = users.filter(u => {
+      if (!u) return false;
+      return (
+        u.provider === 'google' ||
+        Boolean(u.googleId) ||
+        (typeof u.id === 'string' && u.id.startsWith('google_')) ||
+        (u.email && typeof u.email === 'string' && u.email.includes('@'))
+      );
+    });
+
+    if (badge) badge.textContent = `총 ${googleUsers.length}명`;
+
+    if (googleUsers.length === 0) {
+      if (tableWrapper) tableWrapper.style.display = 'none';
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+
+    if (tableWrapper) tableWrapper.style.display = 'block';
+    if (empty) empty.style.display = 'none';
+
+    tbody.innerHTML = googleUsers.map((u, idx) => {
+      const avatarHtml = u.picture
+        ? `<img src="${escapeHtml(u.picture)}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`
+        : `<div style="width:32px;height:32px;border-radius:50%;background:#e0e7ff;color:#4338ca;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;">${(u.name || 'G')[0]}</div>`;
+
+      let joinDate = u.createdAt ? u.createdAt.slice(0, 10).replace(/-/g, '.') : '-';
+      if (u.createdAt && u.createdAt.length >= 16) {
+        joinDate = `${u.createdAt.slice(0, 10).replace(/-/g, '.')} ${u.createdAt.slice(11, 16)}`;
+      }
+
+      return `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${avatarHtml}</td>
+          <td><strong>${escapeHtml(u.name || '구글 사용자')}</strong></td>
+          <td><span style="font-family:monospace;color:#2563eb;">${escapeHtml(u.email || '-')}</span></td>
+          <td><span class="status-badge" style="background:#fee2e2;color:#b91c1c;font-weight:600;"><i class="fab fa-google"></i> Google</span></td>
+          <td style="color:#64748b;font-size:12px;">${joinDate}</td>
+          <td><span class="status-badge status-completed" style="background:#f0fdf4;color:#166534;"><i class="fa fa-check-circle"></i> 정상</span></td>
+        </tr>
+      `;
+    }).join('');
+  }
+  window.renderMembersPage = renderMembersPage;
+
+  // ──────────────────────────────────────────────────────
+  // 4-2. 상담 내역 확인 페이지 (#page-consult) 렌더링
+  // ──────────────────────────────────────────────────────
+  function renderConsultPage() {
+    const tbody = document.getElementById('consultTableBody');
+    const badgePending = document.getElementById('consultBadgePending');
+    const badgeCompleted = document.getElementById('consultBadgeCompleted');
+    if (!tbody) return;
+
+    let allPosts = [];
+    if (typeof Board !== 'undefined' && typeof Board.getAllPosts === 'function') {
+      allPosts = Board.getAllPosts();
+    } else {
+      try {
+        allPosts = JSON.parse(localStorage.getItem('pm_board_posts') || '[]');
+      } catch {
+        allPosts = [];
+      }
+    }
+
+    const consultPosts = allPosts
+      .filter(p => p.boardType === 'request' || p.boardType === 'consult')
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    let readReqIds = [];
+    let readConsultIds = [];
+    if (typeof Board !== 'undefined') {
+      if (typeof Board.getReadRequestIds === 'function') readReqIds = Board.getReadRequestIds();
+      if (typeof Board.getReadConsultIds === 'function') readConsultIds = Board.getReadConsultIds();
+    } else {
+      try {
+        readReqIds = JSON.parse(localStorage.getItem('pm_admin_read_requests') || '[]');
+        readConsultIds = JSON.parse(localStorage.getItem('pm_admin_read_consults') || '[]');
+      } catch {}
+    }
+
+    let pendingCount = 0;
+    let completedCount = 0;
+
+    consultPosts.forEach(p => {
+      const isReq = p.boardType === 'request';
+      const isRead = isReq ? readReqIds.includes(p.id) : readConsultIds.includes(p.id);
+      if (isRead) completedCount++;
+      else pendingCount++;
+    });
+
+    if (badgePending) badgePending.innerHTML = `<i class="fa fa-bell"></i> 미확인 ${pendingCount}`;
+    if (badgeCompleted) badgeCompleted.innerHTML = `<i class="fa fa-check"></i> 완료 ${completedCount}`;
+
+    if (consultPosts.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">접수된 상담 내역이 없습니다.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = consultPosts.map(item => {
+      const isReq = item.boardType === 'request';
+      const typeLabel = isReq ? '전화상담' : '온라인상담';
+      const typeBadgeBg = isReq ? 'rgba(245,158,11,0.12)' : 'rgba(59,130,246,0.12)';
+      const typeColor = isReq ? '#d97706' : '#2563eb';
+      const isRead = isReq ? readReqIds.includes(item.id) : readConsultIds.includes(item.id);
+
+      let dateStr = item.createdAt ? item.createdAt.slice(0, 10).replace(/-/g, '.') : '-';
+      if (item.createdAt && item.createdAt.length >= 16) {
+        dateStr = `${item.createdAt.slice(0, 10).replace(/-/g, '.')} ${item.createdAt.slice(11, 16)}`;
+      }
+
+      const customerName = item.author || (item.authorEmail ? item.authorEmail.split('@')[0] : '고객');
+      const contactStr = item.contactPhone || item.authorEmail || '-';
+      const viewUrl = `../board/board-view.html?type=${item.boardType}&id=${encodeURIComponent(item.id)}`;
+
+      let actionHtml = '';
+      if (!isRead) {
+        actionHtml = `
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="status-badge status-pending" style="background:#fef3c7;color:#b45309;font-weight:700;"><i class="fa fa-bell"></i> 미확인</span>
+            <button type="button" class="btn-primary-sm" onclick="markDashboardItemRead('${item.id}', '${item.boardType}', event)" style="padding:3px 8px;font-size:11px;background:#0284c7;border-radius:4px;cursor:pointer;">
+              <i class="fa fa-check"></i> 확인
+            </button>
+          </div>
+        `;
+      } else {
+        actionHtml = `
+          <span class="status-badge status-completed" style="background:#f0fdf4;color:#166534;"><i class="fa fa-check-double"></i> 확인완료</span>
+        `;
+      }
+
+      return `
+        <tr style="cursor:pointer;" onclick="location.href='${viewUrl}'">
+          <td><span class="status-badge" style="background:${typeBadgeBg};color:${typeColor};">${typeLabel}</span></td>
+          <td><strong>${escapeHtml(customerName)}</strong></td>
+          <td style="color:#475569;font-size:12px;">${escapeHtml(contactStr)}</td>
+          <td><a href="${viewUrl}" onclick="event.stopPropagation();" style="color:var(--text-primary);text-decoration:none;font-weight:500;">${escapeHtml(item.title)}</a></td>
+          <td style="color:#64748b;font-size:12px;">${dateStr}</td>
+          <td onclick="event.stopPropagation();">${actionHtml}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+  window.renderConsultPage = renderConsultPage;
+
+  // 페이지 최초 진입 시 홈 통계 애니메이션 카운트업 및 최근 내역 렌더링
+  updateGlobalDashboardStats(true);
+  renderHomeRecentConsults();
 
 
   // ══════════════════════════════════════════════════════
@@ -2564,14 +2960,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 대시보드 메인 홈 통계 수치 연동
     updateGlobalDashboardStats() {
-      const clients = this.getClients();
-      let totalDevices = 0;
-      clients.forEach(c => totalDevices += (c.devices || []).length);
-
-      const elHomeClients = document.getElementById('stat-clients');
-      const elHomeRentals = document.getElementById('stat-rentals');
-      if (elHomeClients) elHomeClients.textContent = clients.length.toLocaleString();
-      if (elHomeRentals) elHomeRentals.textContent = totalDevices.toLocaleString();
+      if (typeof window.updateGlobalDashboardStats === 'function') {
+        window.updateGlobalDashboardStats(false);
+      }
     },
 
     // ============================================

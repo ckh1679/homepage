@@ -126,7 +126,7 @@
               <div class="stat-details">
                 <div class="stat-title">총 거래처 수</div>
                 <div class="stat-value" id="stat-clients">0</div>
-                <div class="stat-trend trend-up"><i class="fa fa-arrow-up"></i> 이번 달 +3</div>
+                <div class="stat-trend trend-up" id="stat-clients-trend"><i class="fa fa-calendar-check"></i> 월별거래처 등록 기준</div>
               </div>
             </div>
             <div class="stat-card">
@@ -134,7 +134,7 @@
               <div class="stat-details">
                 <div class="stat-title">임대 진행 중</div>
                 <div class="stat-value" id="stat-rentals">0</div>
-                <div class="stat-trend trend-up"><i class="fa fa-arrow-up"></i> 5건 신규</div>
+                <div class="stat-trend trend-up" id="stat-rentals-trend"><i class="fa fa-print"></i> 운용 장비 합계</div>
               </div>
             </div>
             <div class="stat-card">
@@ -142,7 +142,7 @@
               <div class="stat-details">
                 <div class="stat-title">미처리 상담</div>
                 <div class="stat-value" id="stat-consult">0</div>
-                <div class="stat-trend trend-down"><i class="fa fa-arrow-down"></i> 2건 감소</div>
+                <div class="stat-trend trend-down" id="stat-consult-trend"><i class="fa fa-bell"></i> 전화 0건 · 온라인 0건</div>
               </div>
             </div>
             <div class="stat-card">
@@ -150,7 +150,7 @@
               <div class="stat-details">
                 <div class="stat-title">가입 회원 수</div>
                 <div class="stat-value" id="stat-members">0</div>
-                <div class="stat-trend trend-up"><i class="fa fa-arrow-up"></i> 12% 이번 달</div>
+                <div class="stat-trend trend-up" id="stat-members-trend"><i class="fa fa-check-circle"></i> 구글 간편가입 연동</div>
               </div>
             </div>
           </div>
@@ -828,17 +828,33 @@
         <section id="page-members" class="page-section">
           <div class="page-title">
             <h2><i class="fa fa-users" style="margin-right:10px;color:var(--accent-primary);"></i>가입회원 관리</h2>
-            <p>홈페이지에 가입한 회원 목록을 조회하고 권한을 관리합니다.</p>
+            <p>실제 구글 간편로그인으로 가입된 회원 목록을 조회하고 현황을 확인합니다.</p>
           </div>
           <div class="panel">
             <div class="panel-header">
-              <div class="panel-title">회원 목록</div>
-              <span style="font-size:13px;color:var(--text-muted);">총 0명</span>
+              <div class="panel-title"><i class="fab fa-google" style="color:#ea4335;margin-right:6px;"></i>구글 연동 회원 목록</div>
+              <span id="membersTotalBadge" style="font-size:13px;font-weight:600;color:var(--accent-primary);">총 0명</span>
             </div>
-            <div class="empty-state">
+            <div class="table-wrapper" id="membersTableWrapper" style="display:none;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th style="width:60px;">번호</th>
+                    <th>프로필</th>
+                    <th>이름</th>
+                    <th>구글 이메일</th>
+                    <th>인증 방식</th>
+                    <th>가입일시</th>
+                    <th>상태</th>
+                  </tr>
+                </thead>
+                <tbody id="membersTableBody"></tbody>
+              </table>
+            </div>
+            <div class="empty-state" id="membersEmptyState">
               <i class="fa fa-users"></i>
-              <p>가입된 회원이 없습니다.</p>
-              <span>회원이 사이트에 가입하면 이 목록에 표시됩니다.</span>
+              <p>가입된 구글 회원이 없습니다.</p>
+              <span>회원이 구글 계정으로 로그인하면 자동으로 이곳에 등록됩니다.</span>
             </div>
           </div>
         </section>
@@ -847,22 +863,29 @@
         <section id="page-consult" class="page-section">
           <div class="page-title">
             <h2><i class="fa fa-headset" style="margin-right:10px;color:var(--accent-primary);"></i>상담 내역 확인</h2>
-            <p>홈페이지 게시판 및 간편견적 신청을 통해 접수된 상담 내역을 확인합니다.</p>
+            <p>홈페이지 전화상담신청 및 온라인 상담게시판을 통해 접수된 상담 내역을 실시간으로 확인하고 처리합니다.</p>
           </div>
           <div class="panel">
             <div class="panel-header">
-              <div class="panel-title">상담 목록</div>
-              <div style="display:flex;gap:10px;">
-                <span class="status-badge status-pending">대기 0</span>
-                <span class="status-badge status-completed">완료 0</span>
+              <div class="panel-title">전체 상담 접수 내역</div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <span class="status-badge status-pending" id="consultBadgePending" style="background:#fef3c7;color:#b45309;font-weight:700;"><i class="fa fa-bell"></i> 미확인 0</span>
+                <span class="status-badge status-completed" id="consultBadgeCompleted" style="background:#f0fdf4;color:#166534;"><i class="fa fa-check"></i> 완료 0</span>
               </div>
             </div>
             <div class="table-wrapper">
               <table class="data-table">
                 <thead>
-                  <tr><th>번호</th><th>고객명</th><th>연락처</th><th>상담 내용</th><th>접수일</th><th>상태</th></tr>
+                  <tr>
+                    <th style="width:70px;">구분</th>
+                    <th>고객명</th>
+                    <th>연락처 / 이메일</th>
+                    <th>상담 요청 내용</th>
+                    <th>접수일시</th>
+                    <th style="width:140px;">상태 / 처리</th>
+                  </tr>
                 </thead>
-                <tbody>
+                <tbody id="consultTableBody">
                   <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">접수된 상담 내역이 없습니다.</td></tr>
                 </tbody>
               </table>
@@ -1739,6 +1762,7 @@
        인쇄 및 PDF 생성용 오버레이 컨테이너
        ============================================ -->
   <div id="meterPrintArea" style="display:none;"></div>
+  <script src="../auth.js"></script>
   <script src="../board/board.js"></script>
   <script src="dashboard.js?v=20260922_005"></script>
 </body>

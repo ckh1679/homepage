@@ -278,6 +278,48 @@ const Board = (() => {
     return readIds.includes(postId);
   }
 
+  // =======================================================
+  // ── 온라인 상담게시판 관리자 읽음 추적 모듈 ────────────
+  // =======================================================
+  const READ_CONSULTS_KEY = 'pm_admin_read_consults';
+
+  // 관리자가 확인한 온라인 상담글 ID 목록 조회
+  function getReadConsultIds() {
+    try {
+      return JSON.parse(localStorage.getItem(READ_CONSULTS_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  // 관리자 미확인(새 글) 온라인 상담글 목록 조회
+  function getUnreadConsults() {
+    const all = getAllPosts();
+    const readIds = getReadConsultIds();
+    return all
+      .filter(p => p.boardType === 'consult' && !readIds.includes(p.id))
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  // 온라인 상담글 읽음 처리 (단일 ID 지정 또는 전체)
+  function markConsultAsRead(postIds) {
+    const readIds = new Set(getReadConsultIds());
+    if (postIds) {
+      const ids = Array.isArray(postIds) ? postIds : [postIds];
+      ids.forEach(id => readIds.add(id));
+    } else {
+      const all = getAllPosts();
+      all.filter(p => p.boardType === 'consult').forEach(p => readIds.add(p.id));
+    }
+    localStorage.setItem(READ_CONSULTS_KEY, JSON.stringify(Array.from(readIds)));
+  }
+
+  // 특정 온라인 상담글 읽음 여부 확인
+  function isConsultRead(postId) {
+    const readIds = getReadConsultIds();
+    return readIds.includes(postId);
+  }
+
   // 게시판 경로 헬퍼
   function getBoardRequestUrl() {
     const path = window.location.pathname.replace(/\\/g, '/');
@@ -751,6 +793,10 @@ const Board = (() => {
     getUnreadRequests,
     markRequestsAsRead,
     isRequestRead,
+    getReadConsultIds,
+    getUnreadConsults,
+    markConsultAsRead,
+    isConsultRead,
     checkAndNotifyAdmin,
     showAdminRequestAlertModal,
     closeAdminRequestAlert,
