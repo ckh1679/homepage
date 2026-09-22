@@ -3670,6 +3670,7 @@ document.addEventListener('DOMContentLoaded', () => {
       logs = logs.filter(l => l.id !== logId);
       this.saveMaintenanceLogs(clientId, logs);
       this.renderMaintenanceLogs(clientId);
+      this.syncSuppliesCost(clientId);
     },
 
     // 건별 지출 장부 테이블 및 합계 렌더링
@@ -3753,6 +3754,53 @@ document.addEventListener('DOMContentLoaded', () => {
       const clientId = document.getElementById('profitClientId')?.value;
       if (clientId) this.renderMaintenanceLogs(clientId);
       this.updateModalPreview();
+    },
+
+    // 소모품 출고 내역 변경(등록/수정/삭제) 시 렌탈수익성 원가/비용 실시간 동기화
+    syncSuppliesCost(clientId) {
+      if (!clientId) return;
+      const idStr = String(clientId);
+      const logs = this.getMaintenanceLogs(idStr);
+
+      let sumSupplies = 0;
+      let sumRepairs = 0;
+      let sumService = 0;
+
+      logs.forEach(l => {
+        const amt = Number(l.amount) || 0;
+        if (l.category === 'supplies') sumSupplies += amt;
+        else if (l.category === 'repairs') sumRepairs += amt;
+        else sumService += amt;
+      });
+
+      // 거래처 원가 설정 가져오기
+      const costs = this.getCosts();
+      const cost = costs[idStr] || { ...this.defaultCost };
+
+      // 소모품 지출 장부 누적 금액을 월평균 소모품비로 환산하여 자동 갱신
+      const months = Math.min(12, Number(cost.contractMonths) || 36);
+      const calculatedMonthlySupplies = Math.round(sumSupplies / months);
+
+      // cost 객체에 반영
+      cost.monthlySupplies = calculatedMonthlySupplies;
+      costs[idStr] = cost;
+      this.saveCosts(costs);
+
+      // 모달이 현재 열려 있고 동일한 거래처라면 모달 UI도 즉각 갱신
+      const currentModalClientId = document.getElementById('profitClientId')?.value;
+      if (currentModalClientId && String(currentModalClientId) === idStr) {
+        this.renderMaintenanceLogs(idStr);
+        const inpSupplies = document.getElementById('profitMonthlySupplies');
+        if (inpSupplies) inpSupplies.value = calculatedMonthlySupplies;
+        this.updateModalPreview();
+      }
+
+      // 메인 렌탈수익성분석 화면 갱신
+      try {
+        this.render();
+      } catch (e) {
+        console.warn('[ProfitManager] render error:', e);
+      }
     },
 
     // 기기별 입력 카드 합계 실시간 계산 및 상단 요약 바 반영
@@ -4902,6 +4950,15 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         this.saveRecords(records);
+
+        // ★ 렌탈수익성분석 원가 및 화면 실시간 동기화
+        if (type === 'out' && targetType === 'client' && clientId) {
+          ProfitManager.syncSuppliesCost(clientId);
+        }
+        if (oldRec.type === 'out' && oldRec.clientId && String(oldRec.clientId) !== String(clientId)) {
+          ProfitManager.syncSuppliesCost(oldRec.clientId);
+        }
+
         this.closeModal();
         this.render();
 
@@ -4929,6 +4986,8 @@ document.addEventListener('DOMContentLoaded', () => {
           source: 'supplies_mgmt'
         });
         ProfitManager.saveMaintenanceLogs(clientId, logs);
+        // ★ 렌탈수익성분석 원가 및 화면 실시간 동기화
+        ProfitManager.syncSuppliesCost(clientId);
       }
 
       const newRecord = {
@@ -4974,16 +5033,34 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // 출고 연동 로그가 있는 경우 ProfitManager 지출 장부에서도 자동 삭제
-      if (rec.type === 'out' && rec.clientId && rec.linkedLogId) {
-        let logs = ProfitManager.getMaintenanceLogs(rec.clientId);
-        logs = logs.filter(l => l.id !== rec.linkedLogId);
-        ProfitManager.saveMaintenanceLogs(rec.clientId, logs);
+      // ★ 출고 연동 로그가 있는 경우 ProfitManager 지출 장부에서도 철저하게 자동 삭제 및 실시간 재계산
+      if (rec.type === 'out' && rec.clientId) {
+        const cId = String(rec.clientId);
+        let logs = ProfitManager.getMaintenanceLogs(cId);
+
+        // 1차: linkedLogId 매칭, 2차: 품목명 & 금액 매칭으로 확실한 삭제
+        logs = logs.filter(l => {
+          if (rec.linkedLogId && l.id === rec.linkedLogId) return false;
+          if (l.source === 'supplies_mgmt') {
+            const nameMatch = l.name && l.name.includes(rec.itemName);
+            const amtMatch = Number(l.amount) === Number(rec.totalAmount);
+            if (nameMatch && amtMatch) return false;
+          }
+          return true;
+        });
+
+        ProfitManager.saveMaintenanceLogs(cId, logs);
+        // ★ 렌탈수익성분석 원가 및 유지비용 실시간 동기화 갱신!
+        ProfitManager.syncSuppliesCost(cId);
       }
 
       const filtered = records.filter(r => r.id !== id);
       this.saveRecords(filtered);
       this.render();
+
+      if (rec.type === 'out' && rec.clientId) {
+        alert('출고 내역이 삭제되었으며, 렌탈수익성분석 메뉴의 소모품 지출 장부와 유지비용이 최신으로 즉시 업데이트되었습니다.');
+      }
     },
 
     render() {
