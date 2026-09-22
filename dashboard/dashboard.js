@@ -4923,7 +4923,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let targetHtml = '';
         if (isIn) {
-          targetHtml = `<span style="color:#0369a1;font-weight:600;"><i class="fa fa-truck" style="margin-right:4px;"></i>${escapeHtml(r.supplier || '-')}</span>`;
+          targetHtml = `<span style="color:#38bdf8;font-weight:600;font-size:13px;"><i class="fa fa-truck" style="margin-right:4px;"></i>${escapeHtml(r.supplier || '-')}</span>`;
         } else {
           if (r.targetType === 'client') {
             targetHtml = `<span class="badge-client" title="월별 거래처"><i class="fa fa-building"></i> ${escapeHtml(r.clientName || '-')}</span>`;
@@ -4941,21 +4941,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return `
           <tr>
-            <td style="color:#64748b;font-size:12.5px;">${r.date || '-'}</td>
-            <td style="text-align:center;">${typeBadge}</td>
-            <td style="font-weight:700;color:#1e293b;">${escapeHtml(r.itemName)}</td>
+            <td style="white-space:nowrap;color:#cbd5e1;font-size:13px;font-weight:500;">${r.date || '-'}</td>
+            <td style="text-align:center;white-space:nowrap;">${typeBadge}</td>
+            <td style="font-weight:700;color:#f8fafc;font-size:14px;">${escapeHtml(r.itemName)}</td>
             <td>${targetHtml}</td>
-            <td style="text-align:right;color:#475569;">${Number(r.price).toLocaleString()}원</td>
-            <td style="text-align:center;font-weight:700;color:#0f172a;">${Number(r.quantity).toLocaleString()}개</td>
-            <td style="text-align:right;font-weight:700;color:#0284c7;">${Number(r.totalAmount).toLocaleString()}원</td>
-            <td style="font-size:12px;color:#64748b;">
+            <td style="text-align:right;color:#e2e8f0;font-size:13.5px;font-weight:500;white-space:nowrap;">${Number(r.price).toLocaleString()}원</td>
+            <td style="text-align:center;font-weight:700;color:#38bdf8;font-size:14px;white-space:nowrap;">${Number(r.quantity).toLocaleString()}개</td>
+            <td style="text-align:right;font-weight:700;color:#60a5fa;font-size:14px;white-space:nowrap;">${Number(r.totalAmount).toLocaleString()}원</td>
+            <td style="font-size:12.5px;color:#94a3b8;">
               <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                 <span>${memoText}</span>
                 ${linkHtml}
               </div>
             </td>
             <td style="text-align:center;">
-              <button type="button" class="btn-action-icon delete" title="삭제" onclick="SuppliesManager.deleteRecord('${r.id}')" style="color:#ef4444;background:none;border:none;cursor:pointer;font-size:14px;padding:4px 8px;">
+              <button type="button" class="btn-action-icon delete" title="삭제" onclick="SuppliesManager.deleteRecord('${r.id}')" style="color:#f87171;background:none;border:none;cursor:pointer;font-size:15px;padding:4px 8px;transition:color 0.2s;">
                 <i class="fa fa-trash-alt"></i>
               </button>
             </td>
@@ -5019,12 +5019,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
           <tr>
             <td style="text-align:center;color:#94a3b8;">${idx + 1}</td>
-            <td style="font-weight:700;color:#1e293b;">${escapeHtml(it.name)}</td>
-            <td style="text-align:right;color:#0284c7;font-weight:600;">${it.totalIn.toLocaleString()}개</td>
-            <td style="text-align:right;color:#d97706;font-weight:600;">${it.totalOut.toLocaleString()}개</td>
-            <td style="text-align:right;font-size:15px;font-weight:800;color:${it.stock <= 0 ? '#ef4444' : '#0f172a'};">${it.stock.toLocaleString()}개</td>
-            <td style="text-align:center;">${statusBadge}</td>
-            <td style="text-align:center;color:#64748b;font-size:12.5px;">${it.lastDate || '-'}</td>
+            <td style="font-weight:700;color:#f8fafc;font-size:14px;">${escapeHtml(it.name)}</td>
+            <td style="text-align:right;color:#38bdf8;font-weight:600;font-size:13.5px;white-space:nowrap;">${it.totalIn.toLocaleString()}개</td>
+            <td style="text-align:right;color:#fbbf24;font-weight:600;font-size:13.5px;white-space:nowrap;">${it.totalOut.toLocaleString()}개</td>
+            <td style="text-align:right;font-size:15px;font-weight:800;color:${it.stock <= 0 ? '#f87171' : '#f8fafc'};white-space:nowrap;">${it.stock.toLocaleString()}개</td>
+            <td style="text-align:center;white-space:nowrap;">${statusBadge}</td>
+            <td style="text-align:center;color:#cbd5e1;font-size:13px;white-space:nowrap;">${it.lastDate || '-'}</td>
           </tr>
         `;
       }).join('');
