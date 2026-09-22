@@ -4603,6 +4603,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // 추천 품목명 datalist 갱신
       this.updateItemSuggestions();
 
+      const hint = document.getElementById('supPriceHint');
+      if (hint) hint.style.display = 'none';
+
       this.toggleType(type);
     },
 
@@ -4620,6 +4623,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const form = document.getElementById('suppliesForm');
       if (form) form.reset();
+
+      const hint = document.getElementById('supPriceHint');
+      if (hint) hint.style.display = 'none';
 
       // 수정 대상 ID 설정
       const editId = document.getElementById('supEditId');
@@ -4675,6 +4681,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (modal) modal.style.display = 'none';
       const editId = document.getElementById('supEditId');
       if (editId) editId.value = '';
+      const hint = document.getElementById('supPriceHint');
+      if (hint) hint.style.display = 'none';
     },
 
     toggleType(type) {
@@ -4770,8 +4778,74 @@ document.addEventListener('DOMContentLoaded', () => {
       const datalist = document.getElementById('supItemSuggestions');
       if (!datalist) return;
       const records = this.getRecords();
-      const names = [...new Set(records.map(r => r.itemName).filter(Boolean))];
-      datalist.innerHTML = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+
+      // 품목별 가장 최근 입고가 및 현재고 계산
+      const itemInfoMap = {};
+      records.forEach(r => {
+        const name = (r.itemName || '').trim();
+        if (!name) return;
+        if (!itemInfoMap[name]) {
+          itemInfoMap[name] = { inPrice: null, stock: 0 };
+        }
+        const qty = Number(r.quantity) || 0;
+        if (r.type === 'in') {
+          itemInfoMap[name].stock += qty;
+          if (itemInfoMap[name].inPrice === null && r.price !== undefined && r.price !== null) {
+            itemInfoMap[name].inPrice = Number(r.price) || 0;
+          }
+        } else {
+          itemInfoMap[name].stock -= qty;
+        }
+      });
+
+      const names = Object.keys(itemInfoMap);
+      datalist.innerHTML = names.map(n => {
+        const info = itemInfoMap[n];
+        const priceLabel = info.inPrice !== null ? `최근 입고가: ${info.inPrice.toLocaleString()}원` : '';
+        return `<option value="${escapeHtml(n)}">${escapeHtml(priceLabel)}</option>`;
+      }).join('');
+    },
+
+    // 품목명 입력/선택 시 입고가를 자동으로 불러와 단가에 주입
+    onItemNameChange(itemName) {
+      const hint = document.getElementById('supPriceHint');
+      if (!itemName) {
+        if (hint) hint.style.display = 'none';
+        return;
+      }
+
+      const trimmed = itemName.trim().toLowerCase();
+      const records = this.getRecords();
+
+      // 1. 가장 최근 입고(type === 'in') 내역 중 품목명 일치 항목 검색 (records는 최신순 정렬)
+      let matched = records.find(r => r.type === 'in' && (r.itemName || '').trim().toLowerCase() === trimmed);
+
+      // 2. 완전 일치가 없는 경우 포함 매칭 검색
+      if (!matched) {
+        matched = records.find(r => r.type === 'in' && (r.itemName || '').trim().toLowerCase().includes(trimmed));
+      }
+
+      // 3. 입고 내역이 없으면 전체 내역 중 가격이 있는 항목 검색
+      if (!matched) {
+        matched = records.find(r => (r.itemName || '').trim().toLowerCase() === trimmed && r.price);
+      }
+
+      const priceInp = document.getElementById('supPrice');
+
+      if (matched && matched.price !== undefined && matched.price !== null) {
+        const inPrice = Number(matched.price) || 0;
+        if (priceInp) {
+          priceInp.value = inPrice;
+          this.calcSubtotal();
+        }
+        if (hint) {
+          const supplierText = matched.supplier ? ` (입고처: ${escapeHtml(matched.supplier)})` : '';
+          hint.innerHTML = `<i class="fa fa-check-circle" style="color:#0284c7;"></i> 최근 입고가 <strong>${inPrice.toLocaleString()}원</strong> 자동 반영${supplierText}`;
+          hint.style.display = 'block';
+        }
+      } else {
+        if (hint) hint.style.display = 'none';
+      }
     },
 
     calcSubtotal() {

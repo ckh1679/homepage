@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>프린터모아 - 관리자 대시보드</title>
-  <link rel="stylesheet" href="dashboard.css?v=20260922_004">
+  <link rel="stylesheet" href="dashboard.css?v=20260922_005">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- SheetJS (Excel xlsx 업로드/다운로드 라이브러리) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1577,7 +1577,7 @@
             <label for="supItemName" style="font-size:12.5px;font-weight:700;color:#334155;display:block;margin-bottom:4px;">
               품목명 <span style="color:#ef4444;">*</span>
             </label>
-            <input type="text" id="supItemName" class="form-input" list="supItemSuggestions" placeholder="예: 삼성 K504S 블랙 토너 / 신도 D410 드럼 등" required style="font-size:13.5px;">
+            <input type="text" id="supItemName" class="form-input" list="supItemSuggestions" placeholder="예: 삼성 K504S 블랙 토너 / 신도 D410 드럼 등" required style="font-size:13.5px;" oninput="SuppliesManager.onItemNameChange(this.value)" onchange="SuppliesManager.onItemNameChange(this.value)">
             <datalist id="supItemSuggestions"></datalist>
           </div>
 
@@ -1628,6 +1628,7 @@
                 가격 (단가, 원) <span style="color:#ef4444;">*</span>
               </label>
               <input type="number" id="supPrice" class="form-input" min="0" step="100" placeholder="0" required oninput="SuppliesManager.calcSubtotal()" style="font-size:14px;font-weight:600;">
+              <div id="supPriceHint" style="font-size:11.5px;color:#0284c7;font-weight:600;margin-top:4px;display:none;"></div>
             </div>
             <div class="form-group">
               <label for="supQuantity" style="font-size:12.5px;font-weight:700;color:#334155;display:block;margin-bottom:4px;">
@@ -1678,6 +1679,6 @@
        ============================================ -->
   <div id="meterPrintArea" style="display:none;"></div>
   <script src="../board/board.js"></script>
-  <script src="dashboard.js?v=20260922_004"></script>
+  <script src="dashboard.js?v=20260922_005"></script>
 </body>
 </html>
