@@ -4558,9 +4558,75 @@ document.addEventListener('DOMContentLoaded', () => {
       this.toggleType(type);
     },
 
+    openEditModal(id) {
+      const records = this.getRecords();
+      const rec = records.find(r => r.id === id);
+      if (!rec) {
+        alert('수정할 데이터를 찾을 수 없습니다.');
+        return;
+      }
+
+      const modal = document.getElementById('suppliesModal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+
+      const form = document.getElementById('suppliesForm');
+      if (form) form.reset();
+
+      // 수정 대상 ID 설정
+      const editId = document.getElementById('supEditId');
+      if (editId) editId.value = rec.id;
+
+      // 월별 거래처 드롭다운 구성 및 datalist 갱신
+      this.populateClientDropdown();
+      this.updateItemSuggestions();
+
+      // 입고/출고 타입 설정
+      this.toggleType(rec.type);
+
+      // 모달 타이틀 및 버튼 텍스트 변경
+      const title = document.getElementById('supModalTitle');
+      if (title) title.innerHTML = `<i class="fa fa-pen-to-square" style="color:#38bdf8;margin-right:6px;"></i>소모품 내역 수정 (${rec.type === 'in' ? '입고' : '출고'})`;
+
+      const submitBtnText = document.getElementById('supSubmitBtnText');
+      if (submitBtnText) submitBtnText.textContent = '수정 내용 저장';
+
+      // 기존 데이터 폼에 주입
+      const setVal = (elmId, val) => {
+        const el = document.getElementById(elmId);
+        if (el) el.value = (val !== undefined && val !== null) ? val : '';
+      };
+
+      setVal('supItemName', rec.itemName);
+      setVal('supPrice', rec.price);
+      setVal('supQuantity', rec.quantity);
+      setVal('supTotalAmount', rec.totalAmount);
+      setVal('supDate', rec.date);
+      setVal('supMemo', rec.memo);
+
+      if (rec.type === 'in') {
+        setVal('supSupplier', rec.supplier);
+      } else {
+        const targetType = rec.targetType || 'client';
+        const radios = document.querySelectorAll('input[name="supClientType"]');
+        radios.forEach(r => {
+          r.checked = (r.value === targetType);
+        });
+        this.toggleClientType(targetType);
+
+        if (targetType === 'client') {
+          setVal('supClientId', rec.clientId);
+        } else {
+          setVal('supOtherClientName', rec.clientName);
+        }
+      }
+    },
+
     closeModal() {
       const modal = document.getElementById('suppliesModal');
       if (modal) modal.style.display = 'none';
+      const editId = document.getElementById('supEditId');
+      if (editId) editId.value = '';
     },
 
     toggleType(type) {
@@ -4747,6 +4813,124 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      const editId = document.getElementById('supEditId')?.value;
+      const records = this.getRecords();
+
+      // =========================
+      // 1. 수정 모드 (editId 존재)
+      // =========================
+      if (editId) {
+        const idx = records.findIndex(r => r.id === editId);
+        if (idx === -1) {
+          alert('수정할 내역을 찾을 수 없습니다.');
+          return;
+        }
+        const oldRec = records[idx];
+        let finalLinkedLogId = oldRec.linkedLogId || '';
+
+        // 출고 & 월별 거래처 연동 동기화 처리
+        if (type === 'out' && targetType === 'client') {
+          if (oldRec.type === 'out' && oldRec.targetType === 'client' && oldRec.clientId === clientId && finalLinkedLogId) {
+            // 동일한 월별 거래처: 기존 렌탈수익성 지출 장부 내용 업데이트
+            const logs = ProfitManager.getMaintenanceLogs(clientId);
+            const logIdx = logs.findIndex(l => l.id === finalLinkedLogId);
+            if (logIdx !== -1) {
+              logs[logIdx].date = date;
+              logs[logIdx].name = `${itemName} (출고 ${quantity}개)`;
+              logs[logIdx].amount = totalAmount;
+              logs[logIdx].memo = memo ? `소모품관리 출고 연동 - ${memo}` : '소모품관리 출고 연동';
+              ProfitManager.saveMaintenanceLogs(clientId, logs);
+            } else {
+              // 로그가 없으면 새로 생성
+              finalLinkedLogId = 'sup_log_' + Date.now();
+              logs.unshift({
+                id: finalLinkedLogId,
+                date: date,
+                category: 'supplies',
+                name: `${itemName} (출고 ${quantity}개)`,
+                amount: totalAmount,
+                memo: memo ? `소모품관리 출고 연동 - ${memo}` : '소모품관리 출고 연동',
+                source: 'supplies_mgmt'
+              });
+              ProfitManager.saveMaintenanceLogs(clientId, logs);
+            }
+          } else {
+            // 거래처가 바뀌었거나 이전에 연동이 없었던 경우
+            if (oldRec.type === 'out' && oldRec.clientId && finalLinkedLogId) {
+              let oldLogs = ProfitManager.getMaintenanceLogs(oldRec.clientId);
+              oldLogs = oldLogs.filter(l => l.id !== finalLinkedLogId);
+              ProfitManager.saveMaintenanceLogs(oldRec.clientId, oldLogs);
+            }
+            finalLinkedLogId = 'sup_log_' + Date.now();
+            const newLogs = ProfitManager.getMaintenanceLogs(clientId);
+            newLogs.unshift({
+              id: finalLinkedLogId,
+              date: date,
+              category: 'supplies',
+              name: `${itemName} (출고 ${quantity}개)`,
+              amount: totalAmount,
+              memo: memo ? `소모품관리 출고 연동 - ${memo}` : '소모품관리 출고 연동',
+              source: 'supplies_mgmt'
+            });
+            ProfitManager.saveMaintenanceLogs(clientId, newLogs);
+          }
+        } else {
+          // 새 상태가 입고이거나 기타업체인 경우: 이전 연동 로그가 있었다면 삭제
+          if (oldRec.type === 'out' && oldRec.clientId && finalLinkedLogId) {
+            let oldLogs = ProfitManager.getMaintenanceLogs(oldRec.clientId);
+            oldLogs = oldLogs.filter(l => l.id !== finalLinkedLogId);
+            ProfitManager.saveMaintenanceLogs(oldRec.clientId, oldLogs);
+          }
+          finalLinkedLogId = '';
+        }
+
+        records[idx] = {
+          ...oldRec,
+          type,
+          itemName,
+          supplier: type === 'in' ? supplier : '',
+          targetType: type === 'out' ? targetType : '',
+          clientId: type === 'out' ? clientId : '',
+          clientName: type === 'out' ? clientName : '',
+          price,
+          quantity,
+          totalAmount,
+          date,
+          memo,
+          linkedLogId: finalLinkedLogId,
+          updatedAt: new Date().toISOString()
+        };
+
+        this.saveRecords(records);
+        this.closeModal();
+        this.render();
+
+        let updateMsg = `[수정 완료] "${itemName}" 내역이 성공적으로 수정되었습니다.`;
+        if (type === 'out' && targetType === 'client') {
+          updateMsg += `\n\n★ [연동 완료] "${clientName}"의 렌탈수익성분석 지출 장부도 최신 정보(${totalAmount.toLocaleString()}원)로 자동 갱신되었습니다!`;
+        }
+        alert(updateMsg);
+        return;
+      }
+
+      // =========================
+      // 2. 신규 등록 모드
+      // =========================
+      if (type === 'out' && targetType === 'client') {
+        linkedLogId = 'sup_log_' + Date.now();
+        const logs = ProfitManager.getMaintenanceLogs(clientId);
+        logs.unshift({
+          id: linkedLogId,
+          date: date,
+          category: 'supplies',
+          name: `${itemName} (출고 ${quantity}개)`,
+          amount: totalAmount,
+          memo: memo ? `소모품관리 출고 연동 - ${memo}` : '소모품관리 출고 연동',
+          source: 'supplies_mgmt'
+        });
+        ProfitManager.saveMaintenanceLogs(clientId, logs);
+      }
+
       const newRecord = {
         id: 'sup_' + Date.now(),
         type,
@@ -4764,7 +4948,6 @@ document.addEventListener('DOMContentLoaded', () => {
         createdAt: new Date().toISOString()
       };
 
-      const records = this.getRecords();
       records.unshift(newRecord);
       this.saveRecords(records);
 
@@ -4954,8 +5137,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${linkHtml}
               </div>
             </td>
-            <td style="text-align:center;">
-              <button type="button" class="btn-action-icon delete" title="삭제" onclick="SuppliesManager.deleteRecord('${r.id}')" style="color:#f87171;background:none;border:none;cursor:pointer;font-size:15px;padding:4px 8px;transition:color 0.2s;">
+            <td style="text-align:center;white-space:nowrap;">
+              <button type="button" class="btn-action-icon edit" title="수정" onclick="SuppliesManager.openEditModal('${r.id}')" style="color:#38bdf8;background:none;border:none;cursor:pointer;font-size:15px;padding:4px 6px;margin-right:2px;transition:color 0.2s;">
+                <i class="fa fa-pen-to-square"></i>
+              </button>
+              <button type="button" class="btn-action-icon delete" title="삭제" onclick="SuppliesManager.deleteRecord('${r.id}')" style="color:#f87171;background:none;border:none;cursor:pointer;font-size:15px;padding:4px 6px;transition:color 0.2s;">
                 <i class="fa fa-trash-alt"></i>
               </button>
             </td>
