@@ -1065,7 +1065,7 @@ document.addEventListener('DOMContentLoaded', () => {
     },
 
     // 장비별 계산 (전월누적/당월누적 -> 이번달 사용량 자동 계산, 초과금액, 공급가, VAT, 월임대료)
-    calcDevice(dev) {
+    calcDevice(dev, vatType = 'tax') {
       const bwBase    = Number(dev.bwBase) || 0;
       const bwUnit    = Number(dev.bwUnit) || 0;
       const bwPrev    = Number(dev.bwPrev) || 0;
@@ -1102,7 +1102,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const rawSupply  = baseRent + extraTotal;
       const discount   = Math.max(0, Number(dev.discount) || 0);
       const supply     = Math.max(0, rawSupply - discount);
-      const vat        = Math.round(supply * 0.1);
+      // 부가세 면제(free) 업체인 경우 VAT는 0원 처리
+      const vat        = (vatType === 'free') ? 0 : Math.round(supply * 0.1);
       const total      = supply + vat;
 
       return {
@@ -1122,6 +1123,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 거래처 전체 합산 계산
     calcClientTotals(client) {
       const devices = client.devices || [];
+      const vatType = client.vatType || 'tax'; // 'tax': 일반과세(10%), 'free': 부가세 면제/제외(0%)
       let totalBaseRent   = 0;
       let totalBwExtra    = 0;
       let totalColorExtra = 0;
@@ -1134,7 +1136,7 @@ document.addEventListener('DOMContentLoaded', () => {
       let totalCumulativeUsage = 0;
 
       devices.forEach(dev => {
-        const c = this.calcDevice(dev);
+        const c = this.calcDevice(dev, vatType);
         totalBaseRent   += c.baseRent;
         totalBwExtra    += c.bwExtra;
         totalColorExtra += c.colorExtra;
@@ -1142,12 +1144,13 @@ document.addEventListener('DOMContentLoaded', () => {
         totalRawSupply  += c.rawSupply; // 기본임대료 + 추가금액 (할인 전 순수 공급가)
         totalDiscount   += c.discount;  // 장비별 할인액 합계
         discountedSupply += c.supply;   // 할인 후 공급가액 합계
-        totalVat        += c.vat;       // 할인 후 부가세(VAT 10%) 합계
-        totalMonthBill  += c.total;     // 할인 및 VAT 포함 최종 청구금액
+        totalVat        += c.vat;       // 부가세(면세면 0원) 합계
+        totalMonthBill  += c.total;     // 최종 청구금액
         totalCumulativeUsage += c.totalUsage;
       });
 
       return {
+        vatType,
         deviceCount: devices.length,
         totalBaseRent,
         totalBwExtra,
@@ -1158,8 +1161,8 @@ document.addEventListener('DOMContentLoaded', () => {
         totalDiscount,                  // 할인금액 합계
         discountAmount: totalDiscount,  // 모달/정산 일관성용 필드
         discountedSupply,               // 할인 후 공급가액
-        finalVat: totalVat,             // 할인 후 부가세
-        finalBill: totalMonthBill,      // 할인 후 최종 청구액
+        finalVat: totalVat,             // 부가세 (면세면 0원)
+        finalBill: totalMonthBill,      // 최종 청구액
         totalVat,
         totalMonthBill,
         totalBill: totalMonthBill,
@@ -1248,9 +1251,16 @@ document.addEventListener('DOMContentLoaded', () => {
           dispSupply = Math.max(0, rawSupply - discountAmount);
         }
 
-        // V.A.T (할인 후 공급가액 기준 10%)
+        const clientVatType = (settlement && settlement.vatType) ||
+                              (meterSummary && meterSummary.vatType) ||
+                              c.vatType || 'tax';
+        const isClientTaxFree = (clientVatType === 'free');
+
+        // V.A.T (면세업체면 0원, 일반과세면 할인 후 공급가액 기준 10%)
         let dispVat;
-        if (settlement && settlement.finalVat !== undefined) {
+        if (isClientTaxFree) {
+          dispVat = 0;
+        } else if (settlement && settlement.finalVat !== undefined) {
           dispVat = Number(settlement.finalVat) || 0;
         } else if (meterSummary && meterSummary.finalVat !== undefined) {
           dispVat = Number(meterSummary.finalVat) || 0;
@@ -1341,9 +1351,16 @@ document.addEventListener('DOMContentLoaded', () => {
           dispSupply = Math.max(0, rawSupply - discountAmount);
         }
 
-        // V.A.T (할인 후 공급가액 기준 10%)
+        const clientVatType = (settlement && settlement.vatType) ||
+                              (meterSummary && meterSummary.vatType) ||
+                              client.vatType || 'tax';
+        const isClientTaxFree = (clientVatType === 'free');
+
+        // V.A.T (면세업체면 0원, 일반과세면 할인 후 공급가액 기준 10%)
         let dispVat;
-        if (settlement && settlement.finalVat !== undefined) {
+        if (isClientTaxFree) {
+          dispVat = 0;
+        } else if (settlement && settlement.finalVat !== undefined) {
           dispVat = Number(settlement.finalVat) || 0;
         } else if (meterSummary && meterSummary.finalVat !== undefined) {
           dispVat = Number(meterSummary.finalVat) || 0;
@@ -1409,6 +1426,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${idx + 1}</td>
             <td>
               <strong style="font-size:14px;color:#fff;">${escapeHtml(client.name)}</strong>
+              ${isClientTaxFree ? `<span style="font-size:11px;background:#ecfdf5;color:#059669;padding:1px 6px;border-radius:4px;margin-left:6px;font-weight:700;border:1px solid #a7f3d0;"><i class="fa fa-leaf"></i> 면세</span>` : ''}
               ${client.memo ? `<div style="font-size:11px;color:var(--text-muted);">${escapeHtml(client.memo)}</div>` : ''}
             </td>
             <td style="text-align:center;">
@@ -1424,7 +1442,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <strong>${dispSupply.toLocaleString()}원</strong>
               ${discountAmount > 0 ? `<div style="font-size:11px;color:#f59e0b;font-weight:600;white-space:nowrap;margin-top:2px;"><i class="fa fa-tag"></i> -${discountAmount.toLocaleString()}원 할인</div>` : ''}
             </td>
-            <td style="text-align:right;color:var(--text-muted);">${dispVat.toLocaleString()}원</td>
+            <td style="text-align:right;color:var(--text-muted);">${isClientTaxFree ? '<span style="color:#059669;font-weight:600;">0원 (면세)</span>' : (dispVat.toLocaleString() + '원')}</td>
             <td style="text-align:right;color:#60a5fa;font-weight:700;font-size:15px;">
               ${curBill.toLocaleString()}원
             </td>
@@ -1527,7 +1545,7 @@ document.addEventListener('DOMContentLoaded', () => {
                       }
 
                       const effectiveDevSupply = Math.max(0, dc.rawSupply - effectiveDevDiscount);
-                      const effectiveDevVat = Math.round(effectiveDevSupply * 0.1);
+                      const effectiveDevVat = isClientTaxFree ? 0 : Math.round(effectiveDevSupply * 0.1);
                       const effectiveDevTotal = effectiveDevSupply + effectiveDevVat;
                       return `
                         <tr>
@@ -1557,7 +1575,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div style="font-size:10px;color:var(--text-muted);">흑백 ${dc.bwTotal.toLocaleString()} | 컬러 ${dc.colorTotal.toLocaleString()}</div>
                           </td>
                           <td>
-                            <strong style="color:#60a5fa;">${effectiveDevTotal.toLocaleString()}원</strong> <span style="font-size:10px;color:var(--text-muted);">(VAT포함)</span>
+                            <strong style="color:#60a5fa;">${effectiveDevTotal.toLocaleString()}원</strong> <span style="font-size:10px;color:var(--text-muted);">${isClientTaxFree ? '(면세)' : '(VAT포함)'}</span>
                             ${effectiveDevDiscount > 0 ? `<div style="font-size:11px;color:#f59e0b;font-weight:600;"><i class="fa fa-tag"></i> -${effectiveDevDiscount.toLocaleString()}원 할인</div>` : ''}
                           </td>
                         </tr>
@@ -1631,6 +1649,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const dtInput = document.getElementById('clContractDate');
       if (dtInput) dtInput.value = today;
 
+      const vatSelect = document.getElementById('clVatType');
+      if (vatSelect) vatSelect.value = 'tax';
+
       // 장비 목록 초기화 및 1개 기본 추가
       const devList = document.getElementById('clientDeviceFormList');
       if (devList) devList.innerHTML = '';
@@ -1671,6 +1692,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setVal('clContractDate', client.contractDate);
       setVal('clAddress', client.address);
       setVal('clTotalPaid', client.totalPaid || 0);
+      setVal('clVatType', client.vatType || 'tax');
       setVal('clMemo', client.memo);
 
       if (title) title.innerHTML = `<i class="fa fa-edit"></i> 거래처 정보 수정 - [${escapeHtml(client.name)}]`;
@@ -1916,8 +1938,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const devExtraTotal = bwExtra + colorExtra;
         const devSupplyBeforeDiscount = baseRent + devExtraTotal;
-        const devSupply = Math.max(0, devSupplyBeforeDiscount - devDiscount); // 할인 차감
-        const devTotal = Math.round(devSupply * 1.1);
+        const isFree = (document.getElementById('clVatType')?.value === 'free');
+        const devTotal = isFree ? devSupply : Math.round(devSupply * 1.1);
 
         const devTotalUsage = bwTotal + colorTotal;
 
@@ -1955,9 +1977,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const totalBadge = card.querySelector('.dev-card-total');
         if (totalBadge) {
+          const vatText = isFree ? '(면세)' : `(VAT포함 ${devTotal.toLocaleString()}원)`;
           totalBadge.textContent = devDiscount > 0
-            ? `${devSupplyBeforeDiscount.toLocaleString()}원 → 할인 후 ${devSupply.toLocaleString()}원 (VAT포함 ${devTotal.toLocaleString()}원)`
-            : `${devSupply.toLocaleString()}원 (VAT포함 ${devTotal.toLocaleString()}원)`;
+            ? `${devSupplyBeforeDiscount.toLocaleString()}원 → 할인 후 ${devSupply.toLocaleString()}원 ${vatText}`
+            : `${devSupply.toLocaleString()}원 ${vatText}`;
         }
 
         sumBaseRent   += baseRent;
@@ -1966,10 +1989,12 @@ document.addEventListener('DOMContentLoaded', () => {
         sumDiscount   += devDiscount;
       });
 
+      const formVatType = document.getElementById('clVatType')?.value || 'tax';
+      const isFormFree = formVatType === 'free';
       const sumSupplyBeforeDiscount = sumBaseRent + sumBwExtra + sumColorExtra;
       const sumDiscount_ = sumDiscount; // alias
       const sumSupply = Math.max(0, sumSupplyBeforeDiscount - sumDiscount_);
-      const sumVat    = Math.round(sumSupply * 0.1);
+      const sumVat    = isFormFree ? 0 : Math.round(sumSupply * 0.1);
       const sumTotal  = sumSupply + sumVat;
 
       const elBase  = document.getElementById('prevBaseRent');
@@ -1983,7 +2008,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (elBw)    elBw.textContent    = sumBwExtra.toLocaleString() + '원';
       if (elColor) elColor.textContent = sumColorExtra.toLocaleString() + '원';
       if (elSup)   elSup.textContent   = sumSupply.toLocaleString() + '원';
-      if (elVat)   elVat.textContent   = sumVat.toLocaleString() + '원';
+      if (elVat)   elVat.textContent   = isFormFree ? '0원 (면세)' : (sumVat.toLocaleString() + '원');
       if (elTotal) elTotal.textContent = sumTotal.toLocaleString() + '원';
     },
 
@@ -2023,6 +2048,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const memoInput = document.getElementById('clMemo');
       const memo = memoInput ? memoInput.value.trim() : '';
+
+      const vatTypeInput = document.getElementById('clVatType');
+      const vatType = vatTypeInput ? vatTypeInput.value : 'tax';
 
       if (!name) {
         alert('거래처명을 입력해주세요.');
@@ -2077,7 +2105,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const candidateData = {
-        name, bizNum, ceo, phone, email, contractDate, address, totalPaid, memo, devices
+        name, bizNum, ceo, phone, email, contractDate, address, totalPaid, memo, vatType, devices
       };
 
       const clients = this.getClients();
@@ -2653,6 +2681,109 @@ document.addEventListener('DOMContentLoaded', () => {
       this.updateMeterModalPreview();
     },
 
+    // 검침 수정 모달의 현재 부가세 구분 반환 ('tax' | 'free')
+    getMeterVatType() {
+      const radFree = document.getElementById('meterVatTypeFree');
+      return (radFree && radFree.checked) ? 'free' : 'tax';
+    },
+
+    // 부가세 과세/면세 라디오 변경 핸들러
+    onVatTypeChange() {
+      this.updateMeterModalPreview();
+    },
+
+    // 최종 결제/청구 금액(만원단위 등) 직접 지정 시 부가세 및 할인금액 자동 역산 계산
+    applyCustomFinalBill(targetVal) {
+      const targetTotal = Number(targetVal);
+      const noticeEl = document.getElementById('meterTargetCalcNotice');
+      const discountInput = document.getElementById('meterDiscountAmount');
+      if (isNaN(targetTotal) || targetTotal < 0) {
+        alert('올바른 목표 정산 금액(원)을 숫자로 입력해주세요.');
+        return;
+      }
+
+      // 현재 장비들의 순수 공급가액(기본료 + 추가금) 합계 산출
+      const list = document.getElementById('meterEditDeviceList');
+      const cards = list ? list.querySelectorAll('.meter-dev-card') : [];
+      let sumSupply = 0;
+      cards.forEach(card => {
+        const baseRent = Number(card.querySelector('.m-dev-baseRent')?.value) || 0;
+        const bwBase = Number(card.querySelector('.m-dev-bwBase')?.value) || 0;
+        const bwUnit = Number(card.querySelector('.m-dev-bwUnit')?.value) || 0;
+        const bwUsed = Number(card.querySelector('.m-dev-bwUsed')?.value) || 0;
+        const colorBase = Number(card.querySelector('.m-dev-colorBase')?.value) || 0;
+        const colorUnit = Number(card.querySelector('.m-dev-colorUnit')?.value) || 0;
+        const colorUsed = Number(card.querySelector('.m-dev-colorUsed')?.value) || 0;
+
+        const bwOver = Math.max(0, bwUsed - bwBase);
+        const bwExtra = bwOver * bwUnit;
+        const colorOver = Math.max(0, colorUsed - colorBase);
+        const colorExtra = colorOver * colorUnit;
+        sumSupply += (baseRent + bwExtra + colorExtra);
+      });
+
+      const vatType = this.getMeterVatType();
+      let targetSupply = 0;
+      let targetVat = 0;
+      let requiredDiscount = 0;
+
+      if (vatType === 'free') {
+        // 면세인 경우: 최종금액 = 공급가액, 부가세 = 0원
+        targetSupply = targetTotal;
+        targetVat = 0;
+        requiredDiscount = sumSupply - targetTotal;
+      } else {
+        // 일반과세(10%)인 경우: 최종금액 = 공급가액 + VAT = 공급가액 × 1.1
+        // 정밀 역산: 공급가액 = Math.round(최종금액 / 1.1), VAT = 최종금액 - 공급가액
+        targetSupply = Math.round(targetTotal / 1.1);
+        targetVat = targetTotal - targetSupply;
+        requiredDiscount = sumSupply - targetSupply;
+      }
+
+      if (requiredDiscount < 0) {
+        const minTarget = vatType === 'free' ? sumSupply : Math.round(sumSupply * 1.1);
+        if (!confirm(`입력하신 목표금액(${targetTotal.toLocaleString()}원)이 할인 전 청구금액(${minTarget.toLocaleString()}원)보다 큽니다.\n할인금액을 0원으로 두고 진행하시겠습니까?`)) {
+          return;
+        }
+        requiredDiscount = 0;
+      }
+
+      if (discountInput) {
+        discountInput.value = requiredDiscount;
+      }
+
+      // 프리뷰 즉시 갱신
+      this.updateMeterModalPreview();
+
+      // 역산 결과 알림 박스 노출
+      if (noticeEl) {
+        noticeEl.style.display = 'block';
+        if (vatType === 'free') {
+          noticeEl.innerHTML = `<i class="fa fa-check-circle" style="color:#059669;"></i> [면세 적용] 최종 목표금액 <strong>${targetTotal.toLocaleString()}원</strong>에 맞춰 할인금액 <strong>${requiredDiscount.toLocaleString()}원</strong>이 자동 세팅되었습니다.`;
+        } else {
+          noticeEl.innerHTML = `<i class="fa fa-check-circle" style="color:#2563eb;"></i> 최종 목표금액 <strong>${targetTotal.toLocaleString()}원</strong>에 맞춰 공급가액 <strong>${targetSupply.toLocaleString()}원</strong> + 부가세 <strong>${targetVat.toLocaleString()}원</strong>으로 자동 분리되었으며, 할인금액 <strong>${requiredDiscount.toLocaleString()}원</strong>이 자동 차감 반영되었습니다.`;
+        }
+      }
+    },
+
+    // 만원단위 맞춤 / 천원 절사 편의 기능
+    roundBillDown(unit = 10000) {
+      const finalEl = document.getElementById('meterFinalBill');
+      let curTotal = 0;
+      if (finalEl) {
+        curTotal = Number(finalEl.textContent.replace(/[^0-9]/g, '')) || 0;
+      }
+      if (curTotal <= 0) {
+        alert('현재 정산 가능한 청구 금액이 없습니다.');
+        return;
+      }
+
+      const rounded = Math.floor(curTotal / unit) * unit;
+      const targetInput = document.getElementById('meterTargetFinalBill');
+      if (targetInput) targetInput.value = rounded;
+      this.applyCustomFinalBill(rounded);
+    },
+
     // 검침 수정 모달 열기
     openMeterEditModal(clientId, targetMonth = null, event = null) {
       if (event) event.stopPropagation();
@@ -2689,8 +2820,30 @@ document.addEventListener('DOMContentLoaded', () => {
         unpaidAmount: 0,
         paidDate: '',
         taxStatus: 'unissued',
-        taxDate: ''
+        taxDate: '',
+        vatType: client.vatType || 'tax'
       };
+
+      // 부가세 과세 / 면세 라디오 초기화
+      const curVatType = (st && st.vatType) || (record.summary && record.summary.vatType) || client.vatType || 'tax';
+      const radTax = document.getElementById('meterVatTypeTax');
+      const radFree = document.getElementById('meterVatTypeFree');
+      if (curVatType === 'free') {
+        if (radFree) radFree.checked = true;
+        if (radTax) radTax.checked = false;
+      } else {
+        if (radTax) radTax.checked = true;
+        if (radFree) radFree.checked = false;
+      }
+
+      // 역산 입력 필드 및 안내 메시지 초기화
+      const targetBillInput = document.getElementById('meterTargetFinalBill');
+      if (targetBillInput) targetBillInput.value = '';
+      const targetNotice = document.getElementById('meterTargetCalcNotice');
+      if (targetNotice) {
+        targetNotice.style.display = 'none';
+        targetNotice.textContent = '';
+      }
 
       const paidInput = document.getElementById('meterPaidAmount');
       const paidDateInput = document.getElementById('meterPaidDate');
@@ -2858,6 +3011,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!list) return;
       const cards = list.querySelectorAll('.meter-dev-card');
 
+      const vatType = this.getMeterVatType();
+      const isFree = (vatType === 'free');
+
+      const vatLabel = document.getElementById('meterVatLabel');
+      if (vatLabel) {
+        vatLabel.textContent = isFree ? 'V.A.T (면세 0%)' : 'V.A.T (10%)';
+      }
+      const formulaEl = document.getElementById('meterFinalBillFormula');
+      if (formulaEl) {
+        formulaEl.textContent = isFree ? '(공급가액 - 할인) 부가세 면제' : '(공급가액 - 할인) × 1.1 부가세 포함';
+      }
+
       let sumBaseRent = 0;
       let sumBwExtra = 0;
       let sumColorExtra = 0;
@@ -2883,7 +3048,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const devExtra = bwExtra + colorExtra;
         const devSupply = baseRent + devExtra;
-        const devTotal = Math.round(devSupply * 1.1);
+        const devVat = isFree ? 0 : Math.round(devSupply * 0.1);
+        const devTotal = devSupply + devVat;
 
         const tag = card.querySelector('.m-dev-calc-result');
         if (tag) {
@@ -2895,9 +3061,10 @@ document.addEventListener('DOMContentLoaded', () => {
             warnHtml += '<span style="color:#ef4444;margin-right:8px;">[컬러 당월 < 전월 오류]</span> ';
           }
 
+          const vatSuffix = isFree ? '(면세 0원)' : `(VAT포함 ${devTotal.toLocaleString()}원)`;
           tag.innerHTML = `${warnHtml}흑백: <strong>${bwUsed.toLocaleString()}장</strong> (추가 +${bwExtra.toLocaleString()}원) | ` +
                           `컬러: <strong>${colorUsed.toLocaleString()}장</strong> (추가 +${colorExtra.toLocaleString()}원) | ` +
-                          `기기 소계: <strong style="color:#0284c7;">${devSupply.toLocaleString()}원</strong> (VAT포함 ${devTotal.toLocaleString()}원)`;
+                          `기기 소계: <strong style="color:#0284c7;">${devSupply.toLocaleString()}원</strong> ${vatSuffix}`;
         }
 
         sumBaseRent += baseRent;
@@ -2906,19 +3073,19 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       const sumSupply = sumBaseRent + sumBwExtra + sumColorExtra;
-      const sumVat = Math.round(sumSupply * 0.1);
+      const sumVat = isFree ? 0 : Math.round(sumSupply * 0.1);
       const sumTotal = sumSupply + sumVat;
 
-      const setEl = (id, val) => {
+      const setEl = (id, val, text = null) => {
         const el = document.getElementById(id);
-        if (el) el.textContent = val.toLocaleString() + '원';
+        if (el) el.textContent = text !== null ? text : (val.toLocaleString() + '원');
       };
 
       setEl('meterPrevBaseRent', sumBaseRent);
       setEl('meterPrevBwExtra', sumBwExtra);
       setEl('meterPrevColorExtra', sumColorExtra);
       setEl('meterPrevSupply', sumSupply);
-      setEl('meterPrevVat', sumVat);
+      setEl('meterPrevVat', sumVat, isFree ? '0원 (면세)' : null);
       setEl('meterPrevTotalBill', sumTotal);
 
       // 할인금액을 부가세 적용 이전(공급가액) 단계에서 차감
@@ -2938,7 +3105,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const discountedSupply = Math.max(0, sumSupply - discountAmount); // 할인 후 공급가액
-      const finalVat = Math.round(discountedSupply * 0.1);              // 할인 후 공급가액에 VAT 10%
+      const finalVat = isFree ? 0 : Math.round(discountedSupply * 0.1); // 할인 후 공급가액에 VAT
       const finalBill = discountedSupply + finalVat;                    // 최종 정산금액
       const finalBillEl = document.getElementById('meterFinalBill');
       if (finalBillEl) finalBillEl.textContent = finalBill.toLocaleString() + '원';
@@ -2966,6 +3133,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const clients = this.getClients();
       const client = clients.find(c => String(c.id) === String(clientId));
       if (!client) return;
+
+      const vatType = this.getMeterVatType();
+      const isFree = (vatType === 'free');
 
       const list = document.getElementById('meterEditDeviceList');
       const cards = list ? list.querySelectorAll('.meter-dev-card') : [];
@@ -2999,7 +3169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const colorExtra = colorOver * colorUnit;
 
         const supply = baseRent + bwExtra + colorExtra;
-        const vat = Math.round(supply * 0.1);
+        const vat = isFree ? 0 : Math.round(supply * 0.1);
         const total = supply + vat;
 
         sumBase += baseRent;
@@ -3021,13 +3191,13 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       const sumSupply = sumBase + sumBwExtra + sumColorExtra;
-      const sumVat = Math.round(sumSupply * 0.1);
+      const sumVat = isFree ? 0 : Math.round(sumSupply * 0.1);
       const sumTotal = sumSupply + sumVat;
 
       // 할인금액을 부가세 적용 이전(공급가액) 단계에서 차감
       const discountAmount = Math.max(0, Number(document.getElementById('meterDiscountAmount')?.value) || 0);
       const discountedSupply = Math.max(0, sumSupply - discountAmount); // 할인 후 공급가액
-      const finalVat = Math.round(discountedSupply * 0.1);              // 할인 후 공급가액에 VAT 10%
+      const finalVat = isFree ? 0 : Math.round(discountedSupply * 0.1); // 할인 후 부가세
       const finalBill = discountedSupply + finalVat;                    // 최종 정산금액
 
       // 당월 수금 및 세금계산서 정산 정보 (최종 정산금액 기준)
@@ -3038,6 +3208,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const taxDate = document.getElementById('meterTaxDate')?.value || '';
 
       const settlement = {
+        vatType,
         paidAmount,
         unpaidAmount,
         paidDate,
@@ -3063,6 +3234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         readingDate: date,
         devices,
         summary: {
+          vatType,
           totalBaseRent: sumBase,
           totalExtra: sumBwExtra + sumColorExtra,
           totalBwExtra: sumBwExtra,
@@ -3070,7 +3242,7 @@ document.addEventListener('DOMContentLoaded', () => {
           totalRawSupply: sumSupply,    // 순수 할인 전 공급가액
           totalSupply: sumSupply,       // 할인 전 공급가액 (호환)
           totalVat: sumVat,             // 할인 전 VAT
-          totalBill: sumTotal,          // 할인 전 청구금액 (VAT포함)
+          totalBill: sumTotal,          // 할인 전 청구금액
           discountAmount,               // 할인금액
           discountedSupply,             // 할인 후 공급가액
           finalVat,                     // 할인 후 VAT
@@ -3090,10 +3262,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       this.saveMeterHistory(history);
 
-      // 현재 기준월이면 거래처 기본 장비 계수기 및 할인에도 즉시 동기화 반영
+      // 현재 기준월이면 거래처 기본 장비 계수기 및 할인, 부가세 설정에도 즉시 동기화 반영
       if (month === this.getCurrentMonthStr()) {
         const cIdx = clients.findIndex(c => String(c.id) === String(clientId));
         if (cIdx !== -1) {
+          clients[cIdx].vatType = vatType;
           clients[cIdx].devices = (clients[cIdx].devices || []).map(cd => {
             const matched = devices.find(d => String(d.id) === String(cd.id));
             if (matched) {
@@ -3157,6 +3330,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const discountAmount = Number(rec.summary?.discountAmount || rec.settlement?.discountAmount || 0);
         const rawSupply = Number(rec.summary?.totalRawSupply || rec.summary?.totalSupply || 0);
 
+        const isTaxFree = (rec.settlement?.vatType === 'free') || (rec.summary?.vatType === 'free');
+
         (rec.devices || []).forEach((dev, idx) => {
           let devDiscount = Number(dev.discount || 0);
           if (devCount === 1) {
@@ -3176,13 +3351,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const devRawSupply = Number(dev.baseRent || 0) + Number(dev.bwExtra || 0) + Number(dev.colorExtra || 0);
           const devSupply = Math.max(0, devRawSupply - devDiscount);
-          const devVat = Math.round(devSupply * 0.1);
+          const devVat = isTaxFree ? 0 : Math.round(devSupply * 0.1);
           const devTotal = devSupply + devVat;
 
           rows.push({
             '검침연월': rec.month,
             '검침일자': rec.readingDate || '',
             '거래처명': rec.clientName,
+            '부가세유형': isTaxFree ? '면세' : '일반과세(10%)',
             '사업자번호': rec.bizNum || '',
             '대표자': rec.ceo || '',
             '전화번호': rec.phone || '',
@@ -3444,7 +3620,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div>
                   <div style="font-size:12px;color:#64748b;">
                     총 공급가액: <strong>${((summary.discountedSupply !== undefined ? summary.discountedSupply : (summary.totalRawSupply ? Math.max(0, summary.totalRawSupply - (summary.discountAmount || 0)) : summary.totalSupply)) || 0).toLocaleString()}원</strong>
-                    ${(summary.discountAmount || 0) > 0 ? `<span style="color:#d97706;font-weight:700;"> (할인 -${Number(summary.discountAmount).toLocaleString()}원 차감)</span>` : ''} | 부가세(VAT 10%): <strong>${((summary.finalVat !== undefined ? summary.finalVat : summary.totalVat) || 0).toLocaleString()}원</strong>
+                    ${(summary.discountAmount || 0) > 0 ? `<span style="color:#d97706;font-weight:700;"> (할인 -${Number(summary.discountAmount).toLocaleString()}원 차감)</span>` : ''} | 부가세: <strong>${((rec.settlement?.vatType === 'free') || (summary.vatType === 'free')) ? '0원 (면세)' : (((summary.finalVat !== undefined ? summary.finalVat : summary.totalVat) || 0).toLocaleString() + '원 (10%)')}</strong>
                   </div>
                   <div style="font-size:11px;color:#0284c7;margin-top:3px;">입금계좌: 우리은행 1002-000-000000 (예금주: 최○○ / 프린터모아)</div>
                   <div style="margin-top:5px;font-size:11px;color:#334155;display:flex;gap:12px;flex-wrap:wrap;">
@@ -3453,7 +3629,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   </div>
                 </div>
                 <div style="text-align:right;">
-                  <span style="font-size:13px;color:#475569;font-weight:600;">이번달 총 청구금액(VAT포함):</span>
+                  <span style="font-size:13px;color:#475569;font-weight:600;">이번달 총 청구금액${((rec.settlement?.vatType === 'free') || (summary.vatType === 'free')) ? '(면세)' : '(VAT포함)'}:</span>
                   <div style="font-size:22px;font-weight:800;color:#0f172a;">${((summary.finalBill !== undefined ? summary.finalBill : summary.totalBill) || 0).toLocaleString()} 원</div>
                 </div>
               </div>
