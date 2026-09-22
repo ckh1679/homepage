@@ -1938,6 +1938,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const devExtraTotal = bwExtra + colorExtra;
         const devSupplyBeforeDiscount = baseRent + devExtraTotal;
+        const devSupply = Math.max(0, devSupplyBeforeDiscount - devDiscount);
         const isFree = (document.getElementById('clVatType')?.value === 'free');
         const devTotal = isFree ? devSupply : Math.round(devSupply * 1.1);
 
@@ -2010,6 +2011,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (elSup)   elSup.textContent   = sumSupply.toLocaleString() + '원';
       if (elVat)   elVat.textContent   = isFormFree ? '0원 (면세)' : (sumVat.toLocaleString() + '원');
       if (elTotal) elTotal.textContent = sumTotal.toLocaleString() + '원';
+    },
+
+    // 폼 요약 업데이트 (별칭)
+    updateFormSummary() {
+      this.updateCalcPreview();
     },
 
     // 거래처 및 임대 장비 저장 (신규 등록 및 수정 완벽 지원)
