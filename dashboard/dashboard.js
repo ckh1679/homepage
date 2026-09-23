@@ -4499,7 +4499,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // ============================================
-  // 임대 관리 달력 모듈 (RentalCalendarManager)
+  // 통합업무달력 모듈 (RentalCalendarManager)
   // 계약일자(일) 기준 세금계산서 발행 및 수금 관리 달력
   // ============================================
   const RentalCalendarManager = {
