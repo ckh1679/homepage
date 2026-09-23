@@ -1412,6 +1412,51 @@ document.addEventListener('DOMContentLoaded', () => {
       this.renderTable();
     },
 
+    // 이전 달 문자열 반환 (YYYY-MM -> 1달 전 YYYY-MM)
+    getPrevMonthStr(monthStr) {
+      if (!monthStr || !monthStr.includes('-')) return this.getCurrentMonthStr();
+      const parts = monthStr.split('-');
+      let y = parseInt(parts[0], 10);
+      let m = parseInt(parts[1], 10) - 1;
+      if (m < 1) {
+        y -= 1;
+        m = 12;
+      }
+      return `${y}-${String(m).padStart(2, '0')}`;
+    },
+
+    // 다음 달 문자열 반환 (YYYY-MM -> 1달 후 YYYY-MM)
+    getNextMonthStr(monthStr) {
+      if (!monthStr || !monthStr.includes('-')) return this.getCurrentMonthStr();
+      const parts = monthStr.split('-');
+      let y = parseInt(parts[0], 10);
+      let m = parseInt(parts[1], 10) + 1;
+      if (m > 12) {
+        y += 1;
+        m = 1;
+      }
+      return `${y}-${String(m).padStart(2, '0')}`;
+    },
+
+    // 특정 월 기준 직전 검침 레코드 찾기
+    getPreviousMeterRecord(clientId, currentMonth) {
+      const history = this.getMeterHistory();
+      const prevMonth = this.getPrevMonthStr(currentMonth);
+
+      // 1순위: 바로 직전달 레코드
+      let prevRecord = history.find(h => String(h.clientId) === String(clientId) && h.month === prevMonth);
+      if (prevRecord) return prevRecord;
+
+      // 2순위: 현재 월보다 이전인 가장 최근의 검침 레코드
+      const earlierRecords = history.filter(h => String(h.clientId) === String(clientId) && h.month < currentMonth);
+      if (earlierRecords.length > 0) {
+        earlierRecords.sort((a, b) => b.month.localeCompare(a.month));
+        return earlierRecords[0];
+      }
+
+      return null;
+    },
+
     // 현재 연월 YYYY-MM
     getCurrentMonthStr() {
       const d = new Date();
@@ -1424,14 +1469,39 @@ document.addEventListener('DOMContentLoaded', () => {
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     },
 
-    // 거래처 데이터로부터 당월(또는 지정월) 검침 스냅샷 생성 및 동기화
+    // 거래처 데이터로부터 당월(또는 지정월) 검침 스냅샷 생성 및 동기화 (직전달 당월누적 자동 승계)
     syncMeterFromClient(client, targetMonth = null) {
       if (!client || !client.id) return null;
       const month = targetMonth || this.getCurrentMonthStr();
       const history = this.getMeterHistory();
+      const prevRecord = this.getPreviousMeterRecord(client.id, month);
 
-      const devices = (client.devices || []).map(d => {
-        const dc = this.calcDevice(d);
+      const devices = (client.devices || []).map((d, dIdx) => {
+        // 직전월 검침 레코드의 장비와 매칭하여 당월 누적치를 전월 누적치로 승계
+        let matchedPrevDev = null;
+        if (prevRecord && prevRecord.devices) {
+          matchedPrevDev = prevRecord.devices.find(pd => String(pd.id) === String(d.id)) || prevRecord.devices[dIdx];
+        }
+
+        // 직전월 당월누적 카운터가 유효하면 전월누적으로 승계
+        let effectiveBwPrev = Number(d.bwPrev) || 0;
+        let effectiveColorPrev = Number(d.colorPrev) || 0;
+        if (matchedPrevDev) {
+          if (matchedPrevDev.bwTotal !== undefined && Number(matchedPrevDev.bwTotal) > 0) {
+            effectiveBwPrev = Number(matchedPrevDev.bwTotal);
+          }
+          if (matchedPrevDev.colorTotal !== undefined && Number(matchedPrevDev.colorTotal) > 0) {
+            effectiveColorPrev = Number(matchedPrevDev.colorTotal);
+          }
+        }
+
+        const devWithInheritedPrev = {
+          ...d,
+          bwPrev: effectiveBwPrev,
+          colorPrev: effectiveColorPrev
+        };
+
+        const dc = this.calcDevice(devWithInheritedPrev, client.vatType || 'tax');
         const loc = d.location || (d.serial && d.serial.includes('/') ? d.serial.split('/')[1].trim() : '') || '메인 사무실';
         const sn = d.serial && d.serial.includes('/') ? d.serial.split('/')[0].trim() : (d.serial || '-');
         return {
@@ -3383,15 +3453,66 @@ document.addEventListener('DOMContentLoaded', () => {
         discountInput.value = initDiscount > 0 ? initDiscount : '';
       }
 
+      const prevRecord = this.getPreviousMeterRecord(clientId, month);
+      const prevMonthStr = prevRecord ? prevRecord.month : null;
+      let prevMonthLabel = '';
+      if (prevMonthStr) {
+        const [py, pm] = prevMonthStr.split('-');
+        prevMonthLabel = `${parseInt(pm, 10)}월`;
+      }
+
       const rawDevices = (record.devices && record.devices.length > 0) ? record.devices : (client.devices || []);
-      const devices = rawDevices.map(d => {
+      const devices = rawDevices.map((d, dIdx) => {
         const matchedClientDev = (client.devices || []).find(cd => String(cd.id) === String(d.id));
         const devDiscount = (d.discount !== undefined && d.discount !== null && Number(d.discount) > 0)
           ? Number(d.discount)
           : (matchedClientDev ? (Number(matchedClientDev.discount) || 0) : 0);
+
+        // 직전월 검침 레코드의 장비와 매칭하여 당월 누적치를 전월 누적치로 승계
+        let matchedPrevDev = null;
+        if (prevRecord && prevRecord.devices) {
+          matchedPrevDev = prevRecord.devices.find(pd => String(pd.id) === String(d.id)) || prevRecord.devices[dIdx];
+        }
+
+        let effectiveBwPrev = Number(d.bwPrev) || 0;
+        let effectiveColorPrev = Number(d.colorPrev) || 0;
+        let inheritedFromPrev = false;
+
+        // 직전월의 당월 누적치가 존재하고 유효한 경우, 현재 전월 누적으로 승계
+        if (matchedPrevDev) {
+          if (matchedPrevDev.bwTotal !== undefined && Number(matchedPrevDev.bwTotal) > 0) {
+            effectiveBwPrev = Number(matchedPrevDev.bwTotal);
+            inheritedFromPrev = true;
+          }
+          if (matchedPrevDev.colorTotal !== undefined && Number(matchedPrevDev.colorTotal) > 0) {
+            effectiveColorPrev = Number(matchedPrevDev.colorTotal);
+            inheritedFromPrev = true;
+          }
+        }
+
+        const effectiveBwTotal = d.bwTotal !== undefined ? Number(d.bwTotal) : 0;
+        const effectiveColorTotal = d.colorTotal !== undefined ? Number(d.colorTotal) : 0;
+
+        let bwUsed = d.bwUsed !== undefined ? Number(d.bwUsed) : 0;
+        if (effectiveBwTotal > 0 && effectiveBwTotal >= effectiveBwPrev) {
+          bwUsed = effectiveBwTotal - effectiveBwPrev;
+        }
+
+        let colorUsed = d.colorUsed !== undefined ? Number(d.colorUsed) : 0;
+        if (effectiveColorTotal > 0 && effectiveColorTotal >= effectiveColorPrev) {
+          colorUsed = effectiveColorTotal - effectiveColorPrev;
+        }
+
         return {
           ...d,
-          discount: devDiscount
+          discount: devDiscount,
+          bwPrev: effectiveBwPrev,
+          bwTotal: effectiveBwTotal,
+          bwUsed: bwUsed,
+          colorPrev: effectiveColorPrev,
+          colorTotal: effectiveColorTotal,
+          colorUsed: colorUsed,
+          inheritedFromPrev: inheritedFromPrev
         };
       });
 
@@ -3403,6 +3524,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <strong style="color:#0f172a;font-size:14px;">장비 #${dIdx + 1}: ${escapeHtml(d.name || '-')}</strong>
                 <span style="font-size:12px;color:#64748b;margin-left:8px;">[설치장소: ${escapeHtml(d.location || '메인 사무실')} | S/N: ${escapeHtml(d.serial || '-')}]</span>
                 ${(d.discount || 0) > 0 ? `<span style="font-size:11px;color:#d97706;font-weight:700;margin-left:8px;background:#fef3c7;padding:2px 6px;border-radius:4px;"><i class="fa fa-tag"></i> 장비할인 -${Number(d.discount).toLocaleString()}원</span>` : ''}
+                ${d.inheritedFromPrev && prevMonthLabel ? `<span style="font-size:11px;color:#0284c7;background:#e0f2fe;padding:2px 6px;border-radius:4px;font-weight:600;margin-left:8px;"><i class="fa fa-link"></i> ${prevMonthLabel} 당월누적 자동연동</span>` : ''}
               </div>
               <div style="font-size:13px;color:#0284c7;font-weight:700;">
                 월 기본료: ${Number(d.baseRent || 0).toLocaleString()}원
@@ -3423,7 +3545,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
               </div>
               <div class="meter-input-group">
-                <label>전월 흑백 누적 (장)</label>
+                <label>전월 흑백 누적 (장) ${d.inheritedFromPrev && prevMonthLabel ? `<span style="font-size:10.5px;color:#0284c7;font-weight:600;">(${prevMonthLabel} 자동연동)</span>` : ''}</label>
                 <input type="number" class="m-dev-bwPrev" value="${d.bwPrev !== undefined ? d.bwPrev : 0}" min="0" oninput="ClientManager.updateMeterModalUsage(this, 'bw')">
               </div>
               <div class="meter-input-group">
@@ -3445,7 +3567,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
               </div>
               <div class="meter-input-group">
-                <label>전월 컬러 누적 (장)</label>
+                <label>전월 컬러 누적 (장) ${d.inheritedFromPrev && prevMonthLabel ? `<span style="font-size:10.5px;color:#0284c7;font-weight:600;">(${prevMonthLabel} 자동연동)</span>` : ''}</label>
                 <input type="number" class="m-dev-colorPrev" value="${d.colorPrev !== undefined ? d.colorPrev : 0}" min="0" oninput="ClientManager.updateMeterModalUsage(this, 'color')">
               </div>
               <div class="meter-input-group">
@@ -3761,10 +3883,127 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         history.push(record);
       }
+
+      // ══════════════════════════════════════════════════════════════════
+      // 다음달(N+1월) 검침 레코드의 전월 누적(bwPrev, colorPrev) 연쇄 자동 갱신
+      // ══════════════════════════════════════════════════════════════════
+      const nextMonth = this.getNextMonthStr(month);
+      const nextRecordIdx = history.findIndex(h => String(h.clientId) === String(clientId) && h.month === nextMonth);
+      let updatedNextMonth = false;
+
+      if (nextRecordIdx !== -1) {
+        const nextRec = history[nextRecordIdx];
+        const nextVatType = (nextRec.settlement && nextRec.settlement.vatType) || (nextRec.summary && nextRec.summary.vatType) || 'tax';
+
+        let nextSumBase = 0, nextSumBwExtra = 0, nextSumColorExtra = 0;
+        const updatedNextDevices = (nextRec.devices || []).map((nd, ndIdx) => {
+          const matchedDev = devices.find(d => String(d.id) === String(nd.id)) || devices[ndIdx];
+          let nextBwPrev = Number(nd.bwPrev) || 0;
+          let nextColorPrev = Number(nd.colorPrev) || 0;
+
+          if (matchedDev) {
+            if (matchedDev.bwTotal !== undefined && Number(matchedDev.bwTotal) > 0) {
+              nextBwPrev = Number(matchedDev.bwTotal);
+            }
+            if (matchedDev.colorTotal !== undefined && Number(matchedDev.colorTotal) > 0) {
+              nextColorPrev = Number(matchedDev.colorTotal);
+            }
+          }
+
+          const devToRecalc = {
+            ...nd,
+            bwPrev: nextBwPrev,
+            colorPrev: nextColorPrev
+          };
+          const dc = this.calcDevice(devToRecalc, nextVatType);
+          nextSumBase += dc.baseRent;
+          nextSumBwExtra += dc.bwExtra;
+          nextSumColorExtra += dc.colorExtra;
+
+          return {
+            ...nd,
+            baseRent: dc.baseRent,
+            bwBase: dc.bwBase,
+            bwUnit: dc.bwUnit,
+            bwPrev: dc.bwPrev,
+            bwTotal: dc.bwTotal,
+            bwUsed: dc.bwUsed,
+            bwOver: dc.bwOver,
+            bwExtra: dc.bwExtra,
+            colorBase: dc.colorBase,
+            colorUnit: dc.colorUnit,
+            colorPrev: dc.colorPrev,
+            colorTotal: dc.colorTotal,
+            colorUsed: dc.colorUsed,
+            colorOver: dc.colorOver,
+            colorExtra: dc.colorExtra,
+            totalUsage: dc.totalUsage,
+            supply: dc.supply,
+            vat: dc.vat,
+            total: dc.total
+          };
+        });
+
+        const nextSupply = nextSumBase + nextSumBwExtra + nextSumColorExtra;
+        const nextDiscount = Number(nextRec.settlement?.discountAmount || nextRec.summary?.discountAmount || 0);
+        const nextDiscountedSupply = Math.max(0, nextSupply - nextDiscount);
+        const nextFinalVat = (nextVatType === 'free') ? 0 : Math.round(nextDiscountedSupply * 0.1);
+        const nextFinalBill = nextDiscountedSupply + nextFinalVat;
+
+        nextRec.devices = updatedNextDevices;
+        nextRec.summary = {
+          ...(nextRec.summary || {}),
+          totalBaseRent: nextSumBase,
+          totalExtra: nextSumBwExtra + nextSumColorExtra,
+          totalBwExtra: nextSumBwExtra,
+          totalColorExtra: nextSumColorExtra,
+          totalRawSupply: nextSupply,
+          totalSupply: nextSupply,
+          totalVat: (nextVatType === 'free') ? 0 : Math.round(nextSupply * 0.1),
+          discountAmount: nextDiscount,
+          discountedSupply: nextDiscountedSupply,
+          finalVat: nextFinalVat,
+          finalBill: nextFinalBill,
+          totalMonthBill: nextFinalBill
+        };
+
+        if (nextRec.settlement) {
+          nextRec.settlement.discountedSupply = nextDiscountedSupply;
+          nextRec.settlement.finalVat = nextFinalVat;
+          nextRec.settlement.finalBill = nextFinalBill;
+          const curPaid = Number(nextRec.settlement.paidAmount || 0);
+          nextRec.settlement.unpaidAmount = Math.max(0, nextFinalBill - curPaid);
+        }
+        nextRec.updatedAt = new Date().toISOString();
+        history[nextRecordIdx] = nextRec;
+        updatedNextMonth = true;
+      }
       this.saveMeterHistory(history);
 
-      // 현재 기준월이면 거래처 기본 장비 계수기 및 할인, 부가세 설정에도 즉시 동기화 반영
-      if (month === this.getCurrentMonthStr()) {
+      // 다음달이 현재 당월이거나 현재 저장 중인 월이 당월인 경우, 마스터 clients에도 동기화
+      if (nextMonth === this.getCurrentMonthStr()) {
+        const cIdx = clients.findIndex(c => String(c.id) === String(clientId));
+        if (cIdx !== -1) {
+          clients[cIdx].devices = (clients[cIdx].devices || []).map((cd, cdIdx) => {
+            const matched = devices.find(d => String(d.id) === String(cd.id)) || devices[cdIdx];
+            if (matched) {
+              const newBwPrev = Number(matched.bwTotal) > 0 ? Number(matched.bwTotal) : cd.bwPrev;
+              const newColorPrev = Number(matched.colorTotal) > 0 ? Number(matched.colorTotal) : cd.colorPrev;
+              const cdBwTotal = Number(cd.bwTotal) || 0;
+              const cdColorTotal = Number(cd.colorTotal) || 0;
+              return {
+                ...cd,
+                bwPrev: newBwPrev,
+                colorPrev: newColorPrev,
+                bwUsed: (cdBwTotal > 0 && cdBwTotal >= newBwPrev) ? (cdBwTotal - newBwPrev) : cd.bwUsed,
+                colorUsed: (cdColorTotal > 0 && cdColorTotal >= newColorPrev) ? (cdColorTotal - newColorPrev) : cd.colorUsed
+              };
+            }
+            return cd;
+          });
+          this.saveClients(clients);
+        }
+      } else if (month === this.getCurrentMonthStr()) {
         const cIdx = clients.findIndex(c => String(c.id) === String(clientId));
         if (cIdx !== -1) {
           clients[cIdx].vatType = vatType;
@@ -3794,7 +4033,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       this.closeMeterModal();
       this.selectedMonth = month; // 저장한 월로 뷰 기준월 유지
-      alert(`[${client.name}]의 ${month} 검침내역이 성공적으로 저장되었습니다.`);
+      const [mY, mM] = month.split('-');
+      const [nmY, nmM] = nextMonth.split('-');
+      let alertMsg = `[${client.name}]의 ${parseInt(mM, 10)}월 검침내역이 성공적으로 저장되었습니다.`;
+      if (updatedNextMonth) {
+        alertMsg += `\n(※ 다음달인 ${parseInt(nmM, 10)}월 전월 누적 카운터에도 자동 연동되었습니다.)`;
+      }
+      alert(alertMsg);
       this.renderTable();
       if (window.ProfitManager) window.ProfitManager.render();
     },
