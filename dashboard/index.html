@@ -203,9 +203,35 @@
 
         <!-- ====== 거래처 관리 ====== -->
         <section id="page-clients" class="page-section">
-          <div class="page-title">
-            <h2><i class="fa fa-building" style="margin-right:10px;color:var(--accent-primary);"></i>월별 거래처관리</h2>
-            <p>복합기·프린터 렌탈 거래처와 다중 임대 장비, 이번달 사용량 및 정산 금액을 통합 관리합니다.</p>
+          <div class="page-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+            <div>
+              <h2><i class="fa fa-building" style="margin-right:10px;color:var(--accent-primary);"></i>월별 거래처관리</h2>
+              <p>복합기·프린터 렌탈 거래처와 다중 임대 장비, 월별 사용량 및 정산 금액을 통합 관리합니다.</p>
+            </div>
+
+            <!-- 월 선택 및 이동 네비게이터 바 -->
+            <div class="month-navigator-card" style="display:flex;align-items:center;gap:8px;background:rgba(30,41,59,0.85);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.15);padding:6px 14px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.25);">
+              <button type="button" class="btn-action-icon" style="color:#cbd5e1;width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;cursor:pointer;" onclick="ClientManager.changeMonth(-1)" title="이전달 이동">
+                <i class="fa fa-chevron-left"></i>
+              </button>
+
+              <div style="display:flex;align-items:center;gap:8px;">
+                <i class="fa fa-calendar-alt" style="color:var(--accent-primary);font-size:16px;"></i>
+                <input type="month" id="clientViewMonthInput" style="background:transparent;border:1px solid rgba(255,255,255,0.2);color:#ffffff;font-weight:700;font-size:15px;cursor:pointer;outline:none;font-family:inherit;padding:4px 8px;border-radius:6px;" onchange="ClientManager.setMonth(this.value)" title="조회할 연월 선택">
+              </div>
+
+              <button type="button" class="btn-action-icon" style="color:#cbd5e1;width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;cursor:pointer;" onclick="ClientManager.changeMonth(1)" title="다음달 이동">
+                <i class="fa fa-chevron-right"></i>
+              </button>
+
+              <button type="button" class="btn-primary-sm" id="clientBtnResetMonth" style="padding:6px 12px;font-size:12px;background:rgba(59,130,246,0.25);border:1px solid rgba(59,130,246,0.5);color:#93c5fd;border-radius:6px;cursor:pointer;white-space:nowrap;font-weight:600;" onclick="ClientManager.resetToCurrentMonth()" title="현재 당월로 즉시 복귀">
+                <i class="fa fa-undo-alt" style="font-size:11px;margin-right:4px;"></i>당월
+              </button>
+
+              <span id="clientPastMonthBadge" style="display:none;background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px;white-space:nowrap;">
+                <i class="fa fa-history"></i> 이전월 현황
+              </span>
+            </div>
           </div>
 
           <!-- 통계 지표 카드 4종 -->
@@ -229,17 +255,17 @@
             <div class="stat-card">
               <div class="stat-icon success"><i class="fa fa-won-sign"></i></div>
               <div class="stat-details">
-                <div class="stat-title">이번달 총 청구예정액</div>
+                <div class="stat-title" id="clientStatMonthBillTitle">이번달 총 청구예정액</div>
                 <div class="stat-value" id="clientStatMonthBill">0원</div>
-                <div class="stat-trend trend-up">공급가액 + V.A.T 포함</div>
+                <div class="stat-trend trend-up" id="clientStatMonthBillSub">공급가액 + V.A.T 포함</div>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-icon warning"><i class="fa fa-receipt"></i></div>
               <div class="stat-details">
-                <div class="stat-title">금월 누적 결제금액</div>
+                <div class="stat-title" id="clientStatTotalPaidTitle">금월 누적 결제금액</div>
                 <div class="stat-value" id="clientStatTotalPaid">0원</div>
-                <div class="stat-trend trend-up">완납 업체 결제합계</div>
+                <div class="stat-trend trend-up" id="clientStatTotalPaidSub">완납 업체 결제합계</div>
               </div>
             </div>
           </div>
@@ -269,14 +295,14 @@
                   <i class="fa fa-file-excel"></i> 엑셀 일괄 등록
                 </button>
 
-                <!-- 이번달 검침 엑셀 다운로드 버튼 -->
-                <button class="btn-primary-sm" style="background:linear-gradient(135deg,#059669,#047857);" onclick="ClientManager.exportMeterToExcel()" title="이번달 거래처별 전체 검침 상세 엑셀 다운로드">
-                  <i class="fa fa-file-excel"></i> 이번달 검침 엑셀
+                <!-- 선택월 검침 엑셀 다운로드 버튼 -->
+                <button class="btn-primary-sm" id="clientBtnExportMeter" style="background:linear-gradient(135deg,#059669,#047857);" onclick="ClientManager.exportMeterToExcel()" title="선택월 거래처별 전체 검침 상세 엑셀 다운로드">
+                  <i class="fa fa-file-excel"></i> <span id="clientBtnExportMeterText">검침 엑셀 다운</span>
                 </button>
 
-                <!-- 이번달 검침 PDF/인쇄 버튼 -->
-                <button class="btn-primary-sm" style="background:linear-gradient(135deg,#dc2626,#b91c1c);" onclick="ClientManager.printAllMeterReports()" title="이번달 거래처별 검침 청구서 통합 인쇄 및 PDF 저장">
-                  <i class="fa fa-file-pdf"></i> 이번달 검침 PDF/인쇄
+                <!-- 선택월 검침 PDF/인쇄 버튼 -->
+                <button class="btn-primary-sm" id="clientBtnPrintMeter" style="background:linear-gradient(135deg,#dc2626,#b91c1c);" onclick="ClientManager.printAllMeterReports()" title="선택월 거래처별 검침 청구서 통합 인쇄 및 PDF 저장">
+                  <i class="fa fa-file-pdf"></i> <span id="clientBtnPrintMeterText">검침 PDF/인쇄</span>
                 </button>
 
                 <!-- 월별 정산 히스토리 및 비교 차트 버튼 -->
