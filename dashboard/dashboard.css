@@ -1605,6 +1605,190 @@ ul { list-style: none; }
   border: 1px solid rgba(248, 113, 113, 0.4);
 }
 
+/* ========================================================
+   임대 관리 월별 정산 & 수금 캘린더 스타일
+   ======================================================== */
+.rental-calendar-wrap {
+  width: 100%;
+  min-width: 900px;
+}
+
+.rental-cal-dow-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.rental-cal-dow {
+  padding: 10px 8px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.rental-cal-dow.sun { color: #f87171; }
+.rental-cal-dow.sat { color: #60a5fa; }
+.rental-cal-dow.weekday { color: #cbd5e1; }
+
+.rental-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.rental-cal-cell {
+  min-height: 125px;
+  background: rgba(30, 41, 59, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.rental-cal-cell:hover {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.rental-cal-cell.other-month {
+  opacity: 0.25;
+  background: rgba(15, 23, 42, 0.2);
+}
+
+.rental-cal-cell.today {
+  border: 1.5px solid #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
+}
+
+.rental-cal-date-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rental-cal-day-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+.rental-cal-cell.sun .rental-cal-day-num { color: #f87171; }
+.rental-cal-cell.sat .rental-cal-day-num { color: #60a5fa; }
+
+.rental-cal-today-badge {
+  font-size: 10px;
+  background: #3b82f6;
+  color: #ffffff;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.rental-cal-count-badge {
+  font-size: 10.5px;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.rental-cal-items {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex-grow: 1;
+}
+
+.rental-cal-item {
+  border-radius: 6px;
+  padding: 6px 7px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  user-select: none;
+}
+.rental-cal-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* 색상 테마: 가독성을 고려한 세련된 반투명 배경 및 선명한 텍스트 */
+.rental-cal-item.status-red {
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+.rental-cal-item.status-purple {
+  background: rgba(168, 85, 247, 0.18);
+  border: 1px solid rgba(168, 85, 247, 0.38);
+  color: #d8b4fe;
+}
+.rental-cal-item.status-green {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.38);
+  color: #6ee7b7;
+}
+.rental-cal-item.status-amber {
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.38);
+  color: #fcd34d;
+}
+
+.cal-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 3px;
+}
+
+.cal-item-name {
+  font-weight: 700;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 95px;
+}
+
+.cal-item-bill {
+  font-weight: 600;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.cal-item-badges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.cal-mini-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+.cal-mini-badge.tax-issued { background: rgba(16, 185, 129, 0.25); color: #34d399; }
+.cal-mini-badge.tax-unissued { background: rgba(239, 68, 68, 0.25); color: #f87171; }
+.cal-mini-badge.pay-paid { background: rgba(16, 185, 129, 0.25); color: #34d399; }
+.cal-mini-badge.pay-unpaid { background: rgba(239, 68, 68, 0.25); color: #f87171; }
+.cal-mini-badge.pay-partial { background: rgba(245, 158, 11, 0.25); color: #fbbf24; }
+
+
 
 
 

@@ -35,6 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
       window.updateGlobalDashboardStats && window.updateGlobalDashboardStats(false);
       window.renderHomeRecentConsults && window.renderHomeRecentConsults();
     }
+    if (pageId === 'rental-mgmt' && window.RentalCalendarManager) {
+      window.RentalCalendarManager.render();
+    }
     if (pageId === 'rental-analysis' && window.ProfitManager) {
       window.ProfitManager.render();
     }
@@ -3240,6 +3243,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       this.saveMeterHistory(history);
       this.renderTable();
+      if (window.RentalCalendarManager) window.RentalCalendarManager.render();
     },
 
     // 수금 / 미수금 상태 원클릭 토글 (미납 <-> 완납)
@@ -3290,6 +3294,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       this.saveMeterHistory(history);
       this.renderTable();
+      if (window.RentalCalendarManager) window.RentalCalendarManager.render();
     },
 
     // 검침 수정 모달 내 전액 완납 입력 바로가기
@@ -4100,6 +4105,7 @@ document.addEventListener('DOMContentLoaded', () => {
       alert(alertMsg);
       this.renderTable();
       if (window.ProfitManager) window.ProfitManager.render();
+      if (window.RentalCalendarManager) window.RentalCalendarManager.render();
     },
 
     // 검침내역 엑셀 다운로드 (단일 거래처 또는 선택월 전체 거래처)
@@ -4487,6 +4493,449 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Escape') {
           if (modal && modal.style.display === 'flex') this.closeModal();
           if (meterModal && meterModal.style.display === 'flex') this.closeMeterModal();
+        }
+      });
+    }
+  };
+
+  // ============================================
+  // 임대 관리 달력 모듈 (RentalCalendarManager)
+  // 계약일자(일) 기준 세금계산서 발행 및 수금 관리 달력
+  // ============================================
+  const RentalCalendarManager = {
+    selectedMonth: null, // 조회 기준 연월 (YYYY-MM)
+    currentModalClientId: null,
+    currentModalMonth: null,
+
+    // 현재 선택된 조회 기준월 반환
+    getSelectedMonth() {
+      if (!this.selectedMonth) {
+        this.selectedMonth = ClientManager.getCurrentMonthStr();
+      }
+      return this.selectedMonth;
+    },
+
+    // 월 이동 (-1: 이전달, +1: 다음달)
+    changeMonth(offset = 0) {
+      const cur = this.getSelectedMonth();
+      const parts = cur.split('-');
+      let year = parseInt(parts[0], 10);
+      let month = parseInt(parts[1], 10);
+
+      month += offset;
+      if (month < 1) {
+        year -= 1;
+        month = 12;
+      } else if (month > 12) {
+        year += 1;
+        month = 1;
+      }
+
+      this.selectedMonth = `${year}-${String(month).padStart(2, '0')}`;
+      this.render();
+    },
+
+    // 조회 기준월 직접 설정 (YYYY-MM)
+    setMonth(monthStr) {
+      if (!monthStr) return;
+      this.selectedMonth = monthStr;
+      this.render();
+    },
+
+    // 현재 당월로 즉시 복귀
+    resetToCurrentMonth() {
+      this.selectedMonth = ClientManager.getCurrentMonthStr();
+      this.render();
+    },
+
+    // 특정 거래처의 해당 월 정산 및 세금계산서/수금 상태 분석
+    getClientStatus(client, monthStr) {
+      const record = ClientManager.getMeterRecord(client.id, monthStr);
+      const st = record ? record.settlement : null;
+      const meterSummary = record ? record.summary : null;
+      const totals = ClientManager.calcClientTotals(client);
+
+      // 이번달 최종 청구금액
+      let curBill = 0;
+      if (st && st.finalBill !== undefined) {
+        curBill = Number(st.finalBill) || 0;
+      } else if (meterSummary && meterSummary.finalBill !== undefined) {
+        curBill = Number(meterSummary.finalBill) || 0;
+      } else {
+        curBill = totals.totalMonthBill || 0;
+      }
+
+      const paidAmount = st ? (Number(st.paidAmount) || 0) : 0;
+      const unpaidAmount = Math.max(0, curBill - paidAmount);
+
+      // 세금계산서 발행 여부
+      const taxStatus = (st && st.taxStatus) ? st.taxStatus : 'unissued';
+      const isTaxIssued = (taxStatus === 'issued' || taxStatus === 'cashReceipt' || taxStatus === 'na');
+
+      // 수금 완료 여부
+      const isPaid = (paidAmount >= curBill && curBill > 0);
+      const isPartial = (!isPaid && paidAmount > 0);
+
+      // 사용자 지정 배경 색상 분류:
+      // 1) 계산서 미발행 / 수금 미완료: 붉은 계열 (status-red)
+      // 2) 계산서 미발행 / 수금 완료: 보라색 계열 (status-purple)
+      // 3) 계산서 발행 / 수금 완료: 녹색 계열 (status-green)
+      // 4) 계산서 발행 / 수금 미완료: 주황 계열 (status-amber)
+      let statusClass = 'status-red';
+      let statusLabel = '미발행 · 미수금';
+
+      if (!isTaxIssued && !isPaid) {
+        statusClass = 'status-red';
+        statusLabel = isPartial ? '미발행 · 부분수금' : '미발행 · 미수금';
+      } else if (!isTaxIssued && isPaid) {
+        statusClass = 'status-purple';
+        statusLabel = '미발행 · 완납';
+      } else if (isTaxIssued && isPaid) {
+        statusClass = 'status-green';
+        statusLabel = '발행완료 · 완납';
+      } else if (isTaxIssued && !isPaid) {
+        statusClass = 'status-amber';
+        statusLabel = isPartial ? '발행완료 · 부분수금' : '발행완료 · 미수금';
+      }
+
+      return {
+        record,
+        curBill,
+        paidAmount,
+        unpaidAmount,
+        taxStatus,
+        isTaxIssued,
+        isPaid,
+        isPartial,
+        statusClass,
+        statusLabel
+      };
+    },
+
+    // 캘린더 및 상단 요약 전체 렌더링
+    render() {
+      const container = document.getElementById('rentalCalendarContainer');
+      const summaryCards = document.getElementById('rentalCalSummaryCards');
+      const monthInput = document.getElementById('rentalCalMonthInput');
+      if (!container) return;
+
+      const curMonth = this.getSelectedMonth();
+      if (monthInput) monthInput.value = curMonth;
+
+      const [yearStr, monthStr] = curMonth.split('-');
+      const year = parseInt(yearStr, 10);
+      const month = parseInt(monthStr, 10);
+
+      // 전체 거래처 중 해당 월에 계약 시작일 이후로 유효한 거래처만 필터링
+      const allClients = ClientManager.getClients();
+      const activeClients = allClients.filter(c => ClientManager.isClientActiveInMonth(c, curMonth));
+
+      // 상단 요약 지표 집계 변수
+      let totalBillSum = 0;
+      let totalPaidSum = 0;
+      let countRed = 0;     // 미발행 & 미완료
+      let sumRedBill = 0;
+      let countPurple = 0;  // 미발행 & 완납
+      let sumPurpleBill = 0;
+      let countGreen = 0;   // 발행 & 완납
+      let sumGreenBill = 0;
+      let countAmber = 0;   // 발행 & 미완료
+      let sumAmberBill = 0;
+
+      // 해당 월 날짜 수 및 첫날 요일
+      const firstDayIndex = new Date(year, month - 1, 1).getDay(); // 0(일) ~ 6(토)
+      const lastDate = new Date(year, month, 0).getDate(); // 해당 월 마지막 날 (28~31)
+      const prevMonthLastDate = new Date(year, month - 1, 0).getDate();
+
+      // 날짜(1~lastDate)별 거래처 매핑
+      const dayMap = {};
+      for (let d = 1; d <= lastDate; d++) {
+        dayMap[d] = [];
+      }
+
+      activeClients.forEach(client => {
+        const info = this.getClientStatus(client, curMonth);
+
+        totalBillSum += info.curBill;
+        totalPaidSum += info.paidAmount;
+
+        if (info.statusClass === 'status-green') {
+          countGreen++;
+          sumGreenBill += info.curBill;
+        } else if (info.statusClass === 'status-purple') {
+          countPurple++;
+          sumPurpleBill += info.curBill;
+        } else if (info.statusClass === 'status-red') {
+          countRed++;
+          sumRedBill += info.curBill;
+        } else if (info.statusClass === 'status-amber') {
+          countAmber++;
+          sumAmberBill += info.curBill;
+        }
+
+        // 계약 시작일의 일(Day) 추출
+        let targetDay = 1;
+        if (client.contractDate && typeof client.contractDate === 'string' && client.contractDate.includes('-')) {
+          const parts = client.contractDate.trim().split('-');
+          if (parts[2]) {
+            targetDay = parseInt(parts[2], 10) || 1;
+          }
+        }
+        // 월말 일수 초과 보정
+        targetDay = Math.min(Math.max(1, targetDay), lastDate);
+
+        dayMap[targetDay].push({ client, info });
+      });
+
+      // ── 1. 상단 요약 카드 렌더링 ──
+      if (summaryCards) {
+        summaryCards.innerHTML = `
+          <!-- 총 관리 거래처 -->
+          <div class="stat-card" style="border-top:3px solid var(--accent-primary);">
+            <div class="stat-icon primary"><i class="fa fa-building"></i></div>
+            <div class="stat-details">
+              <div class="stat-title">${month}월 관리 대상 거래처</div>
+              <div class="stat-value">${activeClients.length}<span style="font-size:16px;font-weight:600;color:var(--text-muted);margin-left:4px;">개사</span></div>
+              <div class="stat-trend" style="color:#94a3b8;font-size:12px;">
+                총 청구예정: <strong style="color:#fff;">${totalBillSum.toLocaleString()}원</strong> (수금: ${totalPaidSum.toLocaleString()}원)
+              </div>
+            </div>
+          </div>
+
+          <!-- 계산서 미발행 / 수금 미완료 (붉은색) -->
+          <div class="stat-card" style="border-top:3px solid #ef4444;background:rgba(239,68,68,0.06);">
+            <div class="stat-icon" style="background:rgba(239,68,68,0.2);color:#f87171;"><i class="fa fa-exclamation-circle"></i></div>
+            <div class="stat-details">
+              <div class="stat-title" style="color:#f87171;font-weight:700;">미발행 · 수금미완료 (붉은 계열)</div>
+              <div class="stat-value" style="color:#f87171;">${countRed}<span style="font-size:16px;font-weight:600;margin-left:4px;">개사</span></div>
+              <div class="stat-trend" style="color:#fca5a5;font-size:12px;">
+                미수금 총액: <strong>${sumRedBill.toLocaleString()}원</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- 계산서 미발행 / 수금 완료 (보라색) -->
+          <div class="stat-card" style="border-top:3px solid #a855f7;background:rgba(168,85,247,0.06);">
+            <div class="stat-icon" style="background:rgba(168,85,247,0.2);color:#c084fc;"><i class="fa fa-receipt"></i></div>
+            <div class="stat-details">
+              <div class="stat-title" style="color:#c084fc;font-weight:700;">미발행 · 수금완료 (보라 계열)</div>
+              <div class="stat-value" style="color:#c084fc;">${countPurple}<span style="font-size:16px;font-weight:600;margin-left:4px;">개사</span></div>
+              <div class="stat-trend" style="color:#d8b4fe;font-size:12px;">
+                계산서 필요: <strong>${sumPurpleBill.toLocaleString()}원</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- 계산서 발행 / 수금 완료 (녹색) -->
+          <div class="stat-card" style="border-top:3px solid #10b981;background:rgba(16,185,129,0.06);">
+            <div class="stat-icon success" style="background:rgba(16,185,129,0.2);color:#34d399;"><i class="fa fa-check-double"></i></div>
+            <div class="stat-details">
+              <div class="stat-title" style="color:#34d399;font-weight:700;">발행완료 · 수금완료 (녹색 계열)</div>
+              <div class="stat-value" style="color:#34d399;">${countGreen}<span style="font-size:16px;font-weight:600;margin-left:4px;">개사</span></div>
+              <div class="stat-trend" style="color:#6ee7b7;font-size:12px;">
+                완료 금액: <strong>${sumGreenBill.toLocaleString()}원</strong>
+                ${countAmber > 0 ? `<span style="margin-left:8px;color:#fcd34d;">(발행/미수 ${countAmber}건)</span>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // ── 2. 달력 그리드 HTML 생성 ──
+      const todayStr = ClientManager.getTodayStr();
+      const [todayY, todayM, todayD] = todayStr.split('-').map(Number);
+      const isCurrentMonthView = (todayY === year && todayM === month);
+
+      const dowNames = [
+        { name: '일 (SUN)', cls: 'sun' },
+        { name: '월 (MON)', cls: 'weekday' },
+        { name: '화 (TUE)', cls: 'weekday' },
+        { name: '수 (WED)', cls: 'weekday' },
+        { name: '목 (THU)', cls: 'weekday' },
+        { name: '금 (FRI)', cls: 'weekday' },
+        { name: '토 (SAT)', cls: 'sat' }
+      ];
+
+      let calHtml = `
+        <div class="rental-cal-dow-row">
+          ${dowNames.map(d => `<div class="rental-cal-dow ${d.cls}">${d.name}</div>`).join('')}
+        </div>
+        <div class="rental-cal-grid">
+      `;
+
+      // 1) 이전 달 빈 칸
+      for (let i = 0; i < firstDayIndex; i++) {
+        const prevDayNum = prevMonthLastDate - firstDayIndex + 1 + i;
+        calHtml += `
+          <div class="rental-cal-cell other-month">
+            <div class="rental-cal-date-bar">
+              <span class="rental-cal-day-num">${prevDayNum}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      // 2) 이번 달 날짜들
+      for (let day = 1; day <= lastDate; day++) {
+        const dateObj = new Date(year, month - 1, day);
+        const dayOfWeek = dateObj.getDay();
+        const isToday = isCurrentMonthView && (day === todayD);
+        const dayOfWeekCls = dayOfWeek === 0 ? 'sun' : (dayOfWeek === 6 ? 'sat' : '');
+
+        const itemsForDay = dayMap[day] || [];
+        const countBadge = itemsForDay.length > 0
+          ? `<span class="rental-cal-count-badge">${itemsForDay.length}건</span>`
+          : '';
+
+        calHtml += `
+          <div class="rental-cal-cell ${isToday ? 'today' : ''} ${dayOfWeekCls}">
+            <div class="rental-cal-date-bar">
+              <span class="rental-cal-day-num">${day}일</span>
+              <div style="display:flex;align-items:center;gap:4px;">
+                ${isToday ? `<span class="rental-cal-today-badge">오늘</span>` : ''}
+                ${countBadge}
+              </div>
+            </div>
+            <div class="rental-cal-items">
+              ${itemsForDay.map(it => {
+                const c = it.client;
+                const info = it.info;
+                const clientNameEsc = ClientManager.escapeHtml(c.name);
+
+                // 세금계산서 뱃지
+                const taxBadgeHtml = info.isTaxIssued
+                  ? `<span class="cal-mini-badge tax-issued"><i class="fa fa-check"></i> 발행</span>`
+                  : `<span class="cal-mini-badge tax-unissued"><i class="fa fa-clock"></i> 미발행</span>`;
+
+                // 수금 뱃지
+                const payBadgeHtml = info.isPaid
+                  ? `<span class="cal-mini-badge pay-paid"><i class="fa fa-check"></i> 완납</span>`
+                  : (info.isPartial
+                      ? `<span class="cal-mini-badge pay-partial"><i class="fa fa-adjust"></i> 부분</span>`
+                      : `<span class="cal-mini-badge pay-unpaid"><i class="fa fa-times"></i> 미납</span>`);
+
+                return `
+                  <div class="rental-cal-item ${info.statusClass}" onclick="RentalCalendarManager.openQuickModal('${c.id}', '${curMonth}', event)" title="클릭 시 세금계산서 및 수금 상태 변경\n- 거래처: ${clientNameEsc}\n- 청구액: ${info.curBill.toLocaleString()}원\n- 상태: ${info.statusLabel}">
+                    <div class="cal-item-top">
+                      <span class="cal-item-name">${clientNameEsc}</span>
+                      <span class="cal-item-bill">${info.curBill.toLocaleString()}원</span>
+                    </div>
+                    <div class="cal-item-badges">
+                      ${taxBadgeHtml}
+                      ${payBadgeHtml}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      // 3) 다음 달 날짜 채우기
+      const totalCellsSoFar = firstDayIndex + lastDate;
+      const nextMonthDays = (7 - (totalCellsSoFar % 7)) % 7;
+      for (let n = 1; n <= nextMonthDays; n++) {
+        calHtml += `
+          <div class="rental-cal-cell other-month">
+            <div class="rental-cal-date-bar">
+              <span class="rental-cal-day-num">${n}</span>
+            </div>
+          </div>
+        `;
+      }
+
+      calHtml += `</div>`;
+      container.innerHTML = calHtml;
+    },
+
+    // ── 3. 퀵 액션 모달 제어 ──
+    openQuickModal(clientId, targetMonth, event) {
+      if (event) event.stopPropagation();
+      this.currentModalClientId = clientId;
+      this.currentModalMonth = targetMonth;
+      this.updateQuickModalInfo();
+
+      const modal = document.getElementById('rentalCalQuickModal');
+      if (modal) modal.style.display = 'flex';
+    },
+
+    updateQuickModalInfo() {
+      if (!this.currentModalClientId || !this.currentModalMonth) return;
+      const client = ClientManager.getClients().find(c => String(c.id) === String(this.currentModalClientId));
+      if (!client) return;
+
+      const info = this.getClientStatus(client, this.currentModalMonth);
+      const [y, m] = this.currentModalMonth.split('-');
+      const monthNum = parseInt(m, 10);
+
+      const nameEl = document.getElementById('rcmClientName');
+      const contractEl = document.getElementById('rcmContractDate');
+      const monthEl = document.getElementById('rcmMonth');
+      const billEl = document.getElementById('rcmBill');
+      const paidEl = document.getElementById('rcmPaid');
+      const taxBadge = document.getElementById('rcmTaxBadge');
+      const payBadge = document.getElementById('rcmPayBadge');
+
+      if (nameEl) nameEl.textContent = client.name;
+      if (contractEl) contractEl.textContent = client.contractDate ? `${client.contractDate} (매월 ${parseInt(client.contractDate.split('-')[2] || 1, 10)}일)` : '미지정';
+      if (monthEl) monthEl.textContent = `${y}년 ${monthNum}월 정산분`;
+      if (billEl) billEl.textContent = info.curBill.toLocaleString() + '원';
+      if (paidEl) paidEl.textContent = info.paidAmount.toLocaleString() + '원' + (info.unpaidAmount > 0 ? ` (미수 ${info.unpaidAmount.toLocaleString()}원)` : '');
+
+      if (taxBadge) {
+        taxBadge.className = 'cal-mini-badge ' + (info.isTaxIssued ? 'tax-issued' : 'tax-unissued');
+        taxBadge.innerHTML = info.isTaxIssued ? '<i class="fa fa-check-circle"></i> 발행완료' : '<i class="fa fa-clock"></i> 미발행 (클릭하여 전환)';
+      }
+
+      if (payBadge) {
+        payBadge.className = 'cal-mini-badge ' + (info.isPaid ? 'pay-paid' : (info.isPartial ? 'pay-partial' : 'pay-unpaid'));
+        payBadge.innerHTML = info.isPaid ? '<i class="fa fa-check-circle"></i> 완납 (클릭하여 미납 전환)' : (info.isPartial ? '<i class="fa fa-adjust"></i> 부분입금 (클릭하여 전액완납)' : '<i class="fa fa-exclamation-circle"></i> 미납 (클릭하여 전액완납)');
+      }
+    },
+
+    closeQuickModal() {
+      const modal = document.getElementById('rentalCalQuickModal');
+      if (modal) modal.style.display = 'none';
+      this.currentModalClientId = null;
+      this.currentModalMonth = null;
+    },
+
+    quickToggleTax() {
+      if (!this.currentModalClientId || !this.currentModalMonth) return;
+      ClientManager.toggleTaxStatus(this.currentModalClientId, this.currentModalMonth);
+      this.updateQuickModalInfo();
+      this.render();
+    },
+
+    quickTogglePay() {
+      if (!this.currentModalClientId || !this.currentModalMonth) return;
+      ClientManager.togglePayStatus(this.currentModalClientId, this.currentModalMonth);
+      this.updateQuickModalInfo();
+      this.render();
+    },
+
+    quickOpenMeterModal() {
+      const cid = this.currentModalClientId;
+      const mon = this.currentModalMonth;
+      this.closeQuickModal();
+      if (cid && mon) {
+        ClientManager.openMeterEditModal(cid, mon);
+      }
+    },
+
+    // 초기화
+    init() {
+      const modal = document.getElementById('rentalCalQuickModal');
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) this.closeQuickModal();
+        });
+      }
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
+          this.closeQuickModal();
         }
       });
     }
@@ -6627,12 +7076,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 전역 노출
   window.ClientManager = ClientManager;
+  window.RentalCalendarManager = RentalCalendarManager;
   window.ProfitManager = ProfitManager;
   window.SettlementHistoryManager = SettlementHistoryManager;
   window.SuppliesManager = SuppliesManager;
 
   // 모듈 초기화 실행 (각 모듈 독립 실행 보장)
   try { ClientManager.init(); } catch (e) { console.error('ClientManager init error:', e); }
+  try { RentalCalendarManager.init(); } catch (e) { console.error('RentalCalendarManager init error:', e); }
   try { ProfitManager.init(); } catch (e) { console.error('ProfitManager init error:', e); }
   try { SettlementHistoryManager.init(); } catch (e) { console.error('SettlementHistoryManager init error:', e); }
   try { SuppliesManager.init(); } catch (e) { console.error('SuppliesManager init error:', e); }
