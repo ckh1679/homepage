@@ -1575,6 +1575,46 @@ document.addEventListener('DOMContentLoaded', () => {
       return record;
     },
 
+    // 거래처의 전체 월 누적 결제금액 계산 (각 월별 완납 및 입금된 금액 총합)
+    getTotalPaidForClient(clientId, curMonthRecord = null) {
+      const history = this.getMeterHistory();
+      const monthMap = new Map();
+
+      // 기존 이력에서 해당 거래처의 월별 레코드 추출
+      history.forEach(h => {
+        if (String(h.clientId) === String(clientId) && h.month) {
+          monthMap.set(h.month, h);
+        }
+      });
+
+      // 현재 화면에서 렌더링 중인 월의 최신 레코드 반영 (실시간 완납/미납 토글 즉시 반영)
+      if (curMonthRecord && curMonthRecord.month) {
+        monthMap.set(curMonthRecord.month, curMonthRecord);
+      }
+
+      let total = 0;
+      monthMap.forEach(rec => {
+        const st = rec.settlement;
+        if (!st) return;
+
+        const paid = Number(st.paidAmount) || 0;
+        const bill = (st.finalBill !== undefined)
+          ? Number(st.finalBill)
+          : ((rec.summary && rec.summary.finalBill !== undefined)
+              ? Number(rec.summary.finalBill)
+              : 0);
+
+        // 완납된 경우 청구금액(bill), 부분납인 경우 실제 결제된 금액(paid) 합산
+        if (paid >= bill && bill > 0) {
+          total += bill;
+        } else if (paid > 0) {
+          total += paid;
+        }
+      });
+
+      return total;
+    },
+
     // 장비별 계산 (전월누적/당월누적 -> 이번달 사용량 자동 계산, 초과금액, 공급가, VAT, 월임대료)
     calcDevice(dev, vatType = 'tax') {
       const bwBase    = Number(dev.bwBase) || 0;
@@ -1941,6 +1981,9 @@ document.addEventListener('DOMContentLoaded', () => {
           ? Number(st.unpaidAmount)
           : Math.max(0, curBill - paidAmount);
 
+        // 거래처의 전체 월 누적 결제금액 (각 월별 완납 및 결제된 금액 총합)
+        const totalPaidAmount = this.getTotalPaidForClient(client.id, curRecord);
+
         // 표시용 기본임대료 및 추가요금
         const dispBaseRent = (meterSummary && meterSummary.totalBaseRent !== undefined)
           ? Number(meterSummary.totalBaseRent)
@@ -2003,13 +2046,10 @@ document.addEventListener('DOMContentLoaded', () => {
             </td>
             <td style="text-align:center;" onclick="event.stopPropagation();">${taxBadge}</td>
             <td style="text-align:center;" onclick="event.stopPropagation();">${payBadge}</td>
-            <td style="text-align:right;">
-              ${(paidAmount >= curBill && curBill > 0)
-                ? `<strong style="color:#10b981;font-weight:700;">${curBill.toLocaleString()}원</strong>`
-                : (paidAmount > 0
-                    ? `<span style="color:#0284c7;font-weight:600;">${paidAmount.toLocaleString()}원</span>`
-                    : `<span style="color:var(--text-muted);">0원</span>`
-                  )
+            <td style="text-align:right;" title="거래처 전체 월 누적 결제금액: ${totalPaidAmount.toLocaleString()}원">
+              ${totalPaidAmount > 0
+                ? `<strong style="color:#10b981;font-weight:700;">${totalPaidAmount.toLocaleString()}원</strong>`
+                : `<span style="color:var(--text-muted);">0원</span>`
               }
             </td>
             <td onclick="event.stopPropagation();">
