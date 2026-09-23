@@ -1469,6 +1469,21 @@ document.addEventListener('DOMContentLoaded', () => {
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     },
 
+    // 계약 시작일(contractDate: YYYY-MM-DD) 기준:
+    // 해당월(YYYY-MM) 포함 그 이후 월에만 거래처 목록 및 통계에 표시
+    isClientActiveInMonth(client, targetMonth = null) {
+      if (!client) return false;
+      const curMonth = targetMonth || this.getSelectedMonth();
+      if (!client.contractDate || typeof client.contractDate !== 'string') {
+        return true; // 계약 시작일이 비어있는 거래처는 기본 표시
+      }
+      const contractMonth = client.contractDate.trim().substring(0, 7);
+      if (contractMonth && contractMonth.length === 7 && contractMonth.includes('-')) {
+        return curMonth >= contractMonth;
+      }
+      return true;
+    },
+
     // 거래처 데이터로부터 당월(또는 지정월) 검침 스냅샷 생성 및 동기화 (직전달 당월누적 자동 승계)
     syncMeterFromClient(client, targetMonth = null) {
       if (!client || !client.id) return null;
@@ -1757,8 +1772,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!tbody) return;
 
+      const curMonth = this.getSelectedMonth();
+      const isCurrentMonth = (curMonth === this.getCurrentMonthStr());
+
+      // 계약 시작일(contractDate) 기준: 해당월 포함 그 이후 월에만 유효 거래처로 취급
+      const activeClients = clients.filter(c => this.isClientActiveInMonth(c, curMonth));
+
       const kw = filterKeyword.trim().toLowerCase();
-      const filtered = clients.filter(c => {
+      const filtered = activeClients.filter(c => {
         if (!kw) return true;
         const searchTarget = [
           c.name, c.bizNum, c.ceo, c.phone, c.email, c.address,
@@ -1767,14 +1788,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return searchTarget.includes(kw);
       });
 
-      // 통계 계산
-      let statTotalClients = clients.length;
+      // 통계 계산 (해당 월 계약 유지 거래처 기준)
+      let statTotalClients = activeClients.length;
       let statTotalDevices = 0;
       let statTotalMonthBill = 0;
       let statTotalMonthPaid = 0; // 금월 누적 결제금액 (완납 업체 청구금액 합산 + 부분납 실 입금액)
-
-      const curMonth = this.getSelectedMonth();
-      const isCurrentMonth = (curMonth === this.getCurrentMonthStr());
 
       // 상단 월 네비게이터 UI 및 동적 타이틀 갱신
       const monthInput = document.getElementById('clientViewMonthInput');
@@ -1806,7 +1824,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const elPrintBtnText = document.getElementById('clientBtnPrintMeterText');
       if (elPrintBtnText) elPrintBtnText.textContent = `${monthNum}월 검침 PDF/인쇄`;
 
-      clients.forEach(c => {
+      activeClients.forEach(c => {
         const t = this.calcClientTotals(c);
         const rec = this.getMeterRecord(c.id, curMonth);
         const meterSummary = rec && rec.summary ? rec.summary : null;
@@ -4101,6 +4119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (rec) targetRecords.push(rec);
       } else {
         clients.forEach(c => {
+          if (!this.isClientActiveInMonth(c, curMonth)) return;
           const rec = this.getMeterRecord(c.id, curMonth);
           if (rec) targetRecords.push(rec);
         });
@@ -4241,12 +4260,13 @@ document.addEventListener('DOMContentLoaded', () => {
     printAllMeterReports(targetMonth = null) {
       const month = targetMonth || this.getSelectedMonth();
       const clients = this.getClients();
-      if (clients.length === 0) {
+      const validClients = clients.filter(c => this.isClientActiveInMonth(c, month));
+      if (validClients.length === 0) {
         alert('출력할 거래처 데이터가 없습니다.');
         return;
       }
 
-      const records = clients.map(c => this.getMeterRecord(c.id, month)).filter(Boolean);
+      const records = validClients.map(c => this.getMeterRecord(c.id, month)).filter(Boolean);
       const html = this.generateMeterReportHtml(records, `전체 거래처 ${month} 검침 청구서`);
       const area = document.getElementById('meterPrintArea');
       if (!area) return;
