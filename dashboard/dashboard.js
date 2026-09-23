@@ -4702,11 +4702,11 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
 
-          <!-- 계산서 미발행 / 수금 미완료 (붉은색) -->
+          <!-- 계산서 미발행 / 수금 미완료 -->
           <div class="stat-card" style="border-top:3px solid #ef4444;background:rgba(239,68,68,0.06);">
             <div class="stat-icon" style="background:rgba(239,68,68,0.2);color:#f87171;"><i class="fa fa-exclamation-circle"></i></div>
             <div class="stat-details">
-              <div class="stat-title" style="color:#f87171;font-weight:700;">미발행 · 수금미완료 (붉은 계열)</div>
+              <div class="stat-title" style="color:#f87171;font-weight:700;">미발행 · 수금미완료</div>
               <div class="stat-value" style="color:#f87171;">${countRed}<span style="font-size:16px;font-weight:600;margin-left:4px;">개사</span></div>
               <div class="stat-trend" style="color:#fca5a5;font-size:12px;">
                 미수금 총액: <strong>${sumRedBill.toLocaleString()}원</strong>
@@ -4714,11 +4714,11 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
 
-          <!-- 계산서 미발행 / 수금 완료 (보라색) -->
+          <!-- 계산서 미발행 / 수금 완료 -->
           <div class="stat-card" style="border-top:3px solid #a855f7;background:rgba(168,85,247,0.06);">
             <div class="stat-icon" style="background:rgba(168,85,247,0.2);color:#c084fc;"><i class="fa fa-receipt"></i></div>
             <div class="stat-details">
-              <div class="stat-title" style="color:#c084fc;font-weight:700;">미발행 · 수금완료 (보라 계열)</div>
+              <div class="stat-title" style="color:#c084fc;font-weight:700;">미발행 · 수금완료</div>
               <div class="stat-value" style="color:#c084fc;">${countPurple}<span style="font-size:16px;font-weight:600;margin-left:4px;">개사</span></div>
               <div class="stat-trend" style="color:#d8b4fe;font-size:12px;">
                 계산서 필요: <strong>${sumPurpleBill.toLocaleString()}원</strong>
@@ -4726,11 +4726,11 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
 
-          <!-- 계산서 발행 / 수금 완료 (녹색) -->
+          <!-- 계산서 발행 / 수금 완료 -->
           <div class="stat-card" style="border-top:3px solid #10b981;background:rgba(16,185,129,0.06);">
             <div class="stat-icon success" style="background:rgba(16,185,129,0.2);color:#34d399;"><i class="fa fa-check-double"></i></div>
             <div class="stat-details">
-              <div class="stat-title" style="color:#34d399;font-weight:700;">발행완료 · 수금완료 (녹색 계열)</div>
+              <div class="stat-title" style="color:#34d399;font-weight:700;">발행완료 · 수금완료</div>
               <div class="stat-value" style="color:#34d399;">${countGreen}<span style="font-size:16px;font-weight:600;margin-left:4px;">개사</span></div>
               <div class="stat-trend" style="color:#6ee7b7;font-size:12px;">
                 완료 금액: <strong>${sumGreenBill.toLocaleString()}원</strong>
