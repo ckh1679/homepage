@@ -2739,12 +2739,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // 신규 추가
+      // 신규 추가 (목록 가장 아래로 추가)
       const newClient = {
         id: 'cli_' + Date.now(),
         ...candidateData
       };
-      clients.unshift(newClient);
+      clients.push(newClient);
       this.saveClients(clients);
       this.syncMeterFromClient(newClient);
       this.closeModal();
@@ -3098,8 +3098,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 updatedCount++;
               }
             } else {
-              // 신규 등록
-              existingClients.unshift({
+              // 신규 등록 (목록 가장 아래로 추가)
+              existingClients.push({
                 id: 'cli_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
                 ...newC,
                 devices: newC.devices.length > 0 ? newC.devices : [{
