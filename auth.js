@@ -28,6 +28,9 @@ const Auth = (() => {
   // ── 회원 목록 저장 ──────────────────────────────────
   function saveUsers(users) {
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
+      window.FirebaseDB.save(USERS_KEY, users);
+    }
   }
 
   // ── 회원가입 (내부 함수 유지, 구글 사용시 호출하지 않음) ──

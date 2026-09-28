@@ -74,13 +74,21 @@ const Board = (() => {
     }
   ];
 
+  // ── 게시글 전체 목록 저장 (로컬 + 클라우드 동기화) ──
+  function saveAllPosts(all) {
+    localStorage.setItem(BOARD_KEY, JSON.stringify(all));
+    if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
+      window.FirebaseDB.save(BOARD_KEY, all);
+    }
+  }
+
   // ── 게시글 전체 목록 조회 ────────────────────────────
   function getAllPosts() {
     try {
       const raw = localStorage.getItem(BOARD_KEY);
       if (!raw) {
         // 첫 실행: 샘플 데이터 저장
-        localStorage.setItem(BOARD_KEY, JSON.stringify(SAMPLE_POSTS));
+        saveAllPosts(SAMPLE_POSTS);
         return SAMPLE_POSTS;
       }
       return JSON.parse(raw);
@@ -110,7 +118,7 @@ const Board = (() => {
 
     if (increaseView) {
       all[idx].views = (all[idx].views || 0) + 1;
-      localStorage.setItem(BOARD_KEY, JSON.stringify(all));
+      saveAllPosts(all);
     }
     return all[idx];
   }
@@ -139,7 +147,7 @@ const Board = (() => {
     };
 
     all.unshift(newPost);  // 최신글을 맨 앞에
-    localStorage.setItem(BOARD_KEY, JSON.stringify(all));
+    saveAllPosts(all);
     return { success: true, post: newPost };
   }
 
@@ -180,7 +188,7 @@ const Board = (() => {
       updatedAt: new Date().toISOString()
     };
 
-    localStorage.setItem(BOARD_KEY, JSON.stringify(all));
+    saveAllPosts(all);
     return { success: true, post: all[idx] };
   }
 
@@ -212,7 +220,7 @@ const Board = (() => {
     }
 
     all.splice(idx, 1);
-    localStorage.setItem(BOARD_KEY, JSON.stringify(all));
+    saveAllPosts(all);
     return { success: true };
   }
 

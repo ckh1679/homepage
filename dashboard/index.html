@@ -97,7 +97,15 @@
           </div>
         </div>
         
-        <div class="header-right">
+        <div class="header-right" style="display:flex;align-items:center;gap:10px;">
+          <!-- 클라우드 실시간 동기화 상태 뱃지 & 제어 버튼 -->
+          <div id="cloudSyncStatus" style="display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;cursor:pointer;transition:all 0.2s;" title="클릭하여 클라우드 즉시 동기화" onclick="FirebaseDB.manualSync()">
+            <i class="fa fa-cloud" id="cloudSyncIcon" style="color:#0ea5e9;"></i>
+            <span id="cloudSyncText">동기화 확인 중...</span>
+          </div>
+          <button type="button" class="btn-secondary" style="padding:6px 11px;font-size:12px;border-radius:6px;display:flex;align-items:center;gap:5px;cursor:pointer;background:#ffffff;border:1px solid #cbd5e1;" onclick="FirebaseDB.forceUploadLocal()" title="현재 PC의 업체정보를 클라우드로 올리기">
+            <i class="fa fa-cloud-upload-alt" style="color:#0284c7;"></i> 클라우드 올리기
+          </button>
           <button class="icon-btn" title="알림">
             <i class="fa fa-bell"></i>
             <span class="badge-dot"></span>
@@ -1886,8 +1894,14 @@
        인쇄 및 PDF 생성용 오버레이 컨테이너
        ============================================ -->
   <div id="meterPrintArea" style="display:none;"></div>
-  <script src="../auth.js?v=20260923_008"></script>
-  <script src="../board/board.js?v=20260923_008"></script>
-  <script src="dashboard.js?v=20260923_008"></script>
+  
+  <!-- Firebase SDK v10 (Compat 모드) & 클라우드 실시간 동기화 브리지 -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="../firebase-db.js?v=20260928_001"></script>
+
+  <script src="../auth.js?v=20260928_001"></script>
+  <script src="../board/board.js?v=20260928_001"></script>
+  <script src="dashboard.js?v=20260928_001"></script>
 </body>
 </html>

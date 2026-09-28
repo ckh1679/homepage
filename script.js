@@ -270,6 +270,9 @@ function initStickyForm() {
           isPinned: false
         });
         localStorage.setItem('pm_board_posts', JSON.stringify(posts));
+        if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
+          window.FirebaseDB.save('pm_board_posts', posts);
+        }
       } catch (err) {
         console.error('전화상담신청 데이터 저장 실패:', err);
       }

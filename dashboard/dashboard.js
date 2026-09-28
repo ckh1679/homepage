@@ -1342,6 +1342,9 @@ document.addEventListener('DOMContentLoaded', () => {
     saveClients(clients) {
       try {
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(clients));
+        if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
+          window.FirebaseDB.save(this.STORAGE_KEY, clients);
+        }
         this.renderTable();
         this.updateGlobalDashboardStats();
       } catch (e) {
@@ -1367,6 +1370,9 @@ document.addEventListener('DOMContentLoaded', () => {
     saveMeterHistory(history) {
       try {
         localStorage.setItem(this.METER_STORAGE_KEY, JSON.stringify(history));
+        if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
+          window.FirebaseDB.save(this.METER_STORAGE_KEY, history);
+        }
       } catch (e) {
         console.error('검침 이력 저장 실패:', e);
       }
@@ -4975,6 +4981,9 @@ document.addEventListener('DOMContentLoaded', () => {
     saveCosts(costs) {
       try {
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(costs));
+        if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
+          window.FirebaseDB.save(this.STORAGE_KEY, costs);
+        }
       } catch (e) {
         console.error('원가 데이터 저장 실패:', e);
       }
@@ -5283,6 +5292,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const all = raw ? JSON.parse(raw) : {};
         all[clientId] = logs;
         localStorage.setItem(this.MAINT_STORAGE_KEY, JSON.stringify(all));
+        if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
+          window.FirebaseDB.save(this.MAINT_STORAGE_KEY, all);
+        }
       } catch (e) {
         console.error('소모품/부품 장부 저장 실패:', e);
       }
@@ -6182,6 +6194,9 @@ document.addEventListener('DOMContentLoaded', () => {
     saveRecords(records) {
       try {
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(records));
+        if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
+          window.FirebaseDB.save(this.STORAGE_KEY, records);
+        }
       } catch (e) {
         console.error('소모품 데이터 저장 실패:', e);
       }
