@@ -791,6 +791,7 @@ ul { list-style: none; }
   gap: 16px;
 }
 
+
 .client-toolbar input[type="text"] {
   background: rgba(0, 0, 0, 0.35) !important;
   border: 1px solid var(--border-color) !important;
@@ -804,7 +805,16 @@ ul { list-style: none; }
 .client-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1360px;
+  min-width: 1390px; /* thead 커럼 합계(1390px)에 맞춰 조정 */
+  /*
+    [table-layout: fixed 핵심 해결재]
+    - 이 설정이 없으면 하위 서브테이블(13개 커럼)이
+      부모 td 너비를 무한 확장시켜 우측 잔리는 현상이 발생
+    - fixed로 테이블 너비를 thead 정의 값으로 고정하면
+      서브테이블 내용이 td를 먹어도 부모 테이블은 확장 안 하고,
+      device-subtable-wrap에서 가로 스크롤이 동작함
+  */
+  table-layout: fixed;
 }
 .client-table th {
   background: rgba(255, 255, 255, 0.02);
@@ -815,6 +825,14 @@ ul { list-style: none; }
   vertical-align: middle;
   white-space: nowrap;
   padding: 11px 12px;
+  /* table-layout:fixed 환경에서 셀 내용이 컬럼 너비를 넘으면 숨김 처리 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 서브테이블 row의 td는 overflow 제한 없이 wrap이 스크롤을 담당 */
+.client-table .device-subtable-row > td {
+  overflow: visible !important;
+  white-space: normal !important;
 }
 .client-table tr.accordion-parent {
   cursor: pointer;
@@ -873,7 +891,8 @@ ul { list-style: none; }
 }
 .device-subtable {
   width: 100%;
-  min-width: 1300px; /* 13개 컬럼이 압축되지 않도록 최소 너비 보장 */
+  /* min-width는 설정하지 않음: table-layout:fixed 부모가 너비를 고정하므로
+     여기서 min-width를 주면 다시 부모 테이블을 확장시키는 부작용이 생김 */
   border-collapse: collapse;
   font-size: 12px;
 }
