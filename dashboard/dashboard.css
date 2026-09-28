@@ -861,7 +861,6 @@ ul { list-style: none; }
   /* 열이 잘리지 않도록 가로 스크롤 허용 */
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  max-width: 100%;
 }
 .device-subtable-title {
   font-size: 12px;
@@ -874,6 +873,7 @@ ul { list-style: none; }
 }
 .device-subtable {
   width: 100%;
+  min-width: 1300px; /* 13개 컬럼이 압축되지 않도록 최소 너비 보장 */
   border-collapse: collapse;
   font-size: 12px;
 }
