@@ -2041,6 +2041,12 @@ document.addEventListener('DOMContentLoaded', () => {
           payBadge = `<span class="badge-pay unpaid" onclick="ClientManager.togglePayStatus('${client.id}', null, event)" title="미납 총액: ${unpaidAmount.toLocaleString()}원 (클릭 시 전액완납 전환)"><i class="fa fa-exclamation-circle"></i> 미납 (${unpaidAmount.toLocaleString()}원)</span>`;
         }
 
+        // 청구 완료 / 미완료 배지 (원클릭 토글)
+        const curBillingStatus = st.billingStatus || 'pending';
+        const billingBadge = (curBillingStatus === 'done')
+          ? `<span class="badge-billing done" onclick="ClientManager.toggleBillingStatus('${client.id}', null, event)" title="청구완료 상태 (클릭 시 미완료 전환)"><i class="fa fa-check-square"></i> 청구완료</span>`
+          : `<span class="badge-billing pending" onclick="ClientManager.toggleBillingStatus('${client.id}', null, event)" title="청구 미완료 (클릭 시 청구완료로 전환)"><i class="fa fa-exclamation-triangle"></i> 청구미완료</span>`;
+
         // 주 행 (Parent Row)
         html += `
           <tr class="accordion-parent" id="row-${client.id}" onclick="ClientManager.toggleAccordion('${client.id}', event)">
@@ -2073,6 +2079,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </td>
             <td style="text-align:center;" onclick="event.stopPropagation();">${taxBadge}</td>
             <td style="text-align:center;" onclick="event.stopPropagation();">${payBadge}</td>
+            <td style="text-align:center;" onclick="event.stopPropagation();">${billingBadge}</td>
             <td style="text-align:right;" title="거래처 전체 월 누적 결제금액: ${totalPaidAmount.toLocaleString()}원">
               ${totalPaidAmount > 0
                 ? `<strong style="color:#10b981;font-weight:700;">${totalPaidAmount.toLocaleString()}원</strong>`
@@ -2108,7 +2115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           <!-- 아코디언 하위 행 (Subtable Row) -->
           <tr class="device-subtable-row" id="sub-${client.id}" style="display:none;">
-            <td colspan="13">
+            <td colspan="14">
               <div class="device-subtable-wrap">
                 <div class="device-subtable-title" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                   <span><i class="fa fa-layer-group"></i> [${escapeHtml(client.name)}] ${monthNum}월 임대 장비 검침 상세 내역 (${devices.length}대)</span>
@@ -3290,6 +3297,48 @@ document.addEventListener('DOMContentLoaded', () => {
         record.settlement.paidDate = today;
       }
       record.settlement.finalBill = curBill;
+
+      const history = this.getMeterHistory();
+      const existIdx = history.findIndex(h => String(h.clientId) === String(clientId) && h.month === curMonth);
+      if (existIdx !== -1) {
+        history[existIdx] = record;
+      } else {
+        history.push(record);
+      }
+      this.saveMeterHistory(history);
+      this.renderTable();
+      if (window.RentalCalendarManager) window.RentalCalendarManager.render();
+    },
+
+    // 청구 완료 / 미완료 상태 원클릭 토글
+    toggleBillingStatus(clientId, targetMonth = null, event = null) {
+      if (event) event.stopPropagation();
+      const curMonth = targetMonth || this.getSelectedMonth();
+      const record = this.getMeterRecord(clientId, curMonth);
+      if (!record) return;
+
+      const client = this.getClients().find(c => String(c.id) === String(clientId));
+      const totals = client ? this.calcClientTotals(client) : null;
+      const curBill = (record.summary?.finalBill !== undefined)
+        ? record.summary.finalBill
+        : ((record.summary?.totalBill !== undefined) ? record.summary.totalBill : (totals ? totals.totalMonthBill : 0));
+
+      if (!record.settlement) {
+        record.settlement = {
+          paidAmount: 0,
+          unpaidAmount: curBill,
+          paidDate: '',
+          taxStatus: 'unissued',
+          taxDate: '',
+          finalBill: curBill,
+          billingStatus: 'pending'
+        };
+      }
+
+      // 토글: 미완료(pending) <-> 완료(done)
+      const curStatus = record.settlement.billingStatus || 'pending';
+      record.settlement.billingStatus = (curStatus === 'done') ? 'pending' : 'done';
+      if (!record.settlement.finalBill) record.settlement.finalBill = curBill;
 
       const history = this.getMeterHistory();
       const existIdx = history.findIndex(h => String(h.clientId) === String(clientId) && h.month === curMonth);
@@ -4604,6 +4653,10 @@ document.addEventListener('DOMContentLoaded', () => {
         statusLabel = isPartial ? '발행완료 · 부분수금' : '발행완료 · 미수금';
       }
 
+      // 청구 완료 여부
+      const billingStatus = (st && st.billingStatus) ? st.billingStatus : 'pending';
+      const isBillingDone = (billingStatus === 'done');
+
       return {
         record,
         curBill,
@@ -4614,7 +4667,9 @@ document.addEventListener('DOMContentLoaded', () => {
         isPaid,
         isPartial,
         statusClass,
-        statusLabel
+        statusLabel,
+        billingStatus,
+        isBillingDone
       };
     },
 
@@ -4820,15 +4875,21 @@ document.addEventListener('DOMContentLoaded', () => {
                       ? `<span class="cal-mini-badge pay-partial"><i class="fa fa-adjust"></i> 부분</span>`
                       : `<span class="cal-mini-badge pay-unpaid"><i class="fa fa-times"></i> 미납</span>`);
 
+                // 청구 미완료 배지 (미완료일 때만 표시)
+                const billingBadgeHtml = info.isBillingDone
+                  ? ''
+                  : `<span class="cal-mini-badge billing-pending"><i class="fa fa-exclamation-triangle"></i> 청구미완료</span>`;
+
                 return `
                   <div class="rental-cal-item ${info.statusClass}" onclick="RentalCalendarManager.openQuickModal('${c.id}', '${curMonth}', event)" title="클릭 시 세금계산서 및 수금 상태 변경\n- 거래처: ${clientNameEsc}\n- 청구액: ${info.curBill.toLocaleString()}원\n- 상태: ${info.statusLabel}">
                     <div class="cal-item-top">
-                      <span class="cal-item-name">${clientNameEsc}</span>
+                      <span class="cal-item-name">${clientNameEsc}${!info.isBillingDone ? '<span class="cal-billing-pending-label">청구미완료</span>' : ''}</span>
                       <span class="cal-item-bill">${info.curBill.toLocaleString()}원</span>
                     </div>
                     <div class="cal-item-badges">
                       ${taxBadgeHtml}
                       ${payBadgeHtml}
+                      ${billingBadgeHtml}
                     </div>
                   </div>
                 `;
