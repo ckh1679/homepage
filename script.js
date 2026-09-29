@@ -44,13 +44,26 @@ function initHeroSlider() {
     dots.forEach((dot, i) => {
       dot.classList.toggle('active', i === currentSlide);
     });
+
+    // 현재 슬라이드의 hero-content 애니메이션을 리셋하여
+    // 모든 슬라이드에서 동일한 타이밍으로 콘텐츠가 나타나도록 함
+    const activeSlide = track.querySelectorAll('.hero-slide')[currentSlide];
+    if (activeSlide) {
+      const content = activeSlide.querySelector('.hero-content');
+      if (content) {
+        // animation 강제 리셋: 클래스 제거 → 리플로우 → 재추가
+        content.classList.remove('fade-in-up');
+        void content.offsetWidth; // 리플로우 강제 발생
+        content.classList.add('fade-in-up');
+      }
+    }
   }
 
-  // 자동재생 시작 (2초 간격)
+  // 자동재생 시작 (4초 간격) — 각 제품당 정확히 4초 표시
   function startAutoplay() {
     autoplayTimer = setInterval(() => {
       goToSlide(currentSlide + 1);
-    }, 2000);
+    }, 4000);
   }
 
   // 자동재생 정지
@@ -372,6 +385,18 @@ styleSheet.textContent = `
     to { opacity: 1; transform: translateX(0); }
   }
 
+  /* ── 히어로 슬라이드 콘텐츠 진입 애니메이션 ──
+     JS에서 슬라이드 전환마다 클래스를 리셋하므로
+     모든 제품이 항상 동일한 0.55s 속도로 등장함 */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .fade-in-up {
+    animation: fadeInUp 0.55s ease forwards;
+  }
+
   /* 히어로 슬라이드 배경 효과 강화 */
   .hero-slide {
     background-size: cover;
@@ -400,3 +425,4 @@ styleSheet.textContent = `
   }
 `;
 document.head.appendChild(styleSheet);
+
