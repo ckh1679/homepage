@@ -436,9 +436,9 @@ const ShopData = {
       recommend: ['기업용 사무실', '중소 인쇄량 부서', '디자인·기획팀'],
 
       images: [
-        './images/c3922_main.jpg',
-        './images/c3922_sub.jpg',
-        './images/c3922_spec.jpg',
+        './images/c3922_main.jpg?v=20260929',
+        './images/c3922_sub.jpg?v=20260929',
+        './images/c3922_spec.jpg?v=20260929',
       ],
       imageText: '캐논 C3922',
       popular: false
@@ -527,9 +527,9 @@ const ShopData = {
 
       // images 배열: [대표이미지, 추가이미지, 상세스펙인포그래픽]
       images: [
-        './images/c3926_main.jpg',
-        './images/c3926_sub.jpg',
-        './images/c3926_spec.jpg'
+        './images/c3926_main.jpg?v=20260929',
+        './images/c3926_sub.jpg?v=20260929',
+        './images/c3926_spec.jpg?v=20260929'
       ],
       imageText: '캐논 C3926',
       popular: true
@@ -587,9 +587,9 @@ const ShopData = {
       recommend: ['대용량 출력 기업', '법무·회계·컨설팅', '디자인 에이전시', '의료·금융 기관'],
 
       images: [
-        './images/c3935i_main.jpeg',
-        './images/c3935i_sub.jpeg',
-        './images/c3935_spec.jpg',
+        './images/c3935i_main.jpeg?v=20260929',
+        './images/c3935i_sub.jpeg?v=20260929',
+        './images/c3935_spec.jpg?v=20260929',
       ],
       imageText: '캐논 C3935i',
       popular: false
