@@ -31,9 +31,16 @@ function initHeroSlider() {
   let currentSlide = 0;
   let autoplayTimer = null;
 
+  /**
+   * CSS transition 시간 (style.css .hero-slides transition: 0.6s)
+   * 슬라이드 이동 애니메이션이 끝난 뒤부터 4초를 카운트해야
+   * 모든 제품이 동일하게 4초씩 보임
+   */
+  const TRANSITION_MS = 600; // CSS transition 0.6s와 반드시 일치
+  const DISPLAY_MS    = 4000; // 슬라이드 완전히 정착 후 표시 시간
+
   // 슬라이드 이동 함수
   function goToSlide(index) {
-    // 범위 초과 시 순환 처리
     if (index < 0) index = totalSlides - 1;
     if (index >= totalSlides) index = 0;
 
@@ -45,30 +52,47 @@ function initHeroSlider() {
       dot.classList.toggle('active', i === currentSlide);
     });
 
-    // 현재 슬라이드의 hero-content 애니메이션을 리셋하여
-    // 모든 슬라이드에서 동일한 타이밍으로 콘텐츠가 나타나도록 함
+    // 현재 슬라이드 콘텐츠 fade-in-up 애니메이션 리셋
+    // — CSS transition 완료(0.6s) 후 재생해 모든 슬라이드가 동일하게 보이도록 함
     const activeSlide = track.querySelectorAll('.hero-slide')[currentSlide];
     if (activeSlide) {
       const content = activeSlide.querySelector('.hero-content');
       if (content) {
-        // animation 강제 리셋: 클래스 제거 → 리플로우 → 재추가
         content.classList.remove('fade-in-up');
-        void content.offsetWidth; // 리플로우 강제 발생
+        void content.offsetWidth; // 리플로우 강제 → 애니메이션 재시작 보장
         content.classList.add('fade-in-up');
       }
     }
   }
 
-  // 자동재생 시작 (4초 간격) — 각 제품당 정확히 4초 표시
-  function startAutoplay() {
-    autoplayTimer = setInterval(() => {
+  // ── 타이밍 핵심 로직 ──────────────────────────────────────
+  // setInterval은 transition 시간을 무시하고 주기마다 발동해
+  // 실제 가시 시간이 슬라이드마다 달라지는 문제가 있음.
+  // setTimeout 체인을 사용해:
+  //   [슬라이드 전환 시작] → TRANSITION_MS 대기 → [슬라이드 완전 표시]
+  //   → DISPLAY_MS 대기 → [다음 슬라이드 전환 시작] → 반복
+  // 이 방식으로 모든 슬라이드가 정확히 DISPLAY_MS(4초) 동안 보임
+  let isPlaying = false;
+
+  function scheduleNext() {
+    if (!isPlaying) return;
+    // transition 완료 후 표시 시간 대기, 그 다음 다음 슬라이드로 이동
+    autoplayTimer = setTimeout(() => {
       goToSlide(currentSlide + 1);
-    }, 4000);
+      // 전환 애니메이션이 끝난 뒤 다시 scheduleNext 호출
+      autoplayTimer = setTimeout(scheduleNext, TRANSITION_MS);
+    }, DISPLAY_MS);
   }
 
-  // 자동재생 정지
+  function startAutoplay() {
+    isPlaying = true;
+    clearTimeout(autoplayTimer);
+    scheduleNext();
+  }
+
   function stopAutoplay() {
-    clearInterval(autoplayTimer);
+    isPlaying = false;
+    clearTimeout(autoplayTimer);
   }
 
   // 화살표 버튼 이벤트
@@ -116,8 +140,10 @@ function initHeroSlider() {
   sliderEl.addEventListener('mouseenter', stopAutoplay);
   sliderEl.addEventListener('mouseleave', startAutoplay);
 
-  // 초기 자동재생 시작
+  // 첫 슬라이드 콘텐츠 애니메이션 실행 후 자동재생 시작
+  goToSlide(0);
   startAutoplay();
+
 }
 
 // =============================================
