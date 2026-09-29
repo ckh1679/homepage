@@ -46,11 +46,11 @@ function initHeroSlider() {
     });
   }
 
-  // 자동재생 시작 (4초 간격)
+  // 자동재생 시작 (2초 간격)
   function startAutoplay() {
     autoplayTimer = setInterval(() => {
       goToSlide(currentSlide + 1);
-    }, 4000);
+    }, 2000);
   }
 
   // 자동재생 정지
