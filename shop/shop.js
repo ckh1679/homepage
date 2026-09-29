@@ -404,16 +404,16 @@ const ShopData = {
 
       // 플랜별 요금 (동적 UI 렌더링에 사용)
       plans: [
-        { label: '기본형', emoji: '🔹', origPrice: 100000, price: 70000,  bw: 1000, color: 100 },
-        { label: '중형',   emoji: '🔶', origPrice: 130000, price: 95000,  bw: 3000, color: 300 },
-        { label: '대형',   emoji: '🔴', origPrice: 170000, price: 130000, bw: 5000, color: 500 },
+        { label: '', emoji: '🔹', origPrice: 100000, price: 70000,  bw: 1000, color: 100 },
+        { label: '', emoji: '🔶', origPrice: 130000, price: 95000,  bw: 3000, color: 300 },
+        { label: '', emoji: '🔴', origPrice: 170000, price: 130000, bw: 5000, color: 500 },
       ],
 
       specDetail: [
         { group: '📋 렌탈 요금 안내 (3년 약정 / VAT 별도)' },
-        { label: '기본형 · 월 70,000원',  value: '흑백 1,000장 포함 (초과 장당 10원) / 컬러 100장 포함 (초과 장당 100원)' },
-        { label: '중형   · 월 95,000원',  value: '흑백 3,000장 포함 (초과 장당 10원) / 컬러 300장 포함 (초과 장당 100원)' },
-        { label: '대형   · 월 130,000원', value: '흑백 5,000장 포함 (초과 장당 10원) / 컬러 500장 포함 (초과 장당 100원)' },
+        { label: '월 70,000원',  value: '흑백 1,000장 포함 (초과 장당 10원) / 컬러 100장 포함 (초과 장당 100원)' },
+        { label: '월 95,000원',  value: '흑백 3,000장 포함 (초과 장당 10원) / 컬러 300장 포함 (초과 장당 100원)' },
+        { label: '월 130,000원', value: '흑백 5,000장 포함 (초과 장당 10원) / 컬러 500장 포함 (초과 장당 100원)' },
         { group: '상품 상세 정보' },
         { label: '인쇄 방식', value: '레이저' },
         { label: '출력 색상', value: '컬러 출력' },
@@ -430,7 +430,6 @@ const ShopData = {
       features: [
         { icon: '🚀', title: '생산성',       desc: '분당 22매 고속 컬러 출력' },
         { icon: '✨', title: '고화질',       desc: '1,200×1,200dpi 고품질 인쇄' },
-        { icon: '📱', title: '스마트 연결',  desc: '모바일 프린팅 및 클라우드 연동' },
         { icon: '📐', title: '최대 A3 지원', desc: '다양한 용지 사이즈 수용' },
       ],
 
@@ -460,9 +459,9 @@ const ShopData = {
 
       // 플랜별 요금 (동적 UI 렌더링에 사용)
       plans: [
-        { label: '기본형', emoji: '🔹', origPrice: 110000, price: 75000,  bw: 1000, color: 100 },
-        { label: '중형',   emoji: '🔶', origPrice: 140000, price: 100000, bw: 3000, color: 300 },
-        { label: '대형',   emoji: '🔴', origPrice: 180000, price: 140000, bw: 5000, color: 500 },
+        { label: '', emoji: '🔹', origPrice: 110000, price: 75000,  bw: 1000, color: 100 },
+        { label: '', emoji: '🔶', origPrice: 140000, price: 100000, bw: 3000, color: 300 },
+        { label: '', emoji: '🔴', origPrice: 180000, price: 140000, bw: 5000, color: 500 },
       ],
 
       // 상세 스펙 테이블
@@ -470,9 +469,9 @@ const ShopData = {
 
         // ─ 렌탈 요금 안내 ─
         { group: '📋 렌탈 요금 안내 (3년 약정 / VAT 별도)' },
-        { label: '기본형 · 월 75,000원',  value: '흑백 1,000장 포함 (초과 시 장당 10원) / 컬러 100장 포함 (초과 시 장당 100원)' },
-        { label: '중형   · 월 100,000원', value: '흑백 3,000장 포함 (초과 시 장당 10원) / 컬러 300장 포함 (초과 시 장당 100원)' },
-        { label: '대형   · 월 140,000원', value: '흑백 5,000장 포함 (초과 시 장당 10원) / 컬러 500장 포함 (초과 시 장당 100원)' },
+        { label: '월 75,000원',  value: '흑백 1,000장 포함 (초과 시 장당 10원) / 컬러 100장 포함 (초과 시 장당 100원)' },
+        { label: '월 100,000원', value: '흑백 3,000장 포함 (초과 시 장당 10원) / 컬러 300장 포함 (초과 시 장당 100원)' },
+        { label: '월 140,000원', value: '흑백 5,000장 포함 (초과 시 장당 10원) / 컬러 500장 포함 (초과 시 장당 100원)' },
 
         // ─ 상품 상세 정보 ─
         { group: '상품 상세 정보 제공' },
@@ -519,7 +518,6 @@ const ShopData = {
       features: [
         { icon: '🚀', title: '생산성 향상',    desc: '분당 26매 출력 및 단면 최대 70매 스캔' },
         { icon: '✨', title: '고품질 해상도',  desc: '최대 1200x1200dpi 고화질 출력' },
-        { icon: '📱', title: '스마트 연결',    desc: '모바일 프린팅 및 클라우드 서비스 연동' },
         { icon: '🖥️', title: '10.1인치 패널', desc: '스마트폰처럼 직관적인 대화면 터치 패널' },
         { icon: '📐', title: '폭넓은 용지 지원',desc: '다양한 사이즈(최대 A3) 및 용지 수용 가능' },
       ],
@@ -552,16 +550,16 @@ const ShopData = {
 
       // 플랜별 요금 (동적 UI 렌더링에 사용)
       plans: [
-        { label: '기본형', emoji: '🔹', origPrice: 130000, price: 90000,  bw: 1000, color: 100 },
-        { label: '중형',   emoji: '🔶', origPrice: 160000, price: 120000, bw: 3000, color: 300 },
-        { label: '대형',   emoji: '🔴', origPrice: 200000, price: 150000, bw: 5000, color: 500 },
+        { label: '', emoji: '🔹', origPrice: 130000, price: 90000,  bw: 1000, color: 100 },
+        { label: '', emoji: '🔶', origPrice: 160000, price: 120000, bw: 3000, color: 300 },
+        { label: '', emoji: '🔴', origPrice: 200000, price: 150000, bw: 5000, color: 500 },
       ],
 
       specDetail: [
         { group: '📋 렌탈 요금 안내 (3년 약정 / VAT 별도)' },
-        { label: '기본형 · 월 90,000원',  value: '흑백 1,000장 포함 (초과 장당 10원) / 컬러 100장 포함 (초과 장당 100원)' },
-        { label: '중형   · 월 120,000원', value: '흑백 3,000장 포함 (초과 장당 10원) / 컬러 300장 포함 (초과 장당 100원)' },
-        { label: '대형   · 월 150,000원', value: '흑백 5,000장 포함 (초과 장당 10원) / 컬러 500장 포함 (초과 장당 100원)' },
+        { label: '월 90,000원',  value: '흑백 1,000장 포함 (초과 장당 10원) / 컬러 100장 포함 (초과 장당 100원)' },
+        { label: '월 120,000원', value: '흑백 3,000장 포함 (초과 장당 10원) / 컬러 300장 포함 (초과 장당 100원)' },
+        { label: '월 150,000원', value: '흑백 5,000장 포함 (초과 장당 10원) / 컬러 500장 포함 (초과 장당 100원)' },
         { group: '상품 상세 정보' },
         { label: '인쇄 방식', value: '레이저' },
         { label: '출력 색상', value: '컬러 출력' },
@@ -582,7 +580,6 @@ const ShopData = {
       features: [
         { icon: '🚀', title: '고속 출력',       desc: '분당 35매 A3 컬러 고속 인쇄' },
         { icon: '✨', title: '고화질',          desc: '1,200×1,200dpi 선명한 출력' },
-        { icon: '📱', title: '스마트 연결',     desc: '모바일 프린팅 및 클라우드 연동' },
         { icon: '🖥️', title: '10.1인치 패널',  desc: '직관적인 대화면 터치 패널' },
         { icon: '📐', title: '최대 A3 지원',    desc: '대형 용지까지 폭넓게 지원' },
       ],
