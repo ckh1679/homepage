@@ -1,4 +1,4 @@
-/* =============================================
+﻿/* =============================================
    프린터모아 홈페이지 - 전체 스타일시트
    참고: printpro.kr
    ============================================= */
@@ -308,28 +308,33 @@ button {
 }
 
 
-/* 슬라이드 1: 캐논 C3926 — 프리미엄 퍼플 다크 */
+/* 슬라이드 1: 캐논 C3922 — 디프 레드 다크 */
 .hero-slide:nth-child(1) {
+  background: linear-gradient(135deg, #1e0a0a 0%, #3d1515 40%, #7a2020 100%);
+}
+
+/* 슬라이드 2: 캐논 C3926 — 프리미엄 퍼플 다크 */
+.hero-slide:nth-child(2) {
   background: linear-gradient(135deg, #1a0a2e 0%, #2d1a4a 40%, #5c2a80 100%);
 }
 
-/* 슬라이드 2: HP 9010 — 시그니처 블루 */
-.hero-slide:nth-child(2) {
+/* 슬라이드 3: HP 9010 — 시그니처 블루 */
+.hero-slide:nth-child(3) {
   background: linear-gradient(135deg, #0d1b2a 0%, #1a3a5c 40%, #0099cc 100%);
 }
 
-/* 슬라이드 3: HP 9020 — 딘 네이비 */
-.hero-slide:nth-child(3) {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
-}
-
-/* 슬라이드 4: HP 7740 A3 — 다크 틸 */
+/* 슬라이드 4: HP 9020 — 딘 네이비 */
 .hero-slide:nth-child(4) {
-  background: linear-gradient(135deg, #0f2027 0%, #203a43 40%, #2c5364 100%);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
 }
 
 /* 슬라이드 5: 문서세단기 — 딩블루 */
 .hero-slide:nth-child(5) {
+  background: linear-gradient(135deg, #0f2027 0%, #203a43 40%, #2c5364 100%);
+}
+
+/* ?щ씪?대뱶 6: 臾몄꽌?몃떒湲?- ?λ툝猷?*/
+.hero-slide:nth-child(6) {
   background: linear-gradient(135deg, #0a1628 0%, #0f2d40 40%, #0d4f6e 100%);
 }
 
