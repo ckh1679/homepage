@@ -391,7 +391,6 @@ const Auth = (() => {
 
     const users = getUsers();
     let user = users.find(u => u.naverId === strNaverId || (email && u.email === email));
-    const displayName = name || nickname || '네이버 사용자';
 
     if (!user) {
       const shortId = 'naver_' + strNaverId.slice(-6);
