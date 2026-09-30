@@ -6742,6 +6742,51 @@ document.addEventListener('DOMContentLoaded', () => {
     STORAGE_KEY: 'pm_supplies_records',
     currentTab: 'records', // 'records' | 'inventory'
     currentType: 'in',     // 'in' | 'out'
+    sortField: 'date',     // 'date' | 'item' | 'target' | 'price' | 'total'
+    sortOrder: 'desc',     // 'asc' | 'desc'
+
+    // 헤더 클릭 시 정렬 토글
+    setSort(field) {
+      if (this.sortField === field) {
+        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.sortField = field;
+        // 품목명, 거래처는 가나다순(asc) 기본, 일자/가격은 내림차순(desc) 기본
+        this.sortOrder = (field === 'item' || field === 'target') ? 'asc' : 'desc';
+      }
+      const select = document.getElementById('supSortSelect');
+      if (select) {
+        select.value = `${this.sortField}_${this.sortOrder}`;
+      }
+      this.render();
+    },
+
+    // 정렬 드롭다운 선택 시
+    onSortSelectChange(value) {
+      if (!value) return;
+      const parts = value.split('_');
+      this.sortField = parts[0] || 'date';
+      this.sortOrder = parts[1] || 'desc';
+      this.render();
+    },
+
+    // 테이블 헤더 정렬 아이콘 업데이트
+    updateSortIcons() {
+      const fields = ['date', 'item', 'target', 'price', 'total'];
+      fields.forEach(f => {
+        const th = document.getElementById(`supTh_${f}`);
+        const iconSpan = document.getElementById(`supSortIcon_${f}`);
+        if (!th || !iconSpan) return;
+
+        th.classList.remove('sorted-asc', 'sorted-desc');
+        if (this.sortField === f) {
+          th.classList.add(this.sortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
+          iconSpan.innerHTML = `<i class="fa fa-sort-${this.sortOrder === 'asc' ? 'up' : 'down'}"></i>`;
+        } else {
+          iconSpan.innerHTML = `<i class="fa fa-sort" style="color:#64748b;"></i>`;
+        }
+      });
+    },
 
     getRecords() {
       try {
@@ -7523,6 +7568,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return true;
       });
+
+      // [정렬 적용]
+      filtered.sort((a, b) => {
+        let cmp = 0;
+        if (this.sortField === 'date') {
+          const dateA = a.date || '';
+          const dateB = b.date || '';
+          cmp = dateA.localeCompare(dateB);
+        } else if (this.sortField === 'item') {
+          const itemA = (a.itemName || '').trim();
+          const itemB = (b.itemName || '').trim();
+          cmp = itemA.localeCompare(itemB, 'ko');
+        } else if (this.sortField === 'target') {
+          const targetA = (a.type === 'in' ? (a.supplier || '') : (a.clientName || '')).trim();
+          const targetB = (b.type === 'in' ? (b.supplier || '') : (b.clientName || '')).trim();
+          cmp = targetA.localeCompare(targetB, 'ko');
+        } else if (this.sortField === 'price') {
+          const priceA = Number(a.price) || 0;
+          const priceB = Number(b.price) || 0;
+          cmp = priceA - priceB;
+        } else if (this.sortField === 'total') {
+          const totalA = Number(a.totalAmount) || 0;
+          const totalB = Number(b.totalAmount) || 0;
+          cmp = totalA - totalB;
+        }
+
+        // 값이 동일한 경우 날짜 최신순으로 2차 정렬
+        if (cmp === 0 && this.sortField !== 'date') {
+          const dateA = a.date || '';
+          const dateB = b.date || '';
+          return dateB.localeCompare(dateA);
+        }
+
+        return this.sortOrder === 'asc' ? cmp : -cmp;
+      });
+
+      // 헤더 정렬 아이콘 갱신
+      this.updateSortIcons();
 
       if (filtered.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:32px;">조건에 일치하는 입·출고 내역이 없습니다.</td></tr>';

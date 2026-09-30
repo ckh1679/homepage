@@ -430,6 +430,34 @@ ul { list-style: none; }
   font-weight: 600;
 }
 
+.th-sortable {
+  cursor: pointer !important;
+  user-select: none;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.th-sortable:hover {
+  color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.08);
+}
+.th-sortable .sort-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  font-size: 11px;
+  vertical-align: middle;
+  color: #64748b;
+  transition: color 0.15s ease;
+}
+.th-sortable.sorted-asc,
+.th-sortable.sorted-desc {
+  color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.05);
+}
+.th-sortable.sorted-asc .sort-icon,
+.th-sortable.sorted-desc .sort-icon {
+  color: #38bdf8 !important;
+}
+
 .data-table td {
   padding: 16px;
   font-size: 14px;
