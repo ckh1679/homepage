@@ -415,8 +415,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const ActivityLogger = {
     STORAGE_KEY: 'pm_activity_logs',
     currentPage: 1,
-    pageSize: 6,   // 한 페이지당 6개 표시 (총 30개 = 5페이지)
-    maxTotal: 30,  // 최대 30개까지 확인 가능
+    pageSize: 6,    // 한 페이지당 6개 표시 (총 100개 = 약 17페이지)
+    maxTotal: 100,  // 사용자의 요청에 따라 최대 100개까지 확인 가능
 
     getLogs() {
       try {
@@ -434,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveLogs(logs) {
       try {
         if (!Array.isArray(logs)) logs = [];
-        if (logs.length > 50) logs.length = 50;
+        if (logs.length > 100) logs.length = 100; // 최대 100개 보관
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(logs));
         if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
           window.FirebaseDB.save(this.STORAGE_KEY, logs);
@@ -478,12 +478,12 @@ document.addEventListener('DOMContentLoaded', () => {
     generateInitialLogs() {
       const generated = [];
 
-      // 1. 거래처 데이터로부터 추출 (최대 10개)
+      // 1. 거래처 데이터로부터 추출 (최대 25개)
       try {
         const rawClients = localStorage.getItem('pm_clients');
         const clients = rawClients ? JSON.parse(rawClients) : [];
         if (Array.isArray(clients)) {
-          clients.slice(0, 10).forEach((c, idx) => {
+          clients.slice(0, 25).forEach((c, idx) => {
             const devCount = (c.devices || []).length;
             const pastMinutes = (idx + 1) * 35;
             generated.push({
@@ -499,13 +499,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } catch {}
 
-      // 2. 소모품 입출고 내역으로부터 추출 (최대 15개)
+      // 2. 소모품 입출고 내역으로부터 추출 (최대 40개)
       try {
         const rawSupplies = localStorage.getItem('pm_supplies_records');
         const records = rawSupplies ? JSON.parse(rawSupplies) : [];
         if (Array.isArray(records)) {
-          records.slice(0, 15).forEach((r, idx) => {
-            const pastMinutes = (idx + 1) * 55;
+          records.slice(0, 40).forEach((r, idx) => {
+            const pastMinutes = (idx + 1) * 45;
             const isOut = r.type === 'out';
             generated.push({
               id: 'init_sup_' + (r.id || idx),
@@ -520,15 +520,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } catch {}
 
-      // 3. 가입 회원 데이터로부터 추출 (최대 10개)
+      // 3. 가입 회원 데이터로부터 추출 (최대 25개)
       try {
         const rawUsers = localStorage.getItem('pm_users');
         const users = rawUsers ? JSON.parse(rawUsers) : [];
         if (Array.isArray(users)) {
-          users.slice(0, 10).forEach((u, idx) => {
+          users.slice(0, 25).forEach((u, idx) => {
             const prov = (u.provider || '').toLowerCase();
             const provLabel = prov === 'kakao' ? '카카오' : (prov === 'naver' ? '네이버' : '구글');
-            const pastMinutes = (idx + 1) * 75;
+            const pastMinutes = (idx + 1) * 60;
             generated.push({
               id: 'init_usr_' + (u.id || idx),
               type: 'member',
@@ -542,7 +542,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } catch {}
 
+      // 4. 게시판(상담/후기) 새글 데이터로부터 추출 (최대 25개)
+      try {
+        const rawPosts = localStorage.getItem('pm_board_posts');
+        const posts = rawPosts ? JSON.parse(rawPosts) : [];
+        if (Array.isArray(posts)) {
+          posts.slice(0, 25).forEach((p, idx) => {
+            const pastMinutes = (idx + 1) * 80;
+            let title = '새로운 상담 접수';
+            let icon = 'fa fa-comment-dots';
+            let iconColor = '#f59e0b';
+            if (p.boardType === 'request') {
+              title = '전화상담 신청';
+              icon = 'fa fa-phone-volume';
+              iconColor = '#3b82f6';
+            } else if (p.boardType === 'review') {
+              title = '고객 이용후기 등록';
+              icon = 'fa fa-star';
+              iconColor = '#eab308';
+            }
+            generated.push({
+              id: 'init_post_' + (p.id || idx),
+              type: 'consult',
+              title,
+              text: `<strong>${escapeHtml(p.writer || p.name || '고객')}</strong>님 ${escapeHtml(p.title || '새 글 접수')}`,
+              icon,
+              iconColor,
+              createdAt: p.createdAt || new Date(Date.now() - pastMinutes * 60 * 1000).toISOString()
+            });
+          });
+        }
+      } catch {}
+
       generated.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      if (generated.length > 100) generated.length = 100;
       if (generated.length > 0) {
         this.saveLogs(generated);
       }
@@ -572,7 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!container) return;
 
       const allLogs = this.getLogs();
-      // 사용자의 요청에 따라 최대 30개까지 확인 가능하도록 제한
+      // 사용자의 요청에 따라 최대 100개까지 확인 가능하도록 제한
       const targetLogs = (allLogs || []).slice(0, this.maxTotal);
       const totalCount = targetLogs.length;
 
@@ -592,7 +625,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (this.currentPage > totalPages) this.currentPage = totalPages;
       if (this.currentPage < 1) this.currentPage = 1;
 
-      // 상단 헤더 페이지 정보 업데이트 (예: 1 / 5 페이지 (총 30개))
+      // 상단 헤더 페이지 정보 업데이트 (예: 1 / 17 페이지 (총 100개))
       if (pageInfo) {
         pageInfo.innerHTML = `<span style="color:#38bdf8;font-weight:700;">${this.currentPage}</span> / ${totalPages} 페이지 (총 ${totalCount}개)`;
       }
@@ -619,19 +652,38 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
       }).join('');
 
-      // 하단 페이지네이션 컨트롤러 렌더링
+      // 하단 페이지네이션 컨트롤러 렌더링 (스마트 윈도우 페이징)
       if (pagination) {
         if (totalPages <= 1) {
           pagination.style.display = 'none';
         } else {
           pagination.style.display = 'flex';
-          let pagesHtml = `
+          let pagesHtml = '';
+
+          // 맨 처음 페이지 버튼 (총 페이지가 5개 초과일 때 표시)
+          if (totalPages > 5) {
+            pagesHtml += `
+              <button type="button" class="btn-act-page" ${this.currentPage === 1 ? 'disabled' : ''} onclick="ActivityLogger.setPage(1)" title="맨 처음 페이지">
+                <i class="fa fa-angles-left"></i>
+              </button>
+            `;
+          }
+
+          // 이전 페이지 버튼
+          pagesHtml += `
             <button type="button" class="btn-act-page" ${this.currentPage === 1 ? 'disabled' : ''} onclick="ActivityLogger.setPage(${this.currentPage - 1})" title="이전 페이지">
               <i class="fa fa-chevron-left"></i>
             </button>
           `;
 
-          for (let p = 1; p <= totalPages; p++) {
+          // 표시할 페이지 번호 범위 계산 (최대 5개 노출)
+          let startPage = Math.max(1, this.currentPage - 2);
+          let endPage = Math.min(totalPages, startPage + 4);
+          if (endPage - startPage < 4) {
+            startPage = Math.max(1, endPage - 4);
+          }
+
+          for (let p = startPage; p <= endPage; p++) {
             const isActive = p === this.currentPage;
             pagesHtml += `
               <button type="button" class="btn-act-page ${isActive ? 'active' : ''}" onclick="ActivityLogger.setPage(${p})">
@@ -640,11 +692,21 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
           }
 
+          // 다음 페이지 버튼
           pagesHtml += `
             <button type="button" class="btn-act-page" ${this.currentPage === totalPages ? 'disabled' : ''} onclick="ActivityLogger.setPage(${this.currentPage + 1})" title="다음 페이지">
               <i class="fa fa-chevron-right"></i>
             </button>
           `;
+
+          // 맨 끝 페이지 버튼 (총 페이지가 5개 초과일 때 표시)
+          if (totalPages > 5) {
+            pagesHtml += `
+              <button type="button" class="btn-act-page" ${this.currentPage === totalPages ? 'disabled' : ''} onclick="ActivityLogger.setPage(${totalPages})" title="맨 끝 페이지">
+                <i class="fa fa-angles-right"></i>
+              </button>
+            `;
+          }
 
           pagination.innerHTML = pagesHtml;
         }

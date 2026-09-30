@@ -43,7 +43,7 @@ const Auth = (() => {
         text,
         createdAt: new Date().toISOString()
       });
-      if (logs.length > 50) logs.length = 50;
+      if (logs.length > 100) logs.length = 100;
       localStorage.setItem('pm_activity_logs', JSON.stringify(logs));
       if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
         window.FirebaseDB.save('pm_activity_logs', logs);
