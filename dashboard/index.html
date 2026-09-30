@@ -81,6 +81,9 @@
         <div class="menu-item" onclick="window.location.href='../board/board.html?type=consult'">
           <i class="fa fa-headset"></i> 상담게시판 확인
         </div>
+        <div class="menu-item" onclick="window.location.href='../board/board.html?type=review'">
+          <i class="fa fa-star"></i> 사용후기 확인
+        </div>
         <div class="menu-item" data-page="analytics">
           <i class="fa fa-eye"></i> 방문자 통계
         </div>
@@ -183,14 +186,14 @@
           <div class="dashboard-grid">
             <div class="panel">
               <div class="panel-header">
-                <div class="panel-title">최근 상담 및 렌탈 내역</div>
+                <div class="panel-title"><i class="fa fa-clipboard-list" style="color:var(--accent-primary);margin-right:6px;"></i>게시판 새글 확인</div>
                 <div class="panel-action" onclick="showPage('consult')">전체 보기</div>
               </div>
               <div class="table-wrapper">
                 <table class="data-table">
                   <thead>
                     <tr>
-                      <th>구분</th><th>거래처 / 고객명</th><th>요청 내용</th><th>접수일</th><th>상태</th>
+                      <th>구분</th><th>작성자 / 고객명</th><th>글 제목 / 내용</th><th>작성일</th><th>상태</th>
                     </tr>
                   </thead>
                   <tbody id="homeRecentBody"></tbody>
@@ -1954,9 +1957,9 @@
   <!-- Firebase SDK v10 (Compat 모드) & 클라우드 실시간 동기화 브리지 -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="../firebase-db.js?v=20260930_002"></script>
+  <script src="../firebase-db.js?v=20260930_003"></script>
 
-  <script src="../board/board.js?v=20260930_001"></script>
-  <script src="dashboard.js?v=20260930_002"></script>
+  <script src="../board/board.js?v=20260930_002"></script>
+  <script src="dashboard.js?v=20260930_003"></script>
 </body>
 </html>

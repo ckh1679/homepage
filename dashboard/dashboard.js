@@ -113,27 +113,32 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('거래처 통계 집계 오류:', e);
     }
 
-    // 2) 미처리 상담 수: 전화상담신청 새게시물 수 + 상담게시판 새게시물 수 각각
+    // 2) 미처리 상담 및 새글 수: 전화상담신청 + 온라인상담 + 사용후기
     let unreadRequests = [];
     let unreadConsults = [];
+    let unreadReviews = [];
     if (typeof Board !== 'undefined') {
       if (typeof Board.getUnreadRequests === 'function') unreadRequests = Board.getUnreadRequests();
       if (typeof Board.getUnreadConsults === 'function') unreadConsults = Board.getUnreadConsults();
+      if (typeof Board.getUnreadReviews === 'function') unreadReviews = Board.getUnreadReviews();
     } else {
       try {
         const posts = JSON.parse(localStorage.getItem('pm_board_posts') || '[]');
         const readReqIds = JSON.parse(localStorage.getItem('pm_admin_read_requests') || '[]');
         const readConsultIds = JSON.parse(localStorage.getItem('pm_admin_read_consults') || '[]');
+        const readReviewIds = JSON.parse(localStorage.getItem('pm_admin_read_reviews') || '[]');
         unreadRequests = posts.filter(p => p.boardType === 'request' && !readReqIds.includes(p.id));
         unreadConsults = posts.filter(p => p.boardType === 'consult' && !readConsultIds.includes(p.id));
+        unreadReviews = posts.filter(p => p.boardType === 'review' && !readReviewIds.includes(p.id));
       } catch (e) {
-        console.error('상담 통계 집계 오류:', e);
+        console.error('상담/게시판 통계 집계 오류:', e);
       }
     }
 
     const reqCount = unreadRequests.length;
     const consultCount = unreadConsults.length;
-    const totalUnread = reqCount + consultCount;
+    const reviewCount = unreadReviews.length;
+    const totalUnread = reqCount + consultCount + reviewCount;
 
     // 3) 가입 회원 수: 실제 소셜 간편로그인(구글, 카카오, 네이버) 전체 가입 회원 수
     let googleMemberCount = 0;
@@ -156,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
       rentalDeviceCount,
       reqCount,
       consultCount,
+      reviewCount,
       totalUnread,
       googleMemberCount
     };
@@ -197,10 +203,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elConsultTrend) {
       if (stats.totalUnread > 0) {
         elConsultTrend.className = 'stat-trend trend-down';
-        elConsultTrend.innerHTML = `<i class="fa fa-bell"></i> 전화상담 <strong>${stats.reqCount}건</strong> · 온라인 <strong>${stats.consultCount}건</strong> 미처리`;
+        const parts = [];
+        if (stats.reqCount > 0) parts.push(`전화 <strong>${stats.reqCount}건</strong>`);
+        if (stats.consultCount > 0) parts.push(`온라인 <strong>${stats.consultCount}건</strong>`);
+        if (stats.reviewCount > 0) parts.push(`후기 <strong>${stats.reviewCount}건</strong>`);
+        elConsultTrend.innerHTML = `<i class="fa fa-bell"></i> ${parts.join(' · ')} 미확인`;
       } else {
         elConsultTrend.className = 'stat-trend trend-up';
-        elConsultTrend.innerHTML = `<i class="fa fa-check-circle"></i> 전화 0건 · 온라인 0건 (모두 확인 완료)`;
+        elConsultTrend.innerHTML = `<i class="fa fa-check-circle"></i> 게시판 새글 모두 확인 완료`;
       }
     }
     if (elMembersTrend) {
@@ -210,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.updateGlobalDashboardStats = updateGlobalDashboardStats;
 
   // ──────────────────────────────────────────────────────
-  // 4. 홈 최근 내역 테이블 및 미처리 확인 로직
+  // 4. 홈 게시판 새글 확인 테이블 및 미처리 확인 로직
   // ──────────────────────────────────────────────────────
   function renderHomeRecentConsults() {
     const tbody = document.getElementById('homeRecentBody');
@@ -227,35 +237,53 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    const consultPosts = allPosts
-      .filter(p => p.boardType === 'request' || p.boardType === 'consult')
+    const recentPosts = allPosts
+      .filter(p => p.boardType === 'request' || p.boardType === 'consult' || p.boardType === 'review')
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 7);
+      .slice(0, 8);
 
-    if (consultPosts.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">최근 접수된 상담 내역이 없습니다.</td></tr>`;
+    if (recentPosts.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">최근 등록된 게시판 새글(상담/후기) 내역이 없습니다.</td></tr>`;
       return;
     }
 
     let readReqIds = [];
     let readConsultIds = [];
+    let readReviewIds = [];
     if (typeof Board !== 'undefined') {
       if (typeof Board.getReadRequestIds === 'function') readReqIds = Board.getReadRequestIds();
       if (typeof Board.getReadConsultIds === 'function') readConsultIds = Board.getReadConsultIds();
+      if (typeof Board.getReadReviewIds === 'function') readReviewIds = Board.getReadReviewIds();
     } else {
       try {
         readReqIds = JSON.parse(localStorage.getItem('pm_admin_read_requests') || '[]');
         readConsultIds = JSON.parse(localStorage.getItem('pm_admin_read_consults') || '[]');
+        readReviewIds = JSON.parse(localStorage.getItem('pm_admin_read_reviews') || '[]');
       } catch {}
     }
 
-    tbody.innerHTML = consultPosts.map(item => {
-      const isRequest = item.boardType === 'request';
-      const typeLabel = isRequest ? '전화상담' : '온라인상담';
-      const typeBadgeBg = isRequest ? 'rgba(245,158,11,0.12)' : 'rgba(59,130,246,0.12)';
-      const typeColor = isRequest ? '#d97706' : '#2563eb';
+    tbody.innerHTML = recentPosts.map(item => {
+      let typeLabel = '온라인상담';
+      let typeBadgeBg = 'rgba(59,130,246,0.12)';
+      let typeColor = '#2563eb';
+      let isRead = false;
 
-      const isRead = isRequest ? readReqIds.includes(item.id) : readConsultIds.includes(item.id);
+      if (item.boardType === 'request') {
+        typeLabel = '전화상담';
+        typeBadgeBg = 'rgba(245,158,11,0.12)';
+        typeColor = '#d97706';
+        isRead = readReqIds.includes(item.id);
+      } else if (item.boardType === 'review') {
+        typeLabel = '사용후기';
+        typeBadgeBg = 'rgba(16,185,129,0.14)';
+        typeColor = '#059669';
+        isRead = readReviewIds.includes(item.id);
+      } else {
+        typeLabel = '온라인상담';
+        typeBadgeBg = 'rgba(59,130,246,0.12)';
+        typeColor = '#2563eb';
+        isRead = readConsultIds.includes(item.id);
+      }
 
       let dateStr = item.createdAt ? item.createdAt.slice(0, 10).replace(/-/g, '.') : '-';
       if (item.createdAt && item.createdAt.length >= 16) {
@@ -264,7 +292,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const customerName = item.author || (item.authorEmail ? item.authorEmail.split('@')[0] : '고객');
       const phoneDisplay = item.contactPhone ? `<span style="font-size:11px;color:#64748b;margin-left:4px;">(${escapeHtml(item.contactPhone)})</span>` : '';
-      const viewUrl = `../board/board-view.html?type=${item.boardType}&id=${encodeURIComponent(item.id)}`;
+      const viewUrl = item.boardType === 'request'
+        ? `../board/board.html?type=request`
+        : `../board/board-view.html?type=${item.boardType}&id=${encodeURIComponent(item.id)}`;
 
       let statusHtml = '';
       if (!isRead) {
@@ -273,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="status-badge status-pending" style="background:#fef3c7;color:#b45309;font-weight:700;">
               <i class="fa fa-bell"></i> 미확인
             </span>
-            <button type="button" class="btn-primary-sm" onclick="markDashboardItemRead('${item.id}', '${item.boardType}', event)" style="padding:2px 8px;font-size:11px;background:#0284c7;border-radius:4px;cursor:pointer;white-space:nowrap;" title="관리자 확인(미처리에서 차감)">
+            <button type="button" class="btn-primary-sm" onclick="markDashboardItemRead('${item.id}', '${item.boardType}', event)" style="padding:2px 8px;font-size:11px;background:#0284c7;border-radius:4px;cursor:pointer;white-space:nowrap;" title="관리자 확인(새글 목록에서 읽음 처리)">
               <i class="fa fa-check"></i> 확인
             </button>
           </div>
@@ -307,24 +337,45 @@ document.addEventListener('DOMContentLoaded', () => {
   function markDashboardItemRead(postId, boardType, event) {
     if (event) event.stopPropagation();
 
+    let storageKey = 'pm_admin_read_consults';
+    if (boardType === 'request') storageKey = 'pm_admin_read_requests';
+    else if (boardType === 'review') storageKey = 'pm_admin_read_reviews';
+
     if (typeof Board !== 'undefined') {
       if (boardType === 'request' && typeof Board.markRequestsAsRead === 'function') {
         Board.markRequestsAsRead(postId);
       } else if (boardType === 'consult' && typeof Board.markConsultAsRead === 'function') {
         Board.markConsultAsRead(postId);
+      } else if (boardType === 'review' && typeof Board.markReviewAsRead === 'function') {
+        Board.markReviewAsRead(postId);
+      } else {
+        try {
+          const readIds = JSON.parse(localStorage.getItem(storageKey) || '[]');
+          if (!readIds.includes(postId)) {
+            readIds.push(postId);
+            localStorage.setItem(storageKey, JSON.stringify(readIds));
+          }
+        } catch {}
       }
     } else {
-      const key = (boardType === 'request') ? 'pm_admin_read_requests' : 'pm_admin_read_consults';
       try {
-        const readIds = JSON.parse(localStorage.getItem(key) || '[]');
+        const readIds = JSON.parse(localStorage.getItem(storageKey) || '[]');
         if (!readIds.includes(postId)) {
           readIds.push(postId);
-          localStorage.setItem(key, JSON.stringify(readIds));
+          localStorage.setItem(storageKey, JSON.stringify(readIds));
         }
       } catch {}
     }
 
-    // 미처리 상담수 즉시 -1 차감 반영 및 테이블 갱신
+    // Firebase 클라우드 동기화
+    if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
+      try {
+        const list = JSON.parse(localStorage.getItem(storageKey) || '[]');
+        window.FirebaseDB.save(storageKey, list);
+      } catch (e) {}
+    }
+
+    // 미처리 통계 차감 및 테이블 동시 갱신
     updateGlobalDashboardStats(false);
     renderHomeRecentConsults();
     if (document.getElementById('page-consult')?.classList.contains('active')) {
@@ -635,18 +686,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const consultPosts = allPosts
-      .filter(p => p.boardType === 'request' || p.boardType === 'consult')
+      .filter(p => p.boardType === 'request' || p.boardType === 'consult' || p.boardType === 'review')
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     let readReqIds = [];
     let readConsultIds = [];
+    let readReviewIds = [];
     if (typeof Board !== 'undefined') {
       if (typeof Board.getReadRequestIds === 'function') readReqIds = Board.getReadRequestIds();
       if (typeof Board.getReadConsultIds === 'function') readConsultIds = Board.getReadConsultIds();
+      if (typeof Board.getReadReviewIds === 'function') readReviewIds = Board.getReadReviewIds();
     } else {
       try {
         readReqIds = JSON.parse(localStorage.getItem('pm_admin_read_requests') || '[]');
         readConsultIds = JSON.parse(localStorage.getItem('pm_admin_read_consults') || '[]');
+        readReviewIds = JSON.parse(localStorage.getItem('pm_admin_read_reviews') || '[]');
       } catch {}
     }
 
@@ -654,8 +708,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let completedCount = 0;
 
     consultPosts.forEach(p => {
-      const isReq = p.boardType === 'request';
-      const isRead = isReq ? readReqIds.includes(p.id) : readConsultIds.includes(p.id);
+      let isRead = false;
+      if (p.boardType === 'request') isRead = readReqIds.includes(p.id);
+      else if (p.boardType === 'review') isRead = readReviewIds.includes(p.id);
+      else isRead = readConsultIds.includes(p.id);
+
       if (isRead) completedCount++;
       else pendingCount++;
     });
@@ -664,16 +721,32 @@ document.addEventListener('DOMContentLoaded', () => {
     if (badgeCompleted) badgeCompleted.innerHTML = `<i class="fa fa-check"></i> 완료 ${completedCount}`;
 
     if (consultPosts.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">접수된 상담 내역이 없습니다.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">접수된 상담 및 게시글 내역이 없습니다.</td></tr>`;
       return;
     }
 
     tbody.innerHTML = consultPosts.map(item => {
-      const isReq = item.boardType === 'request';
-      const typeLabel = isReq ? '전화상담' : '온라인상담';
-      const typeBadgeBg = isReq ? 'rgba(245,158,11,0.12)' : 'rgba(59,130,246,0.12)';
-      const typeColor = isReq ? '#d97706' : '#2563eb';
-      const isRead = isReq ? readReqIds.includes(item.id) : readConsultIds.includes(item.id);
+      let typeLabel = '온라인상담';
+      let typeBadgeBg = 'rgba(59,130,246,0.12)';
+      let typeColor = '#2563eb';
+      let isRead = false;
+
+      if (item.boardType === 'request') {
+        typeLabel = '전화상담';
+        typeBadgeBg = 'rgba(245,158,11,0.12)';
+        typeColor = '#d97706';
+        isRead = readReqIds.includes(item.id);
+      } else if (item.boardType === 'review') {
+        typeLabel = '사용후기';
+        typeBadgeBg = 'rgba(16,185,129,0.14)';
+        typeColor = '#059669';
+        isRead = readReviewIds.includes(item.id);
+      } else {
+        typeLabel = '온라인상담';
+        typeBadgeBg = 'rgba(59,130,246,0.12)';
+        typeColor = '#2563eb';
+        isRead = readConsultIds.includes(item.id);
+      }
 
       let dateStr = item.createdAt ? item.createdAt.slice(0, 10).replace(/-/g, '.') : '-';
       if (item.createdAt && item.createdAt.length >= 16) {
@@ -682,7 +755,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const customerName = item.author || (item.authorEmail ? item.authorEmail.split('@')[0] : '고객');
       const contactStr = item.contactPhone || item.authorEmail || '-';
-      const viewUrl = `../board/board-view.html?type=${item.boardType}&id=${encodeURIComponent(item.id)}`;
+      const viewUrl = item.boardType === 'request'
+        ? `../board/board.html?type=request`
+        : `../board/board-view.html?type=${item.boardType}&id=${encodeURIComponent(item.id)}`;
 
       let actionHtml = '';
       if (!isRead) {

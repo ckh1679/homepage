@@ -28,6 +28,9 @@ const FirebaseDB = (() => {
     'pm_users',              // 가입 회원 목록
     'pm_blacklist',          // 블랙리스트 차단 목록 (신규)
     'pm_board_posts',        // 상담 및 전화신청 게시글
+    'pm_admin_read_requests',// 전화상담 확인 목록
+    'pm_admin_read_consults',// 온라인상담 확인 목록
+    'pm_admin_read_reviews', // 사용후기 확인 목록
     'pm_client_costs',       // 기기별 렌탈 원가 설정
     'pm_maintenance_logs',   // 소모품/부품 지출 장부
     'pm_supplies_records'    // 소모품 입출고 내역
