@@ -153,13 +153,19 @@ const Auth = (() => {
         createdAt: new Date().toISOString()
       };
       users.push(user);
-      saveUsers(users);
     } else {
+      // 기존 계정 정보 최신화
       if (!user.kakaoId) user.kakaoId = strKakaoId;
-      if (!user.picture && picture) user.picture = picture;
-      if (!user.provider) user.provider = 'kakao';
-      saveUsers(users);
+      if (nickname && (user.name === '카카오 회원' || user.name === '카카오 사용자' || !user.name)) {
+        user.name = nickname;
+      } else if (nickname) {
+        user.name = nickname;
+      }
+      if (email && !user.email) user.email = email;
+      if (picture) user.picture = picture;
+      user.provider = 'kakao';
     }
+    saveUsers(users);
 
     const sessionData = {
       id: user.id,
@@ -183,6 +189,7 @@ const Auth = (() => {
     const users = getUsers();
     const strNaverId = String(naverId);
     let user = users.find(u => u.naverId === strNaverId || (email && u.email === email));
+    const displayName = name || nickname || '네이버 사용자';
 
     if (!user) {
       const shortId = 'naver_' + strNaverId.slice(-6);
@@ -190,7 +197,7 @@ const Auth = (() => {
         id: shortId,
         naverId: strNaverId,
         password: '',
-        name: name || nickname || '네이버 사용자',
+        name: displayName,
         email: email || '',
         phone: '',
         picture: picture || '',
@@ -199,13 +206,19 @@ const Auth = (() => {
         createdAt: new Date().toISOString()
       };
       users.push(user);
-      saveUsers(users);
     } else {
+      // 기존 계정 정보 최신화
       if (!user.naverId) user.naverId = strNaverId;
-      if (!user.picture && picture) user.picture = picture;
-      if (!user.provider) user.provider = 'naver';
-      saveUsers(users);
+      if (displayName && (user.name === '네이버 회원' || user.name === '네이버 사용자' || !user.name)) {
+        user.name = displayName;
+      } else if (name || nickname) {
+        user.name = displayName;
+      }
+      if (email && !user.email) user.email = email;
+      if (picture) user.picture = picture;
+      user.provider = 'naver';
     }
+    saveUsers(users);
 
     const sessionData = {
       id: user.id,

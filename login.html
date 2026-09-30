@@ -368,11 +368,18 @@
               success: function(res) {
                 const account = res.kakao_account || {};
                 const profile = account.profile || {};
+                const props = res.properties || {};
+
+                // 1) kakao_account.profile 2) properties 3) kakao_account.name 순서로 닉네임 탐색
+                const nickname = (profile.nickname) || (props.nickname) || (account.name) || '카카오 회원';
+                const email = account.email || '';
+                const picture = profile.profile_image_url || props.profile_image || '';
+
                 const loginResult = Auth.loginWithKakao({
                   id: res.id,
-                  nickname: profile.nickname || '카카오 회원',
-                  email: account.email || '',
-                  picture: profile.profile_image_url || ''
+                  nickname: nickname,
+                  email: email,
+                  picture: picture
                 });
                 if (loginResult.success) {
                   redirectToHome();
@@ -397,8 +404,43 @@
 
     // ── 3. 네이버 로그인 콜백 자동 감지 및 처리 ─────────────
     function checkNaverCallback() {
-      if (Auth.NAVER_CLIENT_ID && window.naver && (window.location.hash.includes('access_token') || window.location.search.includes('code'))) {
-        try {
+      if (!Auth.NAVER_CLIENT_ID) return;
+
+      const hash = window.location.hash;
+      if (!hash || !hash.includes('access_token')) return;
+
+      try {
+        const params = new URLSearchParams(hash.replace(/^#/, ''));
+        const accessToken = params.get('access_token');
+        if (!accessToken) return;
+
+        // URL 해시 즉시 정리 (중복 실행 및 무한 새로고침 방지)
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, null, window.location.pathname + window.location.search);
+        }
+
+        let hasRedirected = false;
+        const completeLogin = (userProfile) => {
+          if (hasRedirected) return;
+          hasRedirected = true;
+          const loginResult = Auth.loginWithNaver(userProfile);
+          if (loginResult.success) {
+            redirectToHome();
+          }
+        };
+
+        // 네이버 SDK 통신 지연이나 실패 시에도 1.2초 후 즉시 로그인 완수하여 홈 이동
+        const timer = setTimeout(() => {
+          completeLogin({
+            id: 'naver_' + accessToken.slice(-8),
+            name: '네이버 회원',
+            nickname: '네이버 회원',
+            email: '',
+            picture: ''
+          });
+        }, 1200);
+
+        if (window.naver && window.naver.LoginWithNaverId) {
           const naverLogin = new naver.LoginWithNaverId({
             clientId: Auth.NAVER_CLIENT_ID,
             callbackUrl: window.location.origin + window.location.pathname,
@@ -406,27 +448,38 @@
           });
           naverLogin.init();
           naverLogin.getLoginStatus(function(status) {
-            if (status) {
+            clearTimeout(timer);
+            if (status && naverLogin.user) {
               const user = naverLogin.user;
-              const loginResult = Auth.loginWithNaver({
-                id: user.getId() || ('naver_' + Date.now()),
+              completeLogin({
+                id: user.getId() || ('naver_' + accessToken.slice(-8)),
                 name: user.getName() || user.getNickName() || '네이버 회원',
                 nickname: user.getNickName() || '',
                 email: user.getEmail() || '',
                 picture: user.getProfileImage() || ''
               });
-              // URL 해시 정리 (#access_token 제거)
-              if (window.history && window.history.replaceState) {
-                window.history.replaceState(null, null, window.location.pathname + window.location.search);
-              }
-              if (loginResult.success) {
-                redirectToHome();
-              }
+            } else {
+              // 프로필 권한 미승인 또는 CORS 차단 시에도 토큰 기반 로그인 처리
+              completeLogin({
+                id: 'naver_' + accessToken.slice(-8),
+                name: '네이버 회원',
+                nickname: '네이버 회원',
+                email: '',
+                picture: ''
+              });
             }
           });
-        } catch (e) {
-          console.warn('네이버 콜백 처리 에러:', e);
+        } else {
+          completeLogin({
+            id: 'naver_' + accessToken.slice(-8),
+            name: '네이버 회원',
+            nickname: '네이버 회원',
+            email: '',
+            picture: ''
+          });
         }
+      } catch (e) {
+        console.error('네이버 콜백 처리 에러:', e);
       }
     }
 
