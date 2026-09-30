@@ -153,7 +153,6 @@ const ShopData = {
       // 주요 특징 (아이콘 + 텍스트)
       features: [
         { icon: '⚡', title: '고속 출력',      desc: '흑백 22ppm·컬러 18ppm 빠른 인쇄' },
-        { icon: '📱', title: '스마트 앱 지원', desc: 'HP Smart 앱으로 어디서나 인쇄·스캔' },
         { icon: '🔄', title: '자동 양면 인쇄', desc: '용지 절약, 자동 양면 인쇄·스캔 지원' },
         { icon: '🌐', title: '다중 연결',      desc: 'WiFi·유선LAN·USB 모든 연결 지원' },
         { icon: '🖥️', title: '터치스크린',    desc: '4.3인치 컬러 터치 LCD 탑재' },
@@ -267,7 +266,6 @@ const ShopData = {
       features: [
         { icon: '⚡', title: '초고속 출력',    desc: '흑백·컬러 모두 39ppm 빠른 인쇄' },
         { icon: '📦', title: '대용량 급지',    desc: '500매 대용량 2단 용지함 탑재' },
-        { icon: '📱', title: '스마트 모바일',  desc: 'HP Smart 앱으로 인쇄·스캔 원격 제어' },
         { icon: '🔄', title: '자동 양면 인쇄', desc: '용지 절약, 자동 양면 인쇄·복사 지원' },
         { icon: '🌐', title: '다중 연결',      desc: 'WiFi·유선LAN·USB 모든 연결 지원' },
         { icon: '🖥️', title: '터치스크린',    desc: '직관적인 터치스크린 LCD 탑재' },
@@ -377,8 +375,6 @@ const ShopData = {
         { icon: '⚡', title: '고속 출력',        desc: '흑백·컬러 모두 34ppm 빠른 속도' },
         { icon: '📦', title: '대용량 급지',      desc: '500매 하단 용지함 탑재' },
         { icon: '🔄', title: '자동 양면 인쇄',  desc: '용지 절약, 자동 양면 인쇄·스캔 지원' },
-        { icon: '☁️', title: '클라우드 연결',   desc: '에어프린팅·클라우드 프린팅 지원' },
-        { icon: '💻', title: 'Mac 완벽 지원',   desc: 'Mac·iOS·Android 모두 지원' },
       ],
 
       // 추천 대상
