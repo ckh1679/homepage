@@ -426,6 +426,9 @@ const Auth = (() => {
               users[idx].name = newName.trim();
               saveUsers(users);
             }
+            if (user.provider === 'naver') {
+              localStorage.setItem('pm_naver_user_name', user.name);
+            }
             updateHeaderUI();
             alert('닉네임이 "' + user.name + '"으로 변경되었습니다.');
           }

@@ -476,7 +476,7 @@
           window.history.replaceState(null, null, window.location.pathname);
         }
 
-        // 3. 기존 사용자 목록 안전 조회
+        // 3. 기존 네이버 회원 영구 식별자 및 이름 조회
         let users = [];
         try {
           users = (typeof Auth.getUsers === 'function') ? Auth.getUsers() : JSON.parse(localStorage.getItem('pm_users') || '[]');
@@ -484,17 +484,25 @@
           users = [];
         }
 
-        const shortId = accessToken.slice(-8);
-        const existing = users.find(u => u.provider === 'naver');
+        const savedNaverId = localStorage.getItem('pm_naver_user_id');
+        const savedNaverName = localStorage.getItem('pm_naver_user_name');
+        const existing = (savedNaverId ? users.find(u => u.id === savedNaverId || u.naverId === savedNaverId) : null)
+                      || users.find(u => u.provider === 'naver');
 
-        // 이미 닉네임을 설정해둔 기존 회원이면 즉시 로그인 후 홈으로 이동!
-        if (existing && existing.name && existing.name !== '네이버 회원' && existing.name !== '네이버 사용자') {
+        const effectiveName = savedNaverName || (existing && existing.name && existing.name !== '네이버 회원' && existing.name !== '네이버 사용자' ? existing.name : '');
+
+        // 이미 이름을 설정해둔 기존 회원이면 모달창 전혀 없이 즉시 로그인 후 홈으로 이동!
+        if (effectiveName) {
+          const finalId = savedNaverId || (existing ? existing.id : ('naver_' + accessToken.slice(-8)));
+          localStorage.setItem('pm_naver_user_id', finalId);
+          localStorage.setItem('pm_naver_user_name', effectiveName);
+
           const res = Auth.loginWithNaver({
-            id: existing.id || ('naver_' + shortId),
-            name: existing.name,
-            nickname: existing.name,
-            email: existing.email || '',
-            picture: existing.picture || ''
+            id: finalId,
+            name: effectiveName,
+            nickname: effectiveName,
+            email: (existing && existing.email) || '',
+            picture: (existing && existing.picture) || ''
           });
           if (res.success) {
             setTimeout(redirectToHome, 120);
@@ -505,12 +513,17 @@
           }
         }
 
-        // 신규 또는 닉네임 설정이 필요한 경우 즉시 모달 팝업 표시
+        // 최초 1회 신규 회원이거나 이름 설정이 필요한 경우에만 팝업 표시
+        const newId = savedNaverId || ('naver_' + accessToken.slice(-8));
         promptNaverNickname('네이버 회원', (chosenName) => {
+          const finalChosen = chosenName || '네이버 회원';
+          localStorage.setItem('pm_naver_user_id', newId);
+          localStorage.setItem('pm_naver_user_name', finalChosen);
+
           const res = Auth.loginWithNaver({
-            id: 'naver_' + shortId,
-            name: chosenName,
-            nickname: chosenName,
+            id: newId,
+            name: finalChosen,
+            nickname: finalChosen,
             email: '',
             picture: ''
           });
@@ -523,15 +536,16 @@
 
       } catch (e) {
         console.error('네이버 로그인 처리 예외 발생:', e);
-        // 어떤 예외가 발생하더라도 즉시 로그인 완료 처리 후 홈으로 안전하게 이동
+        const savedName = localStorage.getItem('pm_naver_user_name') || '네이버 회원';
+        const finalId = localStorage.getItem('pm_naver_user_id') || ('naver_' + accessToken.slice(-8));
         Auth.loginWithNaver({
-          id: 'naver_' + accessToken.slice(-8),
-          name: '네이버 회원',
-          nickname: '네이버 회원',
+          id: finalId,
+          name: savedName,
+          nickname: savedName,
           email: '',
           picture: ''
         });
-        redirectToHome();
+        setTimeout(redirectToHome, 120);
       }
     }
 
@@ -551,15 +565,14 @@
       }
 
       try {
-        // 네이버 OAuth 2.0 인가 URL로 직접 이동 (SDK DOM 의존성 및 firstChild 에러 원천 차단)
+        // 네이버 OAuth 2.0 인가 URL로 직접 이동 (auth_type=reprompt 제거하여 반복 동의창 원천 차단!)
         const state = Math.random().toString(36).substring(2, 15);
         sessionStorage.setItem('naver_oauth_state', state);
         const callbackUrl = window.location.origin + window.location.pathname;
         const naverAuthUrl = 'https://nid.naver.com/oauth2.0/authorize?response_type=token'
           + '&client_id=' + encodeURIComponent(Auth.NAVER_CLIENT_ID)
           + '&redirect_uri=' + encodeURIComponent(callbackUrl)
-          + '&state=' + encodeURIComponent(state)
-          + '&auth_type=reprompt';
+          + '&state=' + encodeURIComponent(state);
         
         window.location.href = naverAuthUrl;
       } catch (e) {
