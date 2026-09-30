@@ -423,6 +423,8 @@ const Auth = (() => {
     NAVER_CLIENT_ID,
     DASHBOARD_ADMIN_EMAILS,
     parseJwt,
+    getUsers,
+    saveUsers,
     register,
     login,
     loginWithGoogle,

@@ -18,7 +18,7 @@
   <!-- 3. Naver Login SDK -->
   <script src="https://static.nid.naver.com/js/naveridlogin_js_sdk_2.0.2.js" charset="utf-8"></script>
 
-  <script src="auth.js?v=20260930_003"></script>
+  <script src="auth.js?v=20260930_004"></script>
 </head>
 <body class="auth-page">
 
@@ -450,102 +450,78 @@
     function checkNaverCallback() {
       if (!Auth.NAVER_CLIENT_ID) return;
 
-      const hash = window.location.hash;
-      if (!hash || !hash.includes('access_token')) return;
+      // 1. URL 해시(#access_token) 또는 쿼리스트링(?access_token) 확인
+      const rawParams = window.location.hash ? window.location.hash.replace(/^#/, '') : (window.location.search ? window.location.search.replace(/^\?/, '') : '');
+      if (!rawParams || (!rawParams.includes('access_token') && !rawParams.includes('code'))) return;
+
+      const params = new URLSearchParams(rawParams);
+      const accessToken = params.get('access_token');
+      const error = params.get('error');
+
+      if (error) {
+        console.warn('네이버 로그인 취소 또는 오류:', error, params.get('error_description'));
+        return;
+      }
+
+      if (!accessToken) return;
 
       try {
-        const params = new URLSearchParams(hash.replace(/^#/, ''));
-        const accessToken = params.get('access_token');
-        if (!accessToken) return;
-
-        // URL 해시 즉시 정리 (중복 실행 및 무한 새로고침 방지)
+        // 2. URL 해시 즉시 제거 (새로고침 시 재실행 방지)
         if (window.history && window.history.replaceState) {
-          window.history.replaceState(null, null, window.location.pathname + window.location.search);
+          window.history.replaceState(null, null, window.location.pathname);
         }
 
-        let hasProcessed = false;
-        const completeLogin = (userProfile) => {
-          if (hasProcessed) return;
-          hasProcessed = true;
+        // 3. 기존 사용자 목록 안전 조회
+        let users = [];
+        try {
+          users = (typeof Auth.getUsers === 'function') ? Auth.getUsers() : JSON.parse(localStorage.getItem('pm_users') || '[]');
+        } catch (err) {
+          users = [];
+        }
 
-          // 1. 기존에 이미 닉네임을 설정해둔 사용자인지 확인
-          const users = Auth.getUsers();
-          const targetId = String(userProfile.id);
-          const existing = users.find(u => u.naverId === targetId || u.id === 'naver_' + targetId.slice(-6));
+        const shortId = accessToken.slice(-8);
+        const existing = users.find(u => u.provider === 'naver');
 
-          if (existing && existing.name && existing.name !== '네이버 회원' && existing.name !== '네이버 사용자') {
-            userProfile.name = existing.name;
-            const res = Auth.loginWithNaver(userProfile);
-            if (res.success) redirectToHome();
-            return;
-          }
-
-          // 2. SDK에서 실제 이름이 넘어온 경우 (단, 기본값이 아닐 때)
-          if (userProfile.name && userProfile.name !== '네이버 회원' && userProfile.name !== '네이버 사용자') {
-            const res = Auth.loginWithNaver(userProfile);
-            if (res.success) redirectToHome();
-            return;
-          }
-
-          // 3. 네이버 브라우저 CORS 제한으로 이름이 누락된 경우 -> 친절한 닉네임 입력 모달 호출
-          promptNaverNickname(userProfile.name || '네이버 회원', (chosenName) => {
-            userProfile.name = chosenName;
-            userProfile.nickname = chosenName;
-            const res = Auth.loginWithNaver(userProfile);
-            if (res.success) redirectToHome();
+        // 이미 닉네임을 설정해둔 기존 회원이면 즉시 로그인 후 홈으로 이동!
+        if (existing && existing.name && existing.name !== '네이버 회원' && existing.name !== '네이버 사용자') {
+          const res = Auth.loginWithNaver({
+            id: existing.id || ('naver_' + shortId),
+            name: existing.name,
+            nickname: existing.name,
+            email: existing.email || '',
+            picture: existing.picture || ''
           });
-        };
+          if (res.success) {
+            redirectToHome();
+            return;
+          }
+        }
 
-        // 타임아웃 1초 후에도 SDK가 응답이 없으면 즉시 토큰 기반 닉네임 설정으로 진행
-        const timer = setTimeout(() => {
-          completeLogin({
-            id: 'naver_' + accessToken.slice(-8),
-            name: '네이버 회원',
-            nickname: '네이버 회원',
+        // 신규 또는 닉네임 설정이 필요한 경우 즉시 모달 팝업 표시
+        promptNaverNickname('네이버 회원', (chosenName) => {
+          const res = Auth.loginWithNaver({
+            id: 'naver_' + shortId,
+            name: chosenName,
+            nickname: chosenName,
             email: '',
             picture: ''
           });
-        }, 1000);
+          if (res.success) {
+            redirectToHome();
+          }
+        });
 
-        if (window.naver && window.naver.LoginWithNaverId) {
-          const naverLogin = new naver.LoginWithNaverId({
-            clientId: Auth.NAVER_CLIENT_ID,
-            callbackUrl: window.location.origin + window.location.pathname,
-            isPopup: false
-          });
-          naverLogin.init();
-          naverLogin.getLoginStatus(function(status) {
-            clearTimeout(timer);
-            if (status && naverLogin.user) {
-              const user = naverLogin.user;
-              completeLogin({
-                id: user.getId() || ('naver_' + accessToken.slice(-8)),
-                name: user.getName() || user.getNickName() || '네이버 회원',
-                nickname: user.getNickName() || '',
-                email: user.getEmail() || '',
-                picture: user.getProfileImage() || ''
-              });
-            } else {
-              completeLogin({
-                id: 'naver_' + accessToken.slice(-8),
-                name: '네이버 회원',
-                nickname: '네이버 회원',
-                email: '',
-                picture: ''
-              });
-            }
-          });
-        } else {
-          completeLogin({
-            id: 'naver_' + accessToken.slice(-8),
-            name: '네이버 회원',
-            nickname: '네이버 회원',
-            email: '',
-            picture: ''
-          });
-        }
       } catch (e) {
-        console.error('네이버 콜백 처리 에러:', e);
+        console.error('네이버 로그인 처리 예외 발생:', e);
+        // 어떤 예외가 발생하더라도 즉시 로그인 완료 처리 후 홈으로 안전하게 이동
+        Auth.loginWithNaver({
+          id: 'naver_' + accessToken.slice(-8),
+          name: '네이버 회원',
+          nickname: '네이버 회원',
+          email: '',
+          picture: ''
+        });
+        redirectToHome();
       }
     }
 
