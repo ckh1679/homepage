@@ -13,12 +13,12 @@
   <!-- 소셜 로그인 SDK -->
   <!-- 1. Google Identity Services (Google 로그인 SDK) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <!-- 2. Kakao JavaScript SDK -->
-  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>
+  <!-- 2. Kakao JavaScript SDK v1 (팝업 및 API 완벽 호환) -->
+  <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
   <!-- 3. Naver Login SDK -->
   <script src="https://static.nid.naver.com/js/naveridlogin_js_sdk_2.0.2.js" charset="utf-8"></script>
 
-  <script src="auth.js?v=20260930_002"></script>
+  <script src="auth.js?v=20260930_003"></script>
 </head>
 <body class="auth-page">
 
@@ -248,6 +248,9 @@
           <span>네이버로 시작하기</span>
         </button>
 
+        <!-- 네이버 SDK 전용 숨김 컨테이너 (SDK 내부 null 에러 방지용) -->
+        <div id="naverIdLogin" style="display:none;"></div>
+
         <div class="social-divider">또는</div>
 
         <!-- 3. 구글 로그인 버튼 -->
@@ -406,12 +409,16 @@
             if (status) {
               const user = naverLogin.user;
               const loginResult = Auth.loginWithNaver({
-                id: user.getId(),
+                id: user.getId() || ('naver_' + Date.now()),
                 name: user.getName() || user.getNickName() || '네이버 회원',
-                nickname: user.getNickName(),
+                nickname: user.getNickName() || '',
                 email: user.getEmail() || '',
                 picture: user.getProfileImage() || ''
               });
+              // URL 해시 정리 (#access_token 제거)
+              if (window.history && window.history.replaceState) {
+                window.history.replaceState(null, null, window.location.pathname + window.location.search);
+              }
               if (loginResult.success) {
                 redirectToHome();
               }
@@ -433,20 +440,22 @@
         return;
       }
 
-      if (!Auth.NAVER_CLIENT_ID || !window.naver) {
-        alert('네이버 Client ID가 설정되지 않았거나 SDK 로드에 실패했습니다.');
+      if (!Auth.NAVER_CLIENT_ID) {
+        alert('네이버 Client ID가 설정되지 않았습니다.');
         return;
       }
 
       try {
-        const naverLogin = new naver.LoginWithNaverId({
-          clientId: Auth.NAVER_CLIENT_ID,
-          callbackUrl: window.location.origin + window.location.pathname,
-          isPopup: false,
-          loginButton: { color: "green", type: 3, height: 48 }
-        });
-        naverLogin.init();
-        naverLogin.authorize();
+        // 네이버 OAuth 2.0 인가 URL로 직접 이동 (SDK DOM 의존성 및 firstChild 에러 원천 차단)
+        const state = Math.random().toString(36).substring(2, 15);
+        sessionStorage.setItem('naver_oauth_state', state);
+        const callbackUrl = window.location.origin + window.location.pathname;
+        const naverAuthUrl = 'https://nid.naver.com/oauth2.0/authorize?response_type=token'
+          + '&client_id=' + encodeURIComponent(Auth.NAVER_CLIENT_ID)
+          + '&redirect_uri=' + encodeURIComponent(callbackUrl)
+          + '&state=' + encodeURIComponent(state);
+        
+        window.location.href = naverAuthUrl;
       } catch (e) {
         console.error('네이버 로그인 예외 발생:', e);
         alert('네이버 로그인 실행 중 오류가 발생했습니다: ' + e.message);
