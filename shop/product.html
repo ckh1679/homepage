@@ -490,14 +490,28 @@
       border-top: 8px solid #f4f6f9; /* 그룹 간 여백 */
     }
 
-    /* ── 상세 이미지 (인포그래픽) ── */
+    /* ── 상세 이미지 (인포그래픽 및 기본정보 이미지) ── */
     .pd-detail-img-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
       text-align: center;
     }
-    .pd-detail-img-wrap img {
-      max-width: 100%;
+    .pd-detail-img-item {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+    .pd-detail-img-item img {
+      width: 100%;
+      max-width: 950px;
       border-radius: 12px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      display: block;
+    }
+    .pd-detail-img-item.info-top img {
+      border: 1.5px solid #e2e8f0;
     }
 
     /* ── 관련 상품 ── */
@@ -717,13 +731,33 @@
         `<span class="pd-rec-tag">${r}</span>`
       ).join('');
 
-      // 상세 인포그래픽 이미지 (마지막 이미지가 spec 이미지)
-      const specImgSrc = images.length >= 3 ? images[images.length - 1] : '';
-      const specImgSection = specImgSrc ? `
+      // 1. 상세 설명 상단 기본정보 이미지 (제품별 개별 지정 우선, 없으면 공통 이미지 적용)
+      const detailTopImg = p.detailTopImage || p.infoImage || (ShopData.commonInfoImage || '');
+
+      // 2. 상세 설명 하단 상세스펙/인포그래픽 이미지
+      const specImgSrc = p.detailSpecImage || (images.length >= 3 ? images[images.length - 1] : '');
+
+      let detailImagesHtml = '';
+      if (detailTopImg) {
+        detailImagesHtml += `
+          <div class="pd-detail-img-item info-top">
+            <img src="${detailTopImg}" alt="${p.name} 기본정보 안내" loading="lazy">
+          </div>
+        `;
+      }
+      if (specImgSrc && specImgSrc !== detailTopImg) {
+        detailImagesHtml += `
+          <div class="pd-detail-img-item spec-bottom">
+            <img src="${specImgSrc}" alt="${p.name} 상세 설명" loading="lazy">
+          </div>
+        `;
+      }
+
+      const specImgSection = (detailTopImg || specImgSrc) ? `
         <div class="pd-section">
           <h2 class="pd-section-title"><i class="fa fa-file-image" style="color:var(--primary);"></i> 상세 설명</h2>
           <div class="pd-detail-img-wrap">
-            <img src="${specImgSrc}" alt="${p.name} 상세 설명" loading="lazy">
+            ${detailImagesHtml}
           </div>
         </div>
       ` : '';

@@ -53,6 +53,10 @@ const ShopData = {
     }
   ],
 
+  // ── 전 제품 공통 상세설명 상단 기본정보 이미지 (모든 제품에 동일하게 적용할 때 사용) ──
+  // 예: './images/common_rental_info.jpg' (지정하지 않으면 제품별 detailTopImage만 적용)
+  commonInfoImage: '',
+
   // ── 상품 데이터 ───────────────────────────────────
   products: [
 
@@ -159,6 +163,9 @@ const ShopData = {
 
       // 추천 대상
       recommend: ['가정·소호', '1~4인 소규모 사무실', '학원·학교', '재택근무'],
+
+      // 상세설명 상단 기본정보 이미지 (필요시 경로 입력, 예: './images/hp9010_info.jpg')
+      detailTopImage: '',
 
       // images 배열: [대표이미지, 서브이미지, 상세스펙이미지]
       images: [
@@ -270,6 +277,9 @@ const ShopData = {
       // 추천 대상
       recommend: ['중소규모 사무실', '4~10인 팀', '학원·교육기관', '인쇄량이 많은 업무'],
 
+      // 상세설명 상단 기본정보 이미지 (필요시 경로 입력, 예: './images/hp9020_info.jpg')
+      detailTopImage: '',
+
       // images 배열: [대표이미지, 서브이미지, 상세스펙인포그래픽]
       images: [
         './images/hp9020_main.jpg',  // 대표 이미지
@@ -375,6 +385,9 @@ const ShopData = {
       // 추천 대상
       recommend: ['도면·설계 사무소', 'A3 출력이 필요한 학원', '디자인·인쇄 업체', '대형 서류 처리 팀'],
 
+      // 상세설명 상단 기본정보 이미지 (필요시 경로 입력, 예: './images/hp7740_info.jpg')
+      detailTopImage: '',
+
       // images 배열: [대표이미지, 추가이미지, 상세스펙인포그래픽]
       images: [
         './images/hp7740_main.jpg',  // 대표 이미지
@@ -434,6 +447,9 @@ const ShopData = {
       ],
 
       recommend: ['기업용 사무실', '중소 인쇄량 부서', '디자인·기획팀'],
+
+      // 상세설명 상단 기본정보 이미지 (필요시 경로 입력, 예: './images/c3922_info.jpg')
+      detailTopImage: '',
 
       images: [
         './images/c3922_main.jpg?v=20260929',
@@ -525,6 +541,9 @@ const ShopData = {
       // 추천 대상
       recommend: ['기업용 사무실', '대량 문서 출력 부서', '디자인 에이전시', '보안이 중요한 환경'],
 
+      // 상세설명 상단 기본정보 이미지 (필요시 경로 입력, 예: './images/c3926_info.jpg')
+      detailTopImage: '',
+
       // images 배열: [대표이미지, 추가이미지, 상세스펙인포그래픽]
       images: [
         './images/c3926_main.jpg?v=20260929',
@@ -586,6 +605,9 @@ const ShopData = {
 
       recommend: ['대용량 출력 기업', '법무·회계·컨설팅', '디자인 에이전시', '의료·금융 기관'],
 
+      // 상세설명 상단 기본정보 이미지 (필요시 경로 입력, 예: './images/c3935i_info.jpg')
+      detailTopImage: '',
+
       images: [
         './images/c3935i_main.jpeg?v=20260929',
         './images/c3935i_sub.jpeg?v=20260929',
@@ -638,6 +660,9 @@ const ShopData = {
       ],
       recommend: ['가정용', '1~3인 소형 사무실', '개인 정보 보호가 필요한 곳'],
 
+      // 상세설명 상단 기본정보 이미지 (필요시 경로 입력, 예: './images/pk612x_info.jpg')
+      detailTopImage: '',
+
       images: [
         './images/pk612x_main.jpg',
         './images/pk612x_sub.jpg',
@@ -686,6 +711,9 @@ const ShopData = {
       ],
       recommend: ['중소규모 사무실', '문서 폐기량이 많은 부서', '조용한 환경이 필요한 곳'],
 
+      // 상세설명 상단 기본정보 이미지 (필요시 경로 입력, 예: './images/pk7100cd_info.jpg')
+      detailTopImage: '',
+
       images: [
         './images/pk7100cd_main.jpg',
         './images/pk7100cd_sub.jpg',
@@ -707,6 +735,8 @@ const ShopData = {
       badgeTypes: ['new'],
       description: '사무용/그래픽용/게이밍 PC 등 다양한 사양 맞춤 렌탈',
       spec: '고객님의 업무 환경에 맞는 최적의 PC를 제안해 드립니다.',
+      // 상세설명 상단 기본정보 이미지 (필요시 경로 입력)
+      detailTopImage: '',
       imageText: '상담전화+요망',
       popular: true
     }
