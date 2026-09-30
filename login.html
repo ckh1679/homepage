@@ -400,6 +400,8 @@
                 });
                 if (loginResult.success) {
                   redirectToHome();
+                } else {
+                  alert(loginResult.message || '카카오 로그인에 실패했습니다.');
                 }
               },
               fail: function(error) {
@@ -494,6 +496,9 @@
           if (res.success) {
             redirectToHome();
             return;
+          } else {
+            alert(res.message || '네이버 로그인에 실패했습니다.');
+            return;
           }
         }
 
@@ -508,6 +513,8 @@
           });
           if (res.success) {
             redirectToHome();
+          } else {
+            alert(res.message || '네이버 로그인에 실패했습니다.');
           }
         });
 

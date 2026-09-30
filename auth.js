@@ -10,10 +10,82 @@
 const Auth = (() => {
   const USERS_KEY = 'pm_users';
   const SESSION_KEY = 'pm_session';
+  const BLACKLIST_KEY = 'pm_blacklist';
 
-  // ── 초기화: 특별한 작업 없음 (구글 로그인 전용으로 변경) ──
+  // ── 블랙리스트 조회 / 저장 / 차단 확인 ─────────────────
+  function getBlacklist() {
+    try {
+      return JSON.parse(localStorage.getItem(BLACKLIST_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  function saveBlacklist(list) {
+    localStorage.setItem(BLACKLIST_KEY, JSON.stringify(list));
+    if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
+      window.FirebaseDB.save(BLACKLIST_KEY, list);
+    }
+  }
+
+  function isBlacklisted(email, id) {
+    const list = getBlacklist();
+    const targetEmail = (email || '').trim().toLowerCase();
+    const targetId = (id || '').trim();
+
+    return list.some(item => {
+      const itemEmail = (item.email || '').trim().toLowerCase();
+      const itemId = (item.id || '').trim();
+      if (targetEmail && itemEmail && targetEmail === itemEmail) return true;
+      if (targetId && itemId && targetId === itemId) return true;
+      return false;
+    });
+  }
+
+  function addBlacklist({ email, id, name, reason }) {
+    const list = getBlacklist();
+    if (isBlacklisted(email, id)) return false;
+    list.unshift({
+      email: (email || '').trim(),
+      id: (id || '').trim(),
+      name: name || '차단회원',
+      reason: reason || '관리자 지정 차단',
+      createdAt: new Date().toISOString()
+    });
+    saveBlacklist(list);
+    return true;
+  }
+
+  function removeBlacklist(identifier) {
+    let list = getBlacklist();
+    const target = (identifier || '').trim().toLowerCase();
+    list = list.filter(item => {
+      const e = (item.email || '').trim().toLowerCase();
+      const i = (item.id || '').trim().toLowerCase();
+      return e !== target && i !== target;
+    });
+    saveBlacklist(list);
+  }
+
+  // ── 회원 삭제 (탈퇴 처리 - 추후 재가입 가능) ───────────
+  function deleteUser(userId) {
+    let users = getUsers();
+    const target = users.find(u => u.id === userId);
+    if (!target) return false;
+
+    users = users.filter(u => u.id !== userId);
+    saveUsers(users);
+
+    // 만약 현재 로그인된 본인이 삭제된 경우 세션 로그아웃
+    const cur = getCurrentUser();
+    if (cur && cur.id === userId) {
+      sessionStorage.removeItem(SESSION_KEY);
+    }
+    return true;
+  }
+
+  // ── 초기화: 특별한 작업 없음 (소셜 로그인 중심) ──
   function init() {
-    // 일반 아이디 로그인 방식을 사용하지 않으므로 init 작업 없음
   }
 
   // ── 회원 목록 조회 ──────────────────────────────────
@@ -84,6 +156,12 @@ const Auth = (() => {
     }
 
     const { sub: googleId, email, name, picture } = payload;
+
+    // 블랙리스트 차단 여부 확인
+    if (isBlacklisted(email, googleId)) {
+      return { success: false, message: '이용이 제한(차단)된 계정입니다.\n관리자에게 문의해 주세요.' };
+    }
+
     const users = getUsers();
 
     // 1. 기존 구글 연동 계정 또는 이메일 일치 계정 찾기
@@ -134,8 +212,12 @@ const Auth = (() => {
       return { success: false, message: '유효하지 않은 카카오 인증 정보입니다.' };
     }
 
-    const users = getUsers();
     const strKakaoId = String(kakaoId);
+    if (isBlacklisted(email, strKakaoId)) {
+      return { success: false, message: '이용이 제한(차단)된 계정입니다.\n관리자에게 문의해 주세요.' };
+    }
+
+    const users = getUsers();
     let user = users.find(u => u.kakaoId === strKakaoId || (email && u.email === email));
 
     if (!user) {
@@ -186,8 +268,12 @@ const Auth = (() => {
       return { success: false, message: '유효하지 않은 네이버 인증 정보입니다.' };
     }
 
-    const users = getUsers();
     const strNaverId = String(naverId);
+    if (isBlacklisted(email, strNaverId)) {
+      return { success: false, message: '이용이 제한(차단)된 계정입니다.\n관리자에게 문의해 주세요.' };
+    }
+
+    const users = getUsers();
     let user = users.find(u => u.naverId === strNaverId || (email && u.email === email));
     const displayName = name || nickname || '네이버 사용자';
 
@@ -425,6 +511,12 @@ const Auth = (() => {
     parseJwt,
     getUsers,
     saveUsers,
+    deleteUser,
+    getBlacklist,
+    saveBlacklist,
+    isBlacklisted,
+    addBlacklist,
+    removeBlacklist,
     register,
     login,
     loginWithGoogle,

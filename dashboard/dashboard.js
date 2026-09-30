@@ -135,21 +135,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const consultCount = unreadConsults.length;
     const totalUnread = reqCount + consultCount;
 
-    // 3) 가입 회원 수: 실제 구글 로그인으로 가입된 아이디 수 파악
+    // 3) 가입 회원 수: 실제 소셜 간편로그인(구글, 카카오, 네이버) 전체 가입 회원 수
     let googleMemberCount = 0;
     try {
-      const rawUsers = localStorage.getItem('pm_users');
-      const users = rawUsers ? JSON.parse(rawUsers) : [];
-      const googleUsers = users.filter(u => {
-        if (!u) return false;
-        return (
-          u.provider === 'google' ||
-          Boolean(u.googleId) ||
-          (typeof u.id === 'string' && u.id.startsWith('google_')) ||
-          (u.email && typeof u.email === 'string' && u.email.includes('@'))
-        );
-      });
-      googleMemberCount = googleUsers.length;
+      let users = [];
+      if (typeof Auth !== 'undefined' && typeof Auth.getUsers === 'function') {
+        users = Auth.getUsers();
+      } else {
+        const rawUsers = localStorage.getItem('pm_users');
+        users = rawUsers ? JSON.parse(rawUsers) : [];
+      }
+      const validUsers = users.filter(u => u && (u.id || u.email));
+      googleMemberCount = validUsers.length;
     } catch (e) {
       console.error('회원 통계 집계 오류:', e);
     }
@@ -337,6 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.markDashboardItemRead = markDashboardItemRead;
 
   // ──────────────────────────────────────────────────────
+  // ──────────────────────────────────────────────────────
   // 4-1. 가입회원 관리 페이지 (#page-members) 렌더링
   // ──────────────────────────────────────────────────────
   function renderMembersPage() {
@@ -348,26 +346,173 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let users = [];
     try {
-      const raw = localStorage.getItem('pm_users');
-      users = raw ? JSON.parse(raw) : [];
+      if (typeof Auth !== 'undefined' && typeof Auth.getUsers === 'function') {
+        users = Auth.getUsers();
+      } else {
+        const raw = localStorage.getItem('pm_users');
+        users = raw ? JSON.parse(raw) : [];
+      }
     } catch {
       users = [];
     }
 
-    // 실제 구글 로그인 가입 회원 필터링
-    const googleUsers = users.filter(u => {
-      if (!u) return false;
-      return (
-        u.provider === 'google' ||
-        Boolean(u.googleId) ||
-        (typeof u.id === 'string' && u.id.startsWith('google_')) ||
-        (u.email && typeof u.email === 'string' && u.email.includes('@'))
-      );
-    });
+    // 유효한 전체 소셜 회원 (구글, 카카오, 네이버)
+    const socialUsers = users.filter(u => u && (u.id || u.email));
 
-    if (badge) badge.textContent = `총 ${googleUsers.length}명`;
+    if (badge) badge.textContent = `총 ${socialUsers.length}명`;
 
-    if (googleUsers.length === 0) {
+    if (socialUsers.length === 0) {
+      if (tableWrapper) tableWrapper.style.display = 'none';
+      if (empty) empty.style.display = 'block';
+    } else {
+      if (tableWrapper) tableWrapper.style.display = 'block';
+      if (empty) empty.style.display = 'none';
+
+      tbody.innerHTML = socialUsers.map((u, idx) => {
+        let avatarBg = '#e0e7ff';
+        let avatarColor = '#4338ca';
+        let providerBadge = '';
+        let initial = (u.name || 'U')[0];
+
+        if (u.provider === 'kakao') {
+          providerBadge = `<span class="status-badge" style="background:#fef08a;color:#854d0e;font-weight:700;"><i class="fa fa-comment"></i> 카카오</span>`;
+          avatarBg = '#fef08a';
+          avatarColor = '#854d0e';
+        } else if (u.provider === 'naver') {
+          providerBadge = `<span class="status-badge" style="background:#dcfce7;color:#166534;font-weight:700;"><i class="fa fa-square"></i> 네이버</span>`;
+          avatarBg = '#dcfce7';
+          avatarColor = '#166534';
+        } else {
+          providerBadge = `<span class="status-badge" style="background:#fee2e2;color:#b91c1c;font-weight:700;"><i class="fab fa-google"></i> Google</span>`;
+        }
+
+        const avatarHtml = u.picture
+          ? `<img src="${escapeHtml(u.picture)}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`
+          : `<div style="width:32px;height:32px;border-radius:50%;background:${avatarBg};color:${avatarColor};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;">${initial}</div>`;
+
+        let joinDate = u.createdAt ? u.createdAt.slice(0, 10).replace(/-/g, '.') : '-';
+        if (u.createdAt && u.createdAt.length >= 16) {
+          joinDate = `${u.createdAt.slice(0, 10).replace(/-/g, '.')} ${u.createdAt.slice(11, 16)}`;
+        }
+
+        const emailDisplay = u.email ? escapeHtml(u.email) : (u.id ? `<span style="color:#94a3b8;">${escapeHtml(u.id)}</span>` : '-');
+
+        return `
+          <tr>
+            <td>${idx + 1}</td>
+            <td>${avatarHtml}</td>
+            <td><strong>${escapeHtml(u.name || '소셜 회원')}</strong></td>
+            <td><span style="font-family:monospace;color:#2563eb;">${emailDisplay}</span></td>
+            <td>${providerBadge}</td>
+            <td style="color:#64748b;font-size:12px;">${joinDate}</td>
+            <td><span class="status-badge status-completed" style="background:#f0fdf4;color:#166534;"><i class="fa fa-check-circle"></i> 정상</span></td>
+            <td style="text-align:center; white-space:nowrap;">
+              <button type="button" class="btn btn-sm" style="background:#ef4444; color:#fff; border:none; padding:4px 9px; border-radius:4px; font-size:11px; font-weight:700; cursor:pointer; margin-right:4px;" onclick="handleDeleteMember('${escapeHtml(u.id)}')">
+                <i class="fa fa-trash"></i> 탈퇴
+              </button>
+              <button type="button" class="btn btn-sm" style="background:#334155; color:#fff; border:none; padding:4px 9px; border-radius:4px; font-size:11px; font-weight:700; cursor:pointer;" onclick="handleBlockMember('${escapeHtml(u.id)}')">
+                <i class="fa fa-ban"></i> 차단
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 블랙리스트 테이블 렌더링 함께 실행
+    renderBlacklistTable();
+  }
+  window.renderMembersPage = renderMembersPage;
+
+  // ── 회원 삭제 (탈퇴 처리) ───────────────────────────────────
+  function handleDeleteMember(userId) {
+    if (!userId) return;
+    let users = (typeof Auth !== 'undefined' && typeof Auth.getUsers === 'function')
+      ? Auth.getUsers()
+      : JSON.parse(localStorage.getItem('pm_users') || '[]');
+    const target = users.find(u => u.id === userId);
+    const targetName = target ? target.name : '해당';
+
+    if (!confirm(`정말 [${targetName}] 회원의 정보를 삭제(탈퇴) 처리하시겠습니까?\n\n※ 삭제 후에도 해당 계정으로 로그인 시 언제든 신규 회원으로 재가입이 가능합니다.`)) {
+      return;
+    }
+
+    if (typeof Auth !== 'undefined' && typeof Auth.deleteUser === 'function') {
+      Auth.deleteUser(userId);
+    } else {
+      users = users.filter(u => u.id !== userId);
+      localStorage.setItem('pm_users', JSON.stringify(users));
+    }
+
+    renderMembersPage();
+    window.updateGlobalDashboardStats && window.updateGlobalDashboardStats(false);
+    alert(`[${targetName}] 회원이 탈퇴(정보삭제) 처리되었습니다.`);
+  }
+  window.handleDeleteMember = handleDeleteMember;
+
+  // ── 회원 차단 (블랙리스트 등록 후 탈퇴) ──────────────────────
+  function handleBlockMember(userId) {
+    if (!userId) return;
+    let users = (typeof Auth !== 'undefined' && typeof Auth.getUsers === 'function')
+      ? Auth.getUsers()
+      : JSON.parse(localStorage.getItem('pm_users') || '[]');
+    const target = users.find(u => u.id === userId);
+    if (!target) return;
+
+    const reason = prompt(`[${target.name}] 회원을 블랙리스트에 등록하시겠습니까?\n블랙리스트에 등록된 계정은 로그인 및 신규 가입이 즉시 차단됩니다.\n\n차단 사유를 입력해 주세요:`, '부정 이용 또는 악성 행위');
+    if (reason === null) return; // 취소 클릭
+
+    if (typeof Auth !== 'undefined' && typeof Auth.addBlacklist === 'function') {
+      Auth.addBlacklist({
+        email: target.email || '',
+        id: target.id || '',
+        name: target.name || '차단회원',
+        reason: reason.trim() || '관리자 지정 차단'
+      });
+      Auth.deleteUser(userId);
+    } else {
+      const bl = JSON.parse(localStorage.getItem('pm_blacklist') || '[]');
+      bl.unshift({
+        email: target.email || '',
+        id: target.id || '',
+        name: target.name || '차단회원',
+        reason: reason.trim() || '관리자 지정 차단',
+        createdAt: new Date().toISOString()
+      });
+      localStorage.setItem('pm_blacklist', JSON.stringify(bl));
+      users = users.filter(u => u.id !== userId);
+      localStorage.setItem('pm_users', JSON.stringify(users));
+    }
+
+    renderMembersPage();
+    window.updateGlobalDashboardStats && window.updateGlobalDashboardStats(false);
+    alert(`[${target.name}] 회원이 블랙리스트에 등록되고 탈퇴 처리되었습니다.\n해당 계정으로는 더 이상 로그인할 수 없습니다.`);
+  }
+  window.handleBlockMember = handleBlockMember;
+
+  // ── 블랙리스트 테이블 렌더링 ──────────────────────────────
+  function renderBlacklistTable() {
+    const tbody = document.getElementById('blacklistTableBody');
+    const empty = document.getElementById('blacklistEmptyState');
+    const tableWrapper = document.getElementById('blacklistTableWrapper');
+    const badge = document.getElementById('blacklistTotalBadge');
+    if (!tbody) return;
+
+    let blacklist = [];
+    try {
+      if (typeof Auth !== 'undefined' && typeof Auth.getBlacklist === 'function') {
+        blacklist = Auth.getBlacklist();
+      } else {
+        const raw = localStorage.getItem('pm_blacklist');
+        blacklist = raw ? JSON.parse(raw) : [];
+      }
+    } catch {
+      blacklist = [];
+    }
+
+    if (badge) badge.textContent = `총 ${blacklist.length}건`;
+
+    if (blacklist.length === 0) {
       if (tableWrapper) tableWrapper.style.display = 'none';
       if (empty) empty.style.display = 'block';
       return;
@@ -376,30 +521,88 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tableWrapper) tableWrapper.style.display = 'block';
     if (empty) empty.style.display = 'none';
 
-    tbody.innerHTML = googleUsers.map((u, idx) => {
-      const avatarHtml = u.picture
-        ? `<img src="${escapeHtml(u.picture)}" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`
-        : `<div style="width:32px;height:32px;border-radius:50%;background:#e0e7ff;color:#4338ca;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;">${(u.name || 'G')[0]}</div>`;
-
-      let joinDate = u.createdAt ? u.createdAt.slice(0, 10).replace(/-/g, '.') : '-';
-      if (u.createdAt && u.createdAt.length >= 16) {
-        joinDate = `${u.createdAt.slice(0, 10).replace(/-/g, '.')} ${u.createdAt.slice(11, 16)}`;
+    tbody.innerHTML = blacklist.map((item, idx) => {
+      let banDate = item.createdAt ? item.createdAt.slice(0, 10).replace(/-/g, '.') : '-';
+      if (item.createdAt && item.createdAt.length >= 16) {
+        banDate = `${item.createdAt.slice(0, 10).replace(/-/g, '.')} ${item.createdAt.slice(11, 16)}`;
       }
+
+      const identifier = item.email || item.id || '-';
 
       return `
         <tr>
           <td>${idx + 1}</td>
-          <td>${avatarHtml}</td>
-          <td><strong>${escapeHtml(u.name || '구글 사용자')}</strong></td>
-          <td><span style="font-family:monospace;color:#2563eb;">${escapeHtml(u.email || '-')}</span></td>
-          <td><span class="status-badge" style="background:#fee2e2;color:#b91c1c;font-weight:600;"><i class="fab fa-google"></i> Google</span></td>
-          <td style="color:#64748b;font-size:12px;">${joinDate}</td>
-          <td><span class="status-badge status-completed" style="background:#f0fdf4;color:#166534;"><i class="fa fa-check-circle"></i> 정상</span></td>
+          <td><strong style="font-family:monospace;color:#dc2626;">${escapeHtml(identifier)}</strong></td>
+          <td>${escapeHtml(item.name || '차단회원')}</td>
+          <td><span style="color:#64748b;">${escapeHtml(item.reason || '관리자 지정 차단')}</span></td>
+          <td style="color:#64748b;font-size:12px;">${banDate}</td>
+          <td style="text-align:center;">
+            <button type="button" class="btn btn-sm" style="background:#10b981; color:#fff; border:none; padding:4px 10px; border-radius:4px; font-size:11px; font-weight:700; cursor:pointer;" onclick="handleUnblockMember('${escapeHtml(identifier)}')">
+              <i class="fa fa-unlock"></i> 차단해제
+            </button>
+          </td>
         </tr>
       `;
     }).join('');
   }
-  window.renderMembersPage = renderMembersPage;
+  window.renderBlacklistTable = renderBlacklistTable;
+
+  // ── 블랙리스트 차단 해제 ──────────────────────────────────
+  function handleUnblockMember(identifier) {
+    if (!identifier) return;
+    if (!confirm(`'${identifier}' 계정의 차단을 해제하시겠습니까?\n\n차단 해제 후 해당 계정으로 정상적인 로그인 및 가입이 가능해집니다.`)) {
+      return;
+    }
+
+    if (typeof Auth !== 'undefined' && typeof Auth.removeBlacklist === 'function') {
+      Auth.removeBlacklist(identifier);
+    } else {
+      let bl = JSON.parse(localStorage.getItem('pm_blacklist') || '[]');
+      bl = bl.filter(b => b.email !== identifier && b.id !== identifier);
+      localStorage.setItem('pm_blacklist', JSON.stringify(bl));
+    }
+
+    renderBlacklistTable();
+    alert(`'${identifier}' 계정의 차단이 정상적으로 해제되었습니다.`);
+  }
+  window.handleUnblockMember = handleUnblockMember;
+
+  // ── 블랙리스트 직접 수동 등록 ──────────────────────────────
+  const addBlacklistBtn = document.getElementById('addBlacklistBtn');
+  if (addBlacklistBtn) {
+    addBlacklistBtn.addEventListener('click', () => {
+      const emailInput = document.getElementById('blacklistEmailInput');
+      const reasonInput = document.getElementById('blacklistReasonInput');
+      if (!emailInput) return;
+
+      const target = emailInput.value.trim();
+      const reason = reasonInput ? reasonInput.value.trim() : '';
+
+      if (!target) {
+        alert('차단할 이메일 주소 또는 고유 ID를 입력해 주세요.');
+        emailInput.focus();
+        return;
+      }
+
+      if (typeof Auth !== 'undefined' && typeof Auth.addBlacklist === 'function') {
+        const ok = Auth.addBlacklist({
+          email: target.includes('@') ? target : '',
+          id: !target.includes('@') ? target : '',
+          name: '수동등록 차단',
+          reason: reason || '관리자 수동 차단'
+        });
+        if (!ok) {
+          alert('이미 블랙리스트에 등록되어 있는 대상입니다.');
+          return;
+        }
+      }
+
+      emailInput.value = '';
+      if (reasonInput) reasonInput.value = '';
+      renderBlacklistTable();
+      alert(`'${target}' 대상이 블랙리스트에 등록되었습니다.\n해당 계정으로는 로그인이 제한됩니다.`);
+    });
+  }
 
   // ──────────────────────────────────────────────────────
   // 4-2. 상담 내역 확인 페이지 (#page-consult) 렌더링
