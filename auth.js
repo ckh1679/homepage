@@ -48,7 +48,7 @@ const Auth = (() => {
   // 카카오 디벨로퍼스(https://developers.kakao.com) JavaScript 키
   const KAKAO_JS_KEY = 'ae5205ab758e7a7f63b131d1e1d0244b';
   // 네이버 디벨로퍼스(https://developers.naver.com) Client ID
-  const NAVER_CLIENT_ID = '';
+  const NAVER_CLIENT_ID = 'ClcJBJHoTgHglSoqrDT0';
 
   // ── 대시보드 진입 허용 구글 이메일 목록 ────────────────
   // 이 3개 이메일은 홈페이지 관리자 계정으로, 대시보드 + 상담게시판 전체 열람 권한 보유
