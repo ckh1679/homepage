@@ -275,6 +275,23 @@
     </div>
   </div>
 
+  <!-- 네이버 첫 로그인 닉네임 설정 모달 -->
+  <div id="naverNicknameModal" class="dev-modal-overlay" style="display:none;">
+    <div class="dev-modal-card" style="text-align:center; max-width:380px; padding:32px 28px; border-radius:18px;">
+      <div style="font-size:36px; margin-bottom:12px;">🎉</div>
+      <h3 style="font-size:19px; font-weight:800; color:#111; margin-bottom:8px;">네이버 인증 성공!</h3>
+      <p style="font-size:13px; color:#666; margin-bottom:20px; line-height:1.5;">
+        프린터모아에서 사용하실 <strong>이름(또는 닉네임)</strong>을 입력해 주세요.
+      </p>
+      <input type="text" id="naverNicknameInput" placeholder="예: 홍길동 또는 닉네임" maxlength="12"
+        style="width:100%; height:46px; border:2px solid #03C75A; border-radius:10px; padding:0 14px; font-size:15px; box-sizing:border-box; margin-bottom:14px; outline:none; text-align:center; font-weight:700;">
+      <button type="button" id="naverNicknameSubmitBtn"
+        style="width:100%; height:46px; background:#03C75A; color:#fff; font-weight:700; border:none; border-radius:10px; font-size:15px; cursor:pointer; box-shadow:0 4px 12px rgba(3,199,90,0.3);">
+        확인하고 시작하기
+      </button>
+    </div>
+  </div>
+
   <!-- FOOTER -->
   <footer class="footer" style="margin-top: 0;">
     <div class="container">
@@ -403,6 +420,33 @@
     }
 
     // ── 3. 네이버 로그인 콜백 자동 감지 및 처리 ─────────────
+    function promptNaverNickname(defaultName, onConfirm) {
+      const modal = document.getElementById('naverNicknameModal');
+      const input = document.getElementById('naverNicknameInput');
+      const btn = document.getElementById('naverNicknameSubmitBtn');
+
+      if (!modal || !input || !btn) {
+        const val = prompt('네이버 인증 성공!\n프린터모아에서 사용하실 이름(또는 닉네임)을 입력해 주세요:', defaultName);
+        onConfirm(val && val.trim() ? val.trim() : defaultName);
+        return;
+      }
+
+      modal.style.display = 'flex';
+      input.value = (defaultName && defaultName !== '네이버 회원' && defaultName !== '네이버 사용자') ? defaultName : '';
+      setTimeout(() => input.focus(), 100);
+
+      const handleDone = () => {
+        const val = input.value.trim();
+        modal.style.display = 'none';
+        onConfirm(val || defaultName || '네이버 회원');
+      };
+
+      btn.onclick = handleDone;
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') handleDone();
+      };
+    }
+
     function checkNaverCallback() {
       if (!Auth.NAVER_CLIENT_ID) return;
 
@@ -419,17 +463,40 @@
           window.history.replaceState(null, null, window.location.pathname + window.location.search);
         }
 
-        let hasRedirected = false;
+        let hasProcessed = false;
         const completeLogin = (userProfile) => {
-          if (hasRedirected) return;
-          hasRedirected = true;
-          const loginResult = Auth.loginWithNaver(userProfile);
-          if (loginResult.success) {
-            redirectToHome();
+          if (hasProcessed) return;
+          hasProcessed = true;
+
+          // 1. 기존에 이미 닉네임을 설정해둔 사용자인지 확인
+          const users = Auth.getUsers();
+          const targetId = String(userProfile.id);
+          const existing = users.find(u => u.naverId === targetId || u.id === 'naver_' + targetId.slice(-6));
+
+          if (existing && existing.name && existing.name !== '네이버 회원' && existing.name !== '네이버 사용자') {
+            userProfile.name = existing.name;
+            const res = Auth.loginWithNaver(userProfile);
+            if (res.success) redirectToHome();
+            return;
           }
+
+          // 2. SDK에서 실제 이름이 넘어온 경우 (단, 기본값이 아닐 때)
+          if (userProfile.name && userProfile.name !== '네이버 회원' && userProfile.name !== '네이버 사용자') {
+            const res = Auth.loginWithNaver(userProfile);
+            if (res.success) redirectToHome();
+            return;
+          }
+
+          // 3. 네이버 브라우저 CORS 제한으로 이름이 누락된 경우 -> 친절한 닉네임 입력 모달 호출
+          promptNaverNickname(userProfile.name || '네이버 회원', (chosenName) => {
+            userProfile.name = chosenName;
+            userProfile.nickname = chosenName;
+            const res = Auth.loginWithNaver(userProfile);
+            if (res.success) redirectToHome();
+          });
         };
 
-        // 네이버 SDK 통신 지연이나 실패 시에도 1.2초 후 즉시 로그인 완수하여 홈 이동
+        // 타임아웃 1초 후에도 SDK가 응답이 없으면 즉시 토큰 기반 닉네임 설정으로 진행
         const timer = setTimeout(() => {
           completeLogin({
             id: 'naver_' + accessToken.slice(-8),
@@ -438,7 +505,7 @@
             email: '',
             picture: ''
           });
-        }, 1200);
+        }, 1000);
 
         if (window.naver && window.naver.LoginWithNaverId) {
           const naverLogin = new naver.LoginWithNaverId({
@@ -459,7 +526,6 @@
                 picture: user.getProfileImage() || ''
               });
             } else {
-              // 프로필 권한 미승인 또는 CORS 차단 시에도 토큰 기반 로그인 처리
               completeLogin({
                 id: 'naver_' + accessToken.slice(-8),
                 name: '네이버 회원',
