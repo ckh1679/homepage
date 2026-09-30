@@ -10,6 +10,23 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Chart.js (월별 정산 히스토리 및 비교 차트) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
+  <!-- 관리자 인증 모듈 및 보안 가드 -->
+  <style>
+    /* 비인가자 화면 깜빡임 노출 방지 */
+    body { display: none; }
+  </style>
+  <script src="../auth.js?v=20260930_001"></script>
+  <script>
+    // ── 관리자 대시보드 보안 가드 ─────────────────────────
+    // 3개 허용된 구글 관리자 계정 외에는 즉시 차단하고 메인페이지로 리다이렉트
+    if (!Auth.isLoggedIn() || !Auth.isDashboardAdmin()) {
+      alert('관리자 전용 페이지입니다. 허용된 관리자 계정으로 로그인 후 이용해 주세요.');
+      window.location.replace('../index.html');
+    } else {
+      document.write('<style>body { display: block !important; }</style>');
+    }
+  </script>
 </head>
 <body>
 
@@ -1901,7 +1918,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="../firebase-db.js?v=20260928_001"></script>
 
-  <script src="../auth.js?v=20260928_001"></script>
   <script src="../board/board.js?v=20260928_001"></script>
   <script src="dashboard.js?v=20260928_001"></script>
 </body>
