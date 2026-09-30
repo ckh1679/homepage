@@ -140,8 +140,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const reviewCount = unreadReviews.length;
     const totalUnread = reqCount + consultCount + reviewCount;
 
-    // 3) 가입 회원 수: 실제 소셜 간편로그인(구글, 카카오, 네이버) 전체 가입 회원 수
+    // 3) 가입 회원 수: 실제 소셜 간편로그인(구글, 카카오, 네이버) 전체 가입 회원 수 및 소셜별 상세 카운트
+    let totalMemberCount = 0;
     let googleMemberCount = 0;
+    let kakaoMemberCount = 0;
+    let naverMemberCount = 0;
     try {
       let users = [];
       if (typeof Auth !== 'undefined' && typeof Auth.getUsers === 'function') {
@@ -151,7 +154,19 @@ document.addEventListener('DOMContentLoaded', () => {
         users = rawUsers ? JSON.parse(rawUsers) : [];
       }
       const validUsers = users.filter(u => u && (u.id || u.email));
-      googleMemberCount = validUsers.length;
+      totalMemberCount = validUsers.length;
+
+      validUsers.forEach(u => {
+        const prov = (u.provider || '').toLowerCase();
+        const id = (u.id || '').toLowerCase();
+        if (prov === 'kakao' || u.kakaoId || id.startsWith('kakao_')) {
+          kakaoMemberCount++;
+        } else if (prov === 'naver' || u.naverId || id.startsWith('naver_')) {
+          naverMemberCount++;
+        } else {
+          googleMemberCount++;
+        }
+      });
     } catch (e) {
       console.error('회원 통계 집계 오류:', e);
     }
@@ -163,7 +178,10 @@ document.addEventListener('DOMContentLoaded', () => {
       consultCount,
       reviewCount,
       totalUnread,
-      googleMemberCount
+      totalMemberCount,
+      googleMemberCount,
+      kakaoMemberCount,
+      naverMemberCount
     };
   }
 
@@ -175,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
       { id: 'stat-clients', val: stats.clientCount },
       { id: 'stat-rentals', val: stats.rentalDeviceCount },
       { id: 'stat-consult', val: stats.totalUnread },
-      { id: 'stat-members', val: stats.googleMemberCount }
+      { id: 'stat-members', val: stats.totalMemberCount }
     ];
 
     targets.forEach(({ id, val }) => {
@@ -214,7 +232,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     if (elMembersTrend) {
-      elMembersTrend.innerHTML = `<i class="fa fa-check-circle"></i> 구글 간편가입 회원 <strong>${stats.googleMemberCount}명</strong>`;
+      elMembersTrend.innerHTML = `
+        <span style="display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:11px;font-weight:700;">
+          <span style="background:#e8f0fe;color:#1a73e8;padding:1px 6px;border-radius:4px;"><i class="fab fa-google"></i> 구글 <strong>${stats.googleMemberCount}</strong></span>
+          <span style="background:#fef9c3;color:#854d0e;padding:1px 6px;border-radius:4px;"><i class="fa fa-comment"></i> 카카오 <strong>${stats.kakaoMemberCount}</strong></span>
+          <span style="background:#dcfce7;color:#15803d;padding:1px 6px;border-radius:4px;"><i class="fa fa-square"></i> 네이버 <strong>${stats.naverMemberCount}</strong></span>
+        </span>
+      `;
     }
   }
   window.updateGlobalDashboardStats = updateGlobalDashboardStats;
@@ -385,6 +409,186 @@ document.addEventListener('DOMContentLoaded', () => {
   window.markDashboardItemRead = markDashboardItemRead;
 
   // ──────────────────────────────────────────────────────
+  // 4-0. 대시보드 최근 활동 로그 모듈 (ActivityLogger)
+  // 거래처 등록/해지/변경, 소모품 입출고, 신규 가입회원 실시간 연동
+  // ──────────────────────────────────────────────────────
+  const ActivityLogger = {
+    STORAGE_KEY: 'pm_activity_logs',
+
+    getLogs() {
+      try {
+        const raw = localStorage.getItem(this.STORAGE_KEY);
+        if (raw) {
+          const list = JSON.parse(raw);
+          if (Array.isArray(list) && list.length > 0) return list;
+        }
+      } catch (e) {
+        console.error('활동 로그 로드 실패:', e);
+      }
+      return this.generateInitialLogs();
+    },
+
+    saveLogs(logs) {
+      try {
+        if (!Array.isArray(logs)) logs = [];
+        if (logs.length > 50) logs.length = 50;
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(logs));
+        if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
+          window.FirebaseDB.save(this.STORAGE_KEY, logs);
+        }
+      } catch (e) {
+        console.error('활동 로그 저장 실패:', e);
+      }
+    },
+
+    log(type, title, text, icon = 'fa fa-bell', iconColor = 'var(--accent-primary, #2563eb)') {
+      try {
+        const logs = this.getLogs();
+        const newLog = {
+          id: 'act_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          type,
+          title,
+          text,
+          icon,
+          iconColor,
+          createdAt: new Date().toISOString()
+        };
+        logs.unshift(newLog);
+        this.saveLogs(logs);
+        this.render();
+      } catch (e) {
+        console.error('활동 로그 기록 실패:', e);
+      }
+    },
+
+    generateInitialLogs() {
+      const generated = [];
+
+      // 1. 거래처 데이터로부터 추출
+      try {
+        const rawClients = localStorage.getItem('pm_clients');
+        const clients = rawClients ? JSON.parse(rawClients) : [];
+        if (Array.isArray(clients)) {
+          clients.slice(0, 3).forEach((c, idx) => {
+            const devCount = (c.devices || []).length;
+            const pastMinutes = (idx + 1) * 35;
+            generated.push({
+              id: 'init_cli_' + (c.id || idx),
+              type: 'client_new',
+              title: '거래처 신규 등록',
+              text: `<strong>${escapeHtml(c.name || '거래처')}</strong> 등록 완료 (임대기기 ${devCount}대)`,
+              icon: 'fa fa-building',
+              iconColor: '#3b82f6',
+              createdAt: new Date(Date.now() - pastMinutes * 60 * 1000).toISOString()
+            });
+          });
+        }
+      } catch {}
+
+      // 2. 소모품 입출고 내역으로부터 추출
+      try {
+        const rawSupplies = localStorage.getItem('pm_supplies_records');
+        const records = rawSupplies ? JSON.parse(rawSupplies) : [];
+        if (Array.isArray(records)) {
+          records.slice(0, 4).forEach((r, idx) => {
+            const pastMinutes = (idx + 1) * 75;
+            const isOut = r.type === 'out';
+            generated.push({
+              id: 'init_sup_' + (r.id || idx),
+              type: isOut ? 'supply_out' : 'supply_in',
+              title: isOut ? '소모품 출고' : '소모품 입고',
+              text: `<strong>${escapeHtml(r.itemName || '소모품')}</strong> ${r.quantity || 1}개 ${isOut ? '출고' : '입고'} 완료 (${escapeHtml(isOut ? (r.clientName || '출고처') : (r.supplier || '입고처'))})`,
+              icon: isOut ? 'fa fa-arrow-up' : 'fa fa-arrow-down',
+              iconColor: isOut ? '#f59e0b' : '#10b981',
+              createdAt: r.createdAt || new Date(Date.now() - pastMinutes * 60 * 1000).toISOString()
+            });
+          });
+        }
+      } catch {}
+
+      // 3. 가입 회원 데이터로부터 추출
+      try {
+        const rawUsers = localStorage.getItem('pm_users');
+        const users = rawUsers ? JSON.parse(rawUsers) : [];
+        if (Array.isArray(users)) {
+          users.slice(0, 3).forEach((u, idx) => {
+            const prov = (u.provider || '').toLowerCase();
+            const provLabel = prov === 'kakao' ? '카카오' : (prov === 'naver' ? '네이버' : '구글');
+            const pastMinutes = (idx + 1) * 110;
+            generated.push({
+              id: 'init_usr_' + (u.id || idx),
+              type: 'member',
+              title: '신규 회원 가입',
+              text: `<strong>${escapeHtml(u.name || '회원')}</strong>님 (${provLabel}) 간편가입 완료`,
+              icon: 'fa fa-user-plus',
+              iconColor: '#8b5cf6',
+              createdAt: u.createdAt || new Date(Date.now() - pastMinutes * 60 * 1000).toISOString()
+            });
+          });
+        }
+      } catch {}
+
+      generated.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      if (generated.length > 0) {
+        this.saveLogs(generated);
+      }
+      return generated;
+    },
+
+    formatTime(isoString) {
+      if (!isoString) return '방금 전';
+      const d = new Date(isoString);
+      if (isNaN(d.getTime())) return '방금 전';
+      const diffSec = Math.floor((Date.now() - d.getTime()) / 1000);
+      if (diffSec < 60) return '방금 전';
+      const diffMin = Math.floor(diffSec / 60);
+      if (diffMin < 60) return `${diffMin}분 전`;
+      const diffHour = Math.floor(diffMin / 60);
+      if (diffHour < 24) return `${diffHour}시간 전`;
+      const diffDay = Math.floor(diffHour / 24);
+      if (diffDay === 1) return '어제';
+      if (diffDay < 7) return `${diffDay}일 전`;
+      return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+    },
+
+    render() {
+      const container = document.getElementById('homeActivityList');
+      if (!container) return;
+
+      const logs = this.getLogs();
+      if (!logs || logs.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center;padding:28px 12px;color:var(--text-muted);font-size:13px;">
+            <i class="fa fa-history" style="font-size:24px;margin-bottom:8px;opacity:0.4;display:block;"></i>
+            최근 활동 내역이 없습니다.
+          </div>
+        `;
+        return;
+      }
+
+      const recentLogs = logs.slice(0, 8);
+      container.innerHTML = recentLogs.map(item => {
+        const icon = item.icon || 'fa fa-bell';
+        const iconColor = item.iconColor || 'var(--accent-primary, #2563eb)';
+        const title = item.title || '활동 내역';
+        const text = item.text || '';
+        const timeStr = this.formatTime(item.createdAt);
+
+        return `
+          <div class="activity-item">
+            <div class="activity-icon"><i class="${icon}" style="color:${iconColor};"></i></div>
+            <div class="activity-content">
+              <p><span style="font-size:11px;font-weight:700;color:${iconColor};margin-right:4px;">[${escapeHtml(title)}]</span> ${text}</p>
+              <span>${timeStr}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  };
+  window.ActivityLogger = ActivityLogger;
+
+  // ──────────────────────────────────────────────────────
   // ──────────────────────────────────────────────────────
   // 4-1. 가입회원 관리 페이지 (#page-members) 렌더링
   // ──────────────────────────────────────────────────────
@@ -493,10 +697,12 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       users = users.filter(u => u.id !== userId);
       localStorage.setItem('pm_users', JSON.stringify(users));
+      ActivityLogger.log('member_delete', '회원 탈퇴 처리', `<strong>${escapeHtml(targetName)}</strong> 회원 탈퇴 및 정보삭제 완료`, 'fa fa-user-xmark', '#ef4444');
     }
 
     renderMembersPage();
     window.updateGlobalDashboardStats && window.updateGlobalDashboardStats(false);
+    ActivityLogger.render();
     alert(`[${targetName}] 회원이 탈퇴(정보삭제) 처리되었습니다.`);
   }
   window.handleDeleteMember = handleDeleteMember;
@@ -543,8 +749,11 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem('pm_users', JSON.stringify(users));
     }
 
+    ActivityLogger.log('member_block', '회원 차단(블랙리스트)', `<strong>${escapeHtml(target.name)}</strong> 회원 블랙리스트 등록 및 탈퇴 처리`, 'fa fa-ban', '#dc2626');
+
     renderMembersPage();
     window.updateGlobalDashboardStats && window.updateGlobalDashboardStats(false);
+    ActivityLogger.render();
     alert(`[${target.name}] 회원이 블랙리스트에 등록되고 탈퇴 처리되었습니다.\n해당 계정으로는 더 이상 로그인할 수 없습니다.`);
   }
   window.handleBlockMember = handleBlockMember;
@@ -3070,6 +3279,7 @@ document.addEventListener('DOMContentLoaded', () => {
           this.saveClients(clients);
           this.syncMeterFromClient(clients[targetIdx]);
           this.closeModal();
+          ActivityLogger.log('client_edit', '거래처 및 기기 변경', `<strong>${escapeHtml(name)}</strong> 거래처 정보 및 임대기기(${devices.length}대) 변경 완료`, 'fa fa-pen-to-square', '#3b82f6');
           alert(`[${name}] 거래처 및 임대 장비 정보가 성공적으로 수정·저장되었습니다.`);
           return;
         }
@@ -3096,6 +3306,7 @@ document.addEventListener('DOMContentLoaded', () => {
           this.saveClients(clients);
           this.syncMeterFromClient(clients[targetIdx]);
           this.closeModal();
+          ActivityLogger.log('client_edit', '거래처 정보 업데이트', `<strong>${escapeHtml(name)}</strong> 기존 거래처 정보 업데이트 완료`, 'fa fa-pen-to-square', '#3b82f6');
           alert(`[${name}] 거래처 정보가 기존 데이터에 성공적으로 업데이트되었습니다.`);
           return;
         }
@@ -3110,6 +3321,7 @@ document.addEventListener('DOMContentLoaded', () => {
       this.saveClients(clients);
       this.syncMeterFromClient(newClient);
       this.closeModal();
+      ActivityLogger.log('client_new', '거래처 신규 등록', `<strong>${escapeHtml(name)}</strong> 신규 거래처 등록 완료 (임대기기 ${devices.length}대)`, 'fa fa-building', '#2563eb');
       alert(`[${name}] 거래처 및 임대 장비가 성공적으로 등록되었습니다.`);
     },
 
@@ -3125,6 +3337,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const updated = clients.filter(c => c.id !== clientId);
       this.saveClients(updated);
+      ActivityLogger.log('client_delete', '거래처 계약해지(삭제)', `<strong>${escapeHtml(target.name)}</strong> 계약해지 및 거래처 내역 삭제`, 'fa fa-trash-alt', '#ef4444');
       alert(`[${target.name}] 거래처가 삭제되었습니다.`);
     },
 
@@ -7066,6 +7279,14 @@ document.addEventListener('DOMContentLoaded', () => {
           ProfitManager.syncSuppliesCost(oldRec.clientId);
         }
 
+        ActivityLogger.log(
+          type === 'in' ? 'supply_in' : 'supply_out',
+          `소모품 ${type === 'in' ? '입고' : '출고'} 수정`,
+          `<strong>${escapeHtml(itemName)}</strong> ${quantity}개 (${type === 'in' ? escapeHtml(supplier || '입고처') : escapeHtml(clientName || '출고처')}) 수정 완료`,
+          type === 'in' ? 'fa fa-arrow-down' : 'fa fa-arrow-up',
+          type === 'in' ? '#10b981' : '#f59e0b'
+        );
+
         this.closeModal();
         this.render();
 
@@ -7117,6 +7338,24 @@ document.addEventListener('DOMContentLoaded', () => {
       records.unshift(newRecord);
       this.saveRecords(records);
 
+      if (type === 'in') {
+        ActivityLogger.log(
+          'supply_in',
+          '소모품 입고',
+          `<strong>${escapeHtml(itemName)}</strong> ${quantity}개 입고 완료 (${escapeHtml(supplier || '입고처')})`,
+          'fa fa-arrow-down',
+          '#10b981'
+        );
+      } else {
+        ActivityLogger.log(
+          'supply_out',
+          '소모품 출고',
+          `<strong>${escapeHtml(itemName)}</strong> ${quantity}개 출고 완료 (${escapeHtml(clientName || '출고처')})`,
+          'fa fa-arrow-up',
+          '#f59e0b'
+        );
+      }
+
       this.closeModal();
       this.render();
 
@@ -7164,6 +7403,14 @@ document.addEventListener('DOMContentLoaded', () => {
       const filtered = records.filter(r => r.id !== id);
       this.saveRecords(filtered);
       this.render();
+
+      ActivityLogger.log(
+        'supply_delete',
+        '소모품 내역 삭제',
+        `<strong>${escapeHtml(rec.itemName)}</strong> (${rec.type === 'in' ? '입고' : '출고'} ${rec.quantity}개) 내역 삭제`,
+        'fa fa-trash-can',
+        '#94a3b8'
+      );
 
       if (rec.type === 'out' && rec.clientId) {
         alert('출고 내역이 삭제되었으며, 렌탈수익성분석 메뉴의 소모품 지출 장부와 유지비용이 최신으로 즉시 업데이트되었습니다.');
@@ -7452,13 +7699,16 @@ document.addEventListener('DOMContentLoaded', () => {
   try { SettlementHistoryManager.init(); } catch (e) { console.error('SettlementHistoryManager init error:', e); }
   try { SuppliesManager.init(); } catch (e) { console.error('SuppliesManager init error:', e); }
 
-  // 모든 모듈 초기화 완료 후 대시보드 통계 및 최근내역 최종 동기화 (첫 접속 시에도 즉시 계산 반영)
+  // 모든 모듈 초기화 완료 후 대시보드 통계, 최근 상담내역, 최근 활동 로그 최종 동기화 (첫 접속 시에도 즉시 계산 반영)
   try {
     if (typeof updateGlobalDashboardStats === 'function') {
       updateGlobalDashboardStats(true);
     }
     if (typeof renderHomeRecentConsults === 'function') {
       renderHomeRecentConsults();
+    }
+    if (typeof ActivityLogger !== 'undefined' && typeof ActivityLogger.render === 'function') {
+      ActivityLogger.render();
     }
   } catch (e) {
     console.error('Final dashboard stats sync error:', e);

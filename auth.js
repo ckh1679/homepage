@@ -29,6 +29,28 @@ const Auth = (() => {
     }
   }
 
+  function recordActivityLog(type, title, text) {
+    try {
+      if (typeof window !== 'undefined' && window.ActivityLogger && typeof window.ActivityLogger.log === 'function') {
+        window.ActivityLogger.log(type, title, text);
+        return;
+      }
+      const logs = JSON.parse(localStorage.getItem('pm_activity_logs') || '[]');
+      logs.unshift({
+        id: 'act_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        type,
+        title,
+        text,
+        createdAt: new Date().toISOString()
+      });
+      if (logs.length > 50) logs.length = 50;
+      localStorage.setItem('pm_activity_logs', JSON.stringify(logs));
+      if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
+        window.FirebaseDB.save('pm_activity_logs', logs);
+      }
+    } catch (e) {}
+  }
+
   function cleanStr(s) {
     return s ? String(s).trim().toLowerCase() : '';
   }
@@ -173,6 +195,7 @@ const Auth = (() => {
 
     users = users.filter(u => u.id !== userId);
     saveUsers(users);
+    recordActivityLog('member_delete', '회원 탈퇴 처리', `<strong>${escapeHtml(target.name)}</strong> 회원 탈퇴 및 정보 삭제 완료`);
 
     // 만약 현재 로그인된 본인이 삭제된 경우 세션 로그아웃
     const cur = getCurrentUser();
@@ -291,6 +314,7 @@ const Auth = (() => {
       };
       users.push(user);
       saveUsers(users);
+      recordActivityLog('member', '신규 회원 가입', `<strong>${escapeHtml(user.name)}</strong>님 (구글) 신규 회원 가입`);
     } else {
       // 기존 계정에 구글 정보 업데이트 (프로필 사진, 구글 ID 등)
       if (!user.googleId) user.googleId = googleId;
@@ -343,6 +367,8 @@ const Auth = (() => {
         createdAt: new Date().toISOString()
       };
       users.push(user);
+      saveUsers(users);
+      recordActivityLog('member', '신규 회원 가입', `<strong>${escapeHtml(user.name)}</strong>님 (카카오) 신규 회원 가입`);
     } else {
       // 기존 계정 정보 최신화
       if (!user.kakaoId) user.kakaoId = strKakaoId;
@@ -354,8 +380,8 @@ const Auth = (() => {
       if (email && !user.email) user.email = email;
       if (picture) user.picture = picture;
       user.provider = 'kakao';
+      saveUsers(users);
     }
-    saveUsers(users);
 
     const sessionData = {
       id: user.id,
@@ -407,6 +433,8 @@ const Auth = (() => {
         createdAt: new Date().toISOString()
       };
       users.push(user);
+      saveUsers(users);
+      recordActivityLog('member', '신규 회원 가입', `<strong>${escapeHtml(user.name)}</strong>님 (네이버) 신규 회원 가입`);
     } else {
       // 기존 계정 정보 최신화
       if (!user.naverId) user.naverId = strNaverId;
@@ -418,8 +446,8 @@ const Auth = (() => {
       if (email && !user.email) user.email = email;
       if (picture) user.picture = picture;
       user.provider = 'naver';
+      saveUsers(users);
     }
-    saveUsers(users);
 
     const sessionData = {
       id: user.id,
@@ -663,6 +691,7 @@ const Auth = (() => {
     canViewConsultPost,
     checkIdDuplicate,
     updateHeaderUI,
-    requireLogin
+    requireLogin,
+    recordActivityLog
   };
 })();

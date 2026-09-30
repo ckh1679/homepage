@@ -33,7 +33,8 @@ const FirebaseDB = (() => {
     'pm_admin_read_reviews', // 사용후기 확인 목록
     'pm_client_costs',       // 기기별 렌탈 원가 설정
     'pm_maintenance_logs',   // 소모품/부품 지출 장부
-    'pm_supplies_records'    // 소모품 입출고 내역
+    'pm_supplies_records',   // 소모품 입출고 내역
+    'pm_activity_logs'       // 최근 활동 로그 내역
   ];
 
   let db = null;
@@ -312,6 +313,9 @@ const FirebaseDB = (() => {
     }
     if (window.ClientManager && typeof window.ClientManager.renderTable === 'function') {
       window.ClientManager.renderTable();
+    }
+    if (window.ActivityLogger && typeof window.ActivityLogger.render === 'function') {
+      window.ActivityLogger.render();
     }
   }
 
