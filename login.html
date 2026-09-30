@@ -255,23 +255,14 @@
 
       </div>
 
-      <!-- 로컬 개발/테스트 전용 안내 박스 -->
+      <!-- 로컬 file:// 환경 전용 안내 박스 -->
       <div id="localFileNotice" style="display:none; margin-top:14px; padding:14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; font-size:12px; color:#475569; text-align:left; line-height:1.6;">
-        <strong>💡 로컬/개발 환경 테스트 안내</strong><br>
-        API 키 등록 전이나 로컬 파일 환경에서는 아래 버튼으로 즉시 체험 로그인을 진행할 수 있습니다.
-        <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
-          <button type="button" onclick="devAdminLogin()" style="width:100%; padding:8px 12px; background:#4f46e5; color:#fff; border:none; border-radius:6px; font-weight:700; font-size:12px; cursor:pointer;">
-            <i class="fa fa-user-shield"></i> [테스트] 관리자 계정으로 바로 로그인
-          </button>
-          <div style="display:flex; gap:6px;">
-            <button type="button" onclick="devGuestLogin('kakao')" style="flex:1; padding:8px 10px; background:#FEE500; color:#000; border:none; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer;">
-              카카오 체험 로그인
-            </button>
-            <button type="button" onclick="devGuestLogin('naver')" style="flex:1; padding:8px 10px; background:#03C75A; color:#fff; border:none; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer;">
-              네이버 체험 로그인
-            </button>
-          </div>
-        </div>
+        <strong>💡 로컬 파일 열기(file://) 환경 안내</strong><br>
+        카카오 및 네이버 소셜 로그인은 보안 정책상 실제 도메인에서만 인증창이 열립니다.<br>
+        실제 로그인은 아래 배포 사이트에서 진행해 주세요.<br>
+        <a href="https://ckh1679.github.io/homepage/login.html" style="display:inline-block; margin-top:8px; padding:8px 14px; background:var(--primary); color:#fff; border-radius:6px; font-weight:700; text-decoration:none; font-size:12px;">
+          🚀 실제 배포 사이트로 이동하기
+        </a>
       </div>
 
       <a href="index.html" class="login-back-link" id="goHomeLink">
@@ -350,48 +341,55 @@
 
     // ── 2. 카카오 로그인 처리 ────────────────────────────────
     function handleKakaoLogin() {
-      // 1) 카카오 JS 키가 등록되어 있고 유효한 경우 실제 SDK 실행
-      if (Auth.KAKAO_JS_KEY && window.Kakao) {
-        try {
-          if (!Kakao.isInitialized()) {
-            Kakao.init(Auth.KAKAO_JS_KEY);
-          }
-          Kakao.Auth.login({
-            success: function(authObj) {
-              Kakao.API.request({
-                url: '/v2/user/me',
-                success: function(res) {
-                  const account = res.kakao_account || {};
-                  const profile = account.profile || {};
-                  const loginResult = Auth.loginWithKakao({
-                    id: res.id,
-                    nickname: profile.nickname || '카카오 회원',
-                    email: account.email || '',
-                    picture: profile.profile_image_url || ''
-                  });
-                  if (loginResult.success) {
-                    redirectToHome();
-                  }
-                },
-                fail: function(error) {
-                  console.error('카카오 프로필 요청 실패:', error);
-                  alert('카카오 사용자 정보를 가져오지 못했습니다.');
-                }
-              });
-            },
-            fail: function(err) {
-              console.error('카카오 로그인 실패:', err);
-              alert('카카오 로그인 창이 닫혔거나 취소되었습니다.');
-            }
-          });
-          return;
-        } catch (e) {
-          console.warn('카카오 SDK 실행 오류:', e);
+      // 로컬 file:// 환경 안내
+      if (window.location.protocol === 'file:') {
+        if (confirm('카카오 로그인은 보안 정책상 실제 웹 도메인(GitHub Pages)에서만 인증창이 열립니다.\n\n배포 사이트(https://ckh1679.github.io/homepage/login.html)로 이동하시겠습니까?')) {
+          window.location.href = 'https://ckh1679.github.io/homepage/login.html';
         }
+        return;
       }
 
-      // 2) 키가 아직 등록되지 않았을 경우: 개발/테스트 간편 체험 로그인 지원
-      promptQuickSocialLogin('카카오');
+      if (!Auth.KAKAO_JS_KEY || !window.Kakao) {
+        alert('카카오 JavaScript 키가 설정되지 않았거나 SDK 로드에 실패했습니다.');
+        return;
+      }
+
+      try {
+        if (!Kakao.isInitialized()) {
+          Kakao.init(Auth.KAKAO_JS_KEY);
+        }
+        Kakao.Auth.login({
+          success: function(authObj) {
+            Kakao.API.request({
+              url: '/v2/user/me',
+              success: function(res) {
+                const account = res.kakao_account || {};
+                const profile = account.profile || {};
+                const loginResult = Auth.loginWithKakao({
+                  id: res.id,
+                  nickname: profile.nickname || '카카오 회원',
+                  email: account.email || '',
+                  picture: profile.profile_image_url || ''
+                });
+                if (loginResult.success) {
+                  redirectToHome();
+                }
+              },
+              fail: function(error) {
+                console.error('카카오 프로필 요청 실패:', error);
+                alert('카카오 사용자 정보를 가져오지 못했습니다.');
+              }
+            });
+          },
+          fail: function(err) {
+            console.error('카카오 로그인 실패:', err);
+            alert('카카오 로그인이 취소되었거나 실패했습니다.');
+          }
+        });
+      } catch (e) {
+        console.error('카카오 로그인 예외 발생:', e);
+        alert('카카오 로그인 실행 중 오류가 발생했습니다: ' + e.message);
+      }
     }
 
     // ── 3. 네이버 로그인 콜백 자동 감지 및 처리 ─────────────
@@ -427,55 +425,31 @@
 
     // ── 4. 네이버 로그인 버튼 클릭 처리 ──────────────────────
     function handleNaverLogin() {
-      // 1) 네이버 Client ID가 등록되어 있는 경우 실제 SDK 실행
-      if (Auth.NAVER_CLIENT_ID && window.naver) {
-        try {
-          const naverLogin = new naver.LoginWithNaverId({
-            clientId: Auth.NAVER_CLIENT_ID,
-            callbackUrl: window.location.origin + window.location.pathname,
-            isPopup: false,
-            loginButton: { color: "green", type: 3, height: 48 }
-          });
-          naverLogin.init();
-          naverLogin.authorize();
-          return;
-        } catch (e) {
-          console.warn('네이버 SDK 실행 오류:', e);
+      // 로컬 file:// 환경 안내
+      if (window.location.protocol === 'file:') {
+        if (confirm('네이버 로그인은 보안 정책상 실제 웹 도메인(GitHub Pages)에서만 인증창이 열립니다.\n\n배포 사이트(https://ckh1679.github.io/homepage/login.html)로 이동하시겠습니까?')) {
+          window.location.href = 'https://ckh1679.github.io/homepage/login.html';
         }
+        return;
       }
 
-      // 2) 키가 아직 등록되지 않았을 경우: 개발/테스트 간편 체험 로그인 지원
-      promptQuickSocialLogin('네이버');
-    }
-
-    // ── 간편 체험 소셜 로그인 팝업 (키 미설정 시에도 즉시 테스트 가능) ──
-    function promptQuickSocialLogin(providerName) {
-      const defaultName = providerName === '카카오' ? '카카오고객' : '네이버고객';
-      const userName = prompt(`[${providerName} 로그인]\n로그인에 사용할 닉네임이나 이름을 입력해주세요:`, defaultName);
-      if (!userName) return;
-
-      const randomId = Math.floor(100000 + Math.random() * 900000);
-      let res;
-      if (providerName === '카카오') {
-        res = Auth.loginWithKakao({
-          id: 'kakao_' + randomId,
-          nickname: userName.trim(),
-          email: `${userName.trim()}@kakao.test`,
-          picture: ''
-        });
-      } else {
-        res = Auth.loginWithNaver({
-          id: 'naver_' + randomId,
-          name: userName.trim(),
-          nickname: userName.trim(),
-          email: `${userName.trim()}@naver.test`,
-          picture: ''
-        });
+      if (!Auth.NAVER_CLIENT_ID || !window.naver) {
+        alert('네이버 Client ID가 설정되지 않았거나 SDK 로드에 실패했습니다.');
+        return;
       }
 
-      if (res && res.success) {
-        alert(`${userName}님, ${providerName} 계정으로 로그인되었습니다!`);
-        redirectToHome();
+      try {
+        const naverLogin = new naver.LoginWithNaverId({
+          clientId: Auth.NAVER_CLIENT_ID,
+          callbackUrl: window.location.origin + window.location.pathname,
+          isPopup: false,
+          loginButton: { color: "green", type: 3, height: 48 }
+        });
+        naverLogin.init();
+        naverLogin.authorize();
+      } catch (e) {
+        console.error('네이버 로그인 예외 발생:', e);
+        alert('네이버 로그인 실행 중 오류가 발생했습니다: ' + e.message);
       }
     }
 
@@ -491,10 +465,6 @@
       };
       sessionStorage.setItem('pm_session', JSON.stringify(adminUser));
       redirectToHome();
-    }
-
-    function devGuestLogin(type) {
-      promptQuickSocialLogin(type === 'kakao' ? '카카오' : '네이버');
     }
 
     // 로컬 환경 또는 미등록 상태일 때 개발자 안내 표시
