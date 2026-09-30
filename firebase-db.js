@@ -222,13 +222,8 @@ const FirebaseDB = (() => {
       updateStatusUI('online', '클라우드 동기화 완료');
       showToast('☁️ 클라우드 최신 데이터와 동기화되었습니다!');
       
-      // 대시보드 화면 새로고침
-      if (typeof window.updateGlobalDashboardStats === 'function') {
-        window.updateGlobalDashboardStats(false);
-      }
-      if (window.ClientManager && typeof window.ClientManager.renderTable === 'function') {
-        window.ClientManager.renderTable();
-      }
+      // 대시보드 모든 모듈 화면 자동 새로고침
+      triggerAllDashboardRenders();
     } catch (e) {
       console.error('수동 동기화 실패:', e);
       updateStatusUI('error', '동기화 실패');
@@ -298,6 +293,57 @@ const FirebaseDB = (() => {
     }
   }
 
+  // 대시보드 모든 모듈 화면 자동 새로고침 헬퍼
+  function triggerAllDashboardRenders() {
+    try {
+      // 1. 대시보드 상단 통계 카드 및 홈 요약
+      if (typeof window.updateGlobalDashboardStats === 'function') {
+        window.updateGlobalDashboardStats(false);
+      }
+      // 2. 홈 게시판 새글 확인 위젯
+      if (typeof window.renderHomeRecentConsults === 'function') {
+        window.renderHomeRecentConsults();
+      }
+      // 3. 거래처 관리 테이블
+      if (window.ClientManager && typeof window.ClientManager.renderTable === 'function') {
+        window.ClientManager.renderTable();
+      }
+      // 4. 최근 활동 로그
+      if (window.ActivityLogger && typeof window.ActivityLogger.render === 'function') {
+        window.ActivityLogger.render();
+      }
+      // 5. 소모품 관리 내역
+      if (window.SuppliesManager && typeof window.SuppliesManager.render === 'function') {
+        window.SuppliesManager.render();
+      }
+      // 6. 회원 및 블랙리스트 관리
+      if (typeof window.renderMembersPage === 'function') {
+        window.renderMembersPage();
+      }
+      if (typeof window.renderBlacklistTable === 'function') {
+        window.renderBlacklistTable();
+      }
+      // 7. 온라인 상담 관리
+      if (typeof window.renderConsultPage === 'function') {
+        window.renderConsultPage();
+      }
+      // 8. 렌탈 분석 / 원가 설정 / 부품 지출 장부
+      if (window.ProfitManager && typeof window.ProfitManager.render === 'function') {
+        window.ProfitManager.render();
+      }
+      // 9. 렌탈 캘린더
+      if (window.RentalCalendarManager && typeof window.RentalCalendarManager.render === 'function') {
+        window.RentalCalendarManager.render();
+      }
+      // 10. 검침/정산 이력 관리
+      if (window.SettlementHistoryManager && typeof window.SettlementHistoryManager.renderTable === 'function') {
+        window.SettlementHistoryManager.renderTable();
+      }
+    } catch (e) {
+      console.warn('대시보드 실시간 리렌더링 중 오류 (무시 가능):', e);
+    }
+  }
+
   function notifyListeners(key, data) {
     changeListeners.forEach(cb => {
       try {
@@ -307,16 +353,8 @@ const FirebaseDB = (() => {
       }
     });
 
-    // 전역 대시보드 함수들 자동 갱신 트리거
-    if (typeof window.updateGlobalDashboardStats === 'function') {
-      window.updateGlobalDashboardStats(false);
-    }
-    if (window.ClientManager && typeof window.ClientManager.renderTable === 'function') {
-      window.ClientManager.renderTable();
-    }
-    if (window.ActivityLogger && typeof window.ActivityLogger.render === 'function') {
-      window.ActivityLogger.render();
-    }
+    // 클라우드 데이터 수신 시 대시보드 전 모듈 화면 즉각 반영
+    triggerAllDashboardRenders();
   }
 
   // ── UI 상태 표시기 업데이트 ──────────────────────────

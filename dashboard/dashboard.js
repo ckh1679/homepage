@@ -872,8 +872,14 @@ document.addEventListener('DOMContentLoaded', () => {
         createdAt: new Date().toISOString()
       });
       localStorage.setItem('pm_blacklist', JSON.stringify(bl));
+      if (typeof FirebaseDB !== 'undefined' && typeof FirebaseDB.save === 'function') {
+        FirebaseDB.save('pm_blacklist', bl);
+      }
       users = users.filter(u => u.id !== userId);
       localStorage.setItem('pm_users', JSON.stringify(users));
+      if (typeof FirebaseDB !== 'undefined' && typeof FirebaseDB.save === 'function') {
+        FirebaseDB.save('pm_users', users);
+      }
     }
 
     ActivityLogger.log('member_block', '회원 차단(블랙리스트)', `<strong>${escapeHtml(target.name)}</strong> 회원 블랙리스트 등록 및 탈퇴 처리`, 'fa fa-ban', '#dc2626');
@@ -955,6 +961,9 @@ document.addEventListener('DOMContentLoaded', () => {
       let bl = JSON.parse(localStorage.getItem('pm_blacklist') || '[]');
       bl = bl.filter(b => b.email !== identifier && b.id !== identifier && b.rawId !== identifier);
       localStorage.setItem('pm_blacklist', JSON.stringify(bl));
+      if (typeof FirebaseDB !== 'undefined' && typeof FirebaseDB.save === 'function') {
+        FirebaseDB.save('pm_blacklist', bl);
+      }
     }
 
     renderBlacklistTable();
