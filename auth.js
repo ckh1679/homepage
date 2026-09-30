@@ -43,8 +43,12 @@ const Auth = (() => {
     return { success: false, message: '구글 계정으로만 로그인할 수 있습니다.\n[Google로 로그인] 버튼을 이용해 주세요.' };
   }
 
-  // ── 구글 클라이언트 ID ──────────────────────────────
+  // ── 소셜 로그인 클라이언트 설정 ──────────────────────────
   const GOOGLE_CLIENT_ID = '757534137046-7ldla468a72bno30t1g01f1qbq2etnjm.apps.googleusercontent.com';
+  // 카카오 디벨로퍼스(https://developers.kakao.com) JavaScript 키
+  const KAKAO_JS_KEY = '';
+  // 네이버 디벨로퍼스(https://developers.naver.com) Client ID
+  const NAVER_CLIENT_ID = '';
 
   // ── 대시보드 진입 허용 구글 이메일 목록 ────────────────
   // 이 3개 이메일은 홈페이지 관리자 계정으로, 대시보드 + 상담게시판 전체 열람 권한 보유
@@ -124,12 +128,109 @@ const Auth = (() => {
     return { success: true, user: sessionData };
   }
 
+  // ── 카카오 소셜 로그인/간편가입 ───────────────────────
+  function loginWithKakao({ id: kakaoId, nickname, email, picture }) {
+    if (!kakaoId) {
+      return { success: false, message: '유효하지 않은 카카오 인증 정보입니다.' };
+    }
+
+    const users = getUsers();
+    const strKakaoId = String(kakaoId);
+    let user = users.find(u => u.kakaoId === strKakaoId || (email && u.email === email));
+
+    if (!user) {
+      const shortId = 'kakao_' + strKakaoId.slice(-6);
+      user = {
+        id: shortId,
+        kakaoId: strKakaoId,
+        password: '',
+        name: nickname || '카카오 사용자',
+        email: email || '',
+        phone: '',
+        picture: picture || '',
+        provider: 'kakao',
+        role: 'user',
+        createdAt: new Date().toISOString()
+      };
+      users.push(user);
+      saveUsers(users);
+    } else {
+      if (!user.kakaoId) user.kakaoId = strKakaoId;
+      if (!user.picture && picture) user.picture = picture;
+      if (!user.provider) user.provider = 'kakao';
+      saveUsers(users);
+    }
+
+    const sessionData = {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      email: user.email,
+      picture: user.picture || picture || '',
+      provider: 'kakao'
+    };
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+
+    return { success: true, user: sessionData };
+  }
+
+  // ── 네이버 소셜 로그인/간편가입 ───────────────────────
+  function loginWithNaver({ id: naverId, name, nickname, email, picture }) {
+    if (!naverId) {
+      return { success: false, message: '유효하지 않은 네이버 인증 정보입니다.' };
+    }
+
+    const users = getUsers();
+    const strNaverId = String(naverId);
+    let user = users.find(u => u.naverId === strNaverId || (email && u.email === email));
+
+    if (!user) {
+      const shortId = 'naver_' + strNaverId.slice(-6);
+      user = {
+        id: shortId,
+        naverId: strNaverId,
+        password: '',
+        name: name || nickname || '네이버 사용자',
+        email: email || '',
+        phone: '',
+        picture: picture || '',
+        provider: 'naver',
+        role: 'user',
+        createdAt: new Date().toISOString()
+      };
+      users.push(user);
+      saveUsers(users);
+    } else {
+      if (!user.naverId) user.naverId = strNaverId;
+      if (!user.picture && picture) user.picture = picture;
+      if (!user.provider) user.provider = 'naver';
+      saveUsers(users);
+    }
+
+    const sessionData = {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      email: user.email,
+      picture: user.picture || picture || '',
+      provider: 'naver'
+    };
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+
+    return { success: true, user: sessionData };
+  }
+
   // ── 로그아웃 ────────────────────────────────────────
   function logout() {
     sessionStorage.removeItem(SESSION_KEY);
     try {
       if (window.google && google.accounts && google.accounts.id) {
         google.accounts.id.disableAutoSelect();
+      }
+    } catch (e) {}
+    try {
+      if (window.Kakao && Kakao.Auth && Kakao.Auth.getAccessToken()) {
+        Kakao.Auth.logout();
       }
     } catch (e) {}
 
@@ -195,10 +296,19 @@ const Auth = (() => {
         userNameEl.style.display = 'inline-flex';
         userNameEl.style.alignItems = 'center';
         userNameEl.style.gap = '6px';
+        let providerBadge = '';
+        if (user.provider === 'kakao') {
+          providerBadge = '<span style="font-size:10px; background:#FEE500; color:#000; padding:1px 5px; border-radius:4px; font-weight:700;">카카오</span>';
+        } else if (user.provider === 'naver') {
+          providerBadge = '<span style="font-size:10px; background:#03C75A; color:#fff; padding:1px 5px; border-radius:4px; font-weight:700;">네이버</span>';
+        } else if (user.provider === 'google') {
+          providerBadge = '<span style="font-size:10px; background:#e8f0fe; color:#1a73e8; padding:1px 5px; border-radius:4px; font-weight:700;">구글</span>';
+        }
+
         if (user.picture) {
-          userNameEl.innerHTML = `<img src="${user.picture}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover;vertical-align:middle;"> <span>${user.name}님</span>`;
+          userNameEl.innerHTML = `<img src="${user.picture}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover;vertical-align:middle;"> <span>${user.name}님</span> ${providerBadge}`;
         } else {
-          userNameEl.textContent = `${user.name}님`;
+          userNameEl.innerHTML = `<span>${user.name}님</span> ${providerBadge}`;
         }
       }
     } else {
@@ -236,11 +346,14 @@ const Auth = (() => {
     return true;
   }
 
-  // ── 구글 소셜 로그인 사용자 여부 확인 ─────────────────
-  // 상담게시판 글쓰기/수정/삭제는 구글 로그인 사용자만 가능하도록 체크
+  // ── 소셜 로그인 사용자 여부 확인 (구글, 카카오, 네이버) ─────────────────
+  // 상담게시판 글쓰기/수정/삭제 권한 확인 (소셜 로그인 사용자 허용)
   function isGoogleUser() {
     const user = getCurrentUser();
-    return user !== null && user.provider === 'google';
+    return user !== null && ['google', 'kakao', 'naver'].includes(user.provider);
+  }
+  function isSocialUser() {
+    return isGoogleUser();
   }
 
   // ── 대시보드 관리자 여부 확인 ────────────────────────
@@ -273,16 +386,21 @@ const Auth = (() => {
   // 외부에 노출할 함수 목록
   return {
     GOOGLE_CLIENT_ID,
+    KAKAO_JS_KEY,
+    NAVER_CLIENT_ID,
     DASHBOARD_ADMIN_EMAILS,
     parseJwt,
     register,
     login,
     loginWithGoogle,
+    loginWithKakao,
+    loginWithNaver,
     logout,
     getCurrentUser,
     isLoggedIn,
     isAdmin,
     isGoogleUser,
+    isSocialUser,
     isDashboardAdmin,
     canViewConsultPost,
     checkIdDuplicate,

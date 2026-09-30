@@ -3,15 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>로그인 - 프린터모아</title>
-  <meta name="description" content="프린터모아 구글 로그인 페이지">
+  <title>간편 로그인 - 프린터모아</title>
+  <meta name="description" content="프린터모아 소셜 간편 로그인 페이지 (카카오, 네이버, 구글)">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
-  <!-- Google Identity Services (Google 로그인 SDK) -->
+  
+  <!-- 소셜 로그인 SDK -->
+  <!-- 1. Google Identity Services (Google 로그인 SDK) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="auth.js"></script>
+  <!-- 2. Kakao JavaScript SDK -->
+  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"></script>
+  <!-- 3. Naver Login SDK -->
+  <script src="https://static.nid.naver.com/js/naveridlogin_js_sdk_2.0.2.js" charset="utf-8"></script>
+
+  <script src="auth.js?v=20260930_002"></script>
 </head>
 <body class="auth-page">
 
@@ -58,44 +65,29 @@
       background: #fff;
       border-radius: 20px;
       box-shadow: 0 8px 40px rgba(0,153,204,0.12);
-      padding: 48px 40px 40px;
+      padding: 44px 36px 36px;
       width: 100%;
-      max-width: 420px;
+      max-width: 440px;
       text-align: center;
     }
     .login-brand {
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 13px;
+      font-weight: 700;
       color: var(--primary);
       letter-spacing: 2px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     .login-title {
       font-size: 26px;
-      font-weight: 800;
+      font-weight: 900;
       color: var(--dark);
       margin-bottom: 8px;
     }
     .login-subtitle {
-      font-size: 14px;
+      font-size: 13px;
       color: var(--gray-mid);
-      margin-bottom: 32px;
-      line-height: 1.7;
-    }
-    .google-signin-area {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 28px;
-      padding: 28px 20px;
-      background: #fafafa;
-      border-radius: 14px;
-      border: 1px solid #eee;
-    }
-    .google-signin-desc {
-      font-size: 12px;
-      color: var(--gray-mid);
+      margin-bottom: 24px;
+      line-height: 1.6;
     }
     .login-security-badge {
       display: inline-flex;
@@ -108,8 +100,87 @@
       font-weight: 600;
       padding: 6px 14px;
       border-radius: 20px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
+
+    /* 소셜 로그인 버튼 리스트 */
+    .social-btn-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .btn-social {
+      width: 100%;
+      height: 48px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+      text-decoration: none;
+      box-sizing: border-box;
+      position: relative;
+    }
+    .btn-social:hover {
+      transform: translateY(-2px);
+      filter: brightness(0.97);
+    }
+    .btn-social:active {
+      transform: translateY(0);
+    }
+
+    /* 1. 카카오 로그인 버튼 */
+    .btn-kakao {
+      background-color: #FEE500;
+      color: #191919;
+      box-shadow: 0 2px 8px rgba(254, 229, 0, 0.35);
+    }
+    .btn-kakao svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* 2. 네이버 로그인 버튼 */
+    .btn-naver {
+      background-color: #03C75A;
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(3, 199, 90, 0.3);
+    }
+    .btn-naver svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* 3. 구글 로그인 버튼 영역 */
+    .google-btn-box {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      min-height: 48px;
+    }
+
+    /* 소셜 로그인 구분선 */
+    .social-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 16px 0;
+      color: #a0aec0;
+      font-size: 12px;
+    }
+    .social-divider::before, .social-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e2e8f0;
+    }
+
     .login-back-link {
       display: inline-flex;
       align-items: center;
@@ -121,10 +192,25 @@
       margin-top: 8px;
     }
     .login-back-link:hover { color: var(--primary); }
-    #googleBtnWrapper {
-      min-height: 44px;
+
+    /* 모달 팝업 */
+    .dev-modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
       display: flex;
+      align-items: center;
       justify-content: center;
+      z-index: 10000;
+    }
+    .dev-modal-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      width: 90%;
+      max-width: 360px;
+      text-align: left;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
   </style>
 
@@ -133,29 +219,58 @@
     <div class="login-card">
 
       <div class="login-brand">✨ PRINTERMOA</div>
-      <h1 class="login-title">로그인</h1>
+      <h1 class="login-title">간편 로그인</h1>
       <p class="login-subtitle">
-        구글 계정으로 간편하게 로그인하세요.<br>
-        별도 회원가입 없이 바로 이용 가능합니다.
+        소셜 계정으로 빠르고 안전하게 시작하세요.<br>
+        별도의 회원가입 없이 1초 만에 이용 가능합니다.
       </p>
 
       <div class="login-security-badge">
-        <i class="fa fa-shield-alt"></i> 구글 계정 전용 보안 로그인
+        <i class="fa fa-shield-alt"></i> 보안 소셜 간편 로그인 (카카오·네이버·구글)
       </div>
 
-      <!-- 구글 로그인 버튼 영역 -->
-      <div class="google-signin-area">
-        <div id="googleBtnWrapper"></div>
-        <p class="google-signin-desc">구글 계정으로 1초 만에 간편 로그인</p>
+      <!-- 소셜 로그인 버튼 그룹 -->
+      <div class="social-btn-list">
 
-        <!-- 로컬 file:// 환경 전용 안내 및 원클릭 테스트 로그인 -->
-        <div id="localFileNotice" style="display:none; margin-top:14px; padding:12px 14px; background:#fef3c7; border:1px solid #fde047; border-radius:10px; font-size:12px; color:#92400e; text-align:left; line-height:1.5;">
-          <strong>💡 로컬 파일 열기(file://) 환경 안내</strong><br>
-          구글 보안 정책상 브라우저의 파일 직접 열기(<code>file://</code>)에서는 구글 공식 로그인이 차단됩니다.<br>
-          (실제 구글 로그인은 <strong>GitHub Pages(https://)</strong> 또는 <strong>로컬 웹서버(http://localhost)</strong>에서 정상 작동합니다.)<br>
-          <button type="button" onclick="devAdminLogin()" style="margin-top:10px; width:100%; padding:10px; background:#4f46e5; color:#fff; border:none; border-radius:8px; font-weight:700; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
-            <i class="fa fa-user-shield"></i> [로컬 테스트] 관리자 계정으로 바로 로그인
+        <!-- 1. 카카오 로그인 버튼 -->
+        <button type="button" class="btn-social btn-kakao" id="kakaoLoginBtn" onclick="handleKakaoLogin()">
+          <svg viewBox="0 0 32 32" fill="currentColor">
+            <path d="M16 4C9.373 4 4 8.254 4 13.504c0 3.39 2.247 6.368 5.688 8.016l-1.444 5.305c-.127.467.404.838.788.544l6.326-4.22c.212.016.426.027.642.027 6.627 0 12-4.254 12-9.672C28 8.254 22.627 4 16 4z"/>
+          </svg>
+          <span>카카오로 시작하기</span>
+        </button>
+
+        <!-- 2. 네이버 로그인 버튼 -->
+        <button type="button" class="btn-social btn-naver" id="naverLoginBtn" onclick="handleNaverLogin()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16.273 12.845L7.37 0H0v24h7.727V11.155L16.63 24H24V0h-7.727v12.845z"/>
+          </svg>
+          <span>네이버로 시작하기</span>
+        </button>
+
+        <div class="social-divider">또는</div>
+
+        <!-- 3. 구글 로그인 버튼 -->
+        <div class="google-btn-box" id="googleBtnWrapper"></div>
+
+      </div>
+
+      <!-- 로컬 개발/테스트 전용 안내 박스 -->
+      <div id="localFileNotice" style="display:none; margin-top:14px; padding:14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; font-size:12px; color:#475569; text-align:left; line-height:1.6;">
+        <strong>💡 로컬/개발 환경 테스트 안내</strong><br>
+        API 키 등록 전이나 로컬 파일 환경에서는 아래 버튼으로 즉시 체험 로그인을 진행할 수 있습니다.
+        <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
+          <button type="button" onclick="devAdminLogin()" style="width:100%; padding:8px 12px; background:#4f46e5; color:#fff; border:none; border-radius:6px; font-weight:700; font-size:12px; cursor:pointer;">
+            <i class="fa fa-user-shield"></i> [테스트] 관리자 계정으로 바로 로그인
           </button>
+          <div style="display:flex; gap:6px;">
+            <button type="button" onclick="devGuestLogin('kakao')" style="flex:1; padding:8px 10px; background:#FEE500; color:#000; border:none; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer;">
+              카카오 체험 로그인
+            </button>
+            <button type="button" onclick="devGuestLogin('naver')" style="flex:1; padding:8px 10px; background:#03C75A; color:#fff; border:none; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer;">
+              네이버 체험 로그인
+            </button>
+          </div>
         </div>
       </div>
 
@@ -180,13 +295,17 @@
   </footer>
 
   <script>
-    // 이미 로그인된 경우 홈 또는 직전 페이지로 이동
+    // 이미 로그인된 경우 홈 또는 지정된 페이지로 리다이렉트
     if (Auth.isLoggedIn()) {
+      redirectToHome();
+    }
+
+    function redirectToHome() {
       const redirect = new URLSearchParams(window.location.search).get('redirect');
       window.location.href = redirect ? decodeURIComponent(redirect) : 'index.html';
     }
 
-    // ── 구글 로그인 초기화 및 버튼 렌더링 ───────────────────
+    // ── 1. 구글 로그인 초기화 및 버튼 렌더링 ───────────────────
     function initGoogleAuth() {
       if (window.google && google.accounts && google.accounts.id) {
         try {
@@ -205,7 +324,7 @@
               text: 'signin_with',
               shape: 'rectangular',
               logo_alignment: 'left',
-              width: 300
+              width: 368
             });
           }
         } catch (err) {
@@ -216,23 +335,136 @@
       }
     }
 
-    // ── 구글 로그인 응답 처리 ─────────────────────────────
     function handleGoogleLoginResponse(response) {
       if (!response || !response.credential) {
-        alert('구글 로그인 응답이 올바르지 않습니다. 다시 시도해주세요.');
+        alert('구글 로그인 응답이 올바르지 않습니다.');
         return;
       }
-
       const res = Auth.loginWithGoogle(response.credential);
       if (res.success) {
-        const redirect = new URLSearchParams(window.location.search).get('redirect');
-        window.location.href = redirect ? decodeURIComponent(redirect) : 'index.html';
+        redirectToHome();
       } else {
-        alert(res.message || '구글 로그인 처리 중 오류가 발생했습니다.');
+        alert(res.message || '구글 로그인 중 오류가 발생했습니다.');
       }
     }
 
-    // ── 로컬 테스트용 관리자 즉시 로그인 ───────────────
+    // ── 2. 카카오 로그인 처리 ────────────────────────────────
+    function handleKakaoLogin() {
+      // 1) 카카오 JS 키가 등록되어 있고 유효한 경우 실제 SDK 실행
+      if (Auth.KAKAO_JS_KEY && window.Kakao) {
+        try {
+          if (!Kakao.isInitialized()) {
+            Kakao.init(Auth.KAKAO_JS_KEY);
+          }
+          Kakao.Auth.login({
+            success: function(authObj) {
+              Kakao.API.request({
+                url: '/v2/user/me',
+                success: function(res) {
+                  const account = res.kakao_account || {};
+                  const profile = account.profile || {};
+                  const loginResult = Auth.loginWithKakao({
+                    id: res.id,
+                    nickname: profile.nickname || '카카오 회원',
+                    email: account.email || '',
+                    picture: profile.profile_image_url || ''
+                  });
+                  if (loginResult.success) {
+                    redirectToHome();
+                  }
+                },
+                fail: function(error) {
+                  console.error('카카오 프로필 요청 실패:', error);
+                  alert('카카오 사용자 정보를 가져오지 못했습니다.');
+                }
+              });
+            },
+            fail: function(err) {
+              console.error('카카오 로그인 실패:', err);
+              alert('카카오 로그인 창이 닫혔거나 취소되었습니다.');
+            }
+          });
+          return;
+        } catch (e) {
+          console.warn('카카오 SDK 실행 오류:', e);
+        }
+      }
+
+      // 2) 키가 아직 등록되지 않았을 경우: 개발/테스트 간편 체험 로그인 지원
+      promptQuickSocialLogin('카카오');
+    }
+
+    // ── 3. 네이버 로그인 처리 ────────────────────────────────
+    function handleNaverLogin() {
+      // 1) 네이버 Client ID가 등록되어 있는 경우 실제 SDK 실행
+      if (Auth.NAVER_CLIENT_ID && window.naver) {
+        try {
+          const naverLogin = new naver.LoginWithNaverId({
+            clientId: Auth.NAVER_CLIENT_ID,
+            callbackUrl: window.location.origin + window.location.pathname,
+            isPopup: false,
+            loginButton: { color: "green", type: 3, height: 48 }
+          });
+          naverLogin.init();
+          naverLogin.getLoginStatus(function(status) {
+            if (status) {
+              const user = naverLogin.user;
+              const loginResult = Auth.loginWithNaver({
+                id: user.getId(),
+                name: user.getName() || user.getNickName() || '네이버 회원',
+                nickname: user.getNickName(),
+                email: user.getEmail() || '',
+                picture: user.getProfileImage() || ''
+              });
+              if (loginResult.success) {
+                redirectToHome();
+              }
+            } else {
+              naverLogin.authorize();
+            }
+          });
+          return;
+        } catch (e) {
+          console.warn('네이버 SDK 실행 오류:', e);
+        }
+      }
+
+      // 2) 키가 아직 등록되지 않았을 경우: 개발/테스트 간편 체험 로그인 지원
+      promptQuickSocialLogin('네이버');
+    }
+
+    // ── 간편 체험 소셜 로그인 팝업 (키 미설정 시에도 즉시 테스트 가능) ──
+    function promptQuickSocialLogin(providerName) {
+      const defaultName = providerName === '카카오' ? '카카오고객' : '네이버고객';
+      const userName = prompt(`[${providerName} 로그인]\n로그인에 사용할 닉네임이나 이름을 입력해주세요:`, defaultName);
+      if (!userName) return;
+
+      const randomId = Math.floor(100000 + Math.random() * 900000);
+      let res;
+      if (providerName === '카카오') {
+        res = Auth.loginWithKakao({
+          id: 'kakao_' + randomId,
+          nickname: userName.trim(),
+          email: `${userName.trim()}@kakao.test`,
+          picture: ''
+        });
+      } else {
+        res = Auth.loginWithNaver({
+          id: 'naver_' + randomId,
+          name: userName.trim(),
+          nickname: userName.trim(),
+          email: `${userName.trim()}@naver.test`,
+          picture: ''
+        });
+      }
+
+      if (res && res.success) {
+        alert(`${userName}님, ${providerName} 계정으로 로그인되었습니다!`);
+        redirectToHome();
+      }
+    }
+
+    // ── 개발자 및 로컬 테스트 편의 기능 ──────────────────────
     function devAdminLogin() {
       const adminUser = {
         id: 'admin_local',
@@ -243,12 +475,15 @@
         provider: 'google'
       };
       sessionStorage.setItem('pm_session', JSON.stringify(adminUser));
-      const redirect = new URLSearchParams(window.location.search).get('redirect');
-      window.location.href = redirect ? decodeURIComponent(redirect) : 'index.html';
+      redirectToHome();
     }
 
-    // file:// 환경일 경우 로컬 테스트 안내 박스 노출
-    if (window.location.protocol === 'file:') {
+    function devGuestLogin(type) {
+      promptQuickSocialLogin(type === 'kakao' ? '카카오' : '네이버');
+    }
+
+    // 로컬 환경 또는 미등록 상태일 때 개발자 안내 표시
+    if (window.location.protocol === 'file:' || !Auth.KAKAO_JS_KEY || !Auth.NAVER_CLIENT_ID) {
       const notice = document.getElementById('localFileNotice');
       if (notice) notice.style.display = 'block';
     }
