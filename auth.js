@@ -46,7 +46,7 @@ const Auth = (() => {
   // ── 소셜 로그인 클라이언트 설정 ──────────────────────────
   const GOOGLE_CLIENT_ID = '757534137046-7ldla468a72bno30t1g01f1qbq2etnjm.apps.googleusercontent.com';
   // 카카오 디벨로퍼스(https://developers.kakao.com) JavaScript 키
-  const KAKAO_JS_KEY = '';
+  const KAKAO_JS_KEY = 'ae5205ab758e7a7f63b131d1e1d0244b';
   // 네이버 디벨로퍼스(https://developers.naver.com) Client ID
   const NAVER_CLIENT_ID = '';
 
