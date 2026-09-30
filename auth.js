@@ -23,6 +23,7 @@ const Auth = (() => {
 
   function saveBlacklist(list) {
     localStorage.setItem(BLACKLIST_KEY, JSON.stringify(list));
+    localStorage.setItem(`pm_ts_${BLACKLIST_KEY}`, Date.now().toString());
     if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
       window.FirebaseDB.save(BLACKLIST_KEY, list);
     }
@@ -100,6 +101,7 @@ const Auth = (() => {
   // ── 회원 목록 저장 ──────────────────────────────────
   function saveUsers(users) {
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    localStorage.setItem(`pm_ts_${USERS_KEY}`, Date.now().toString());
     if (window.FirebaseDB && typeof window.FirebaseDB.save === 'function') {
       window.FirebaseDB.save(USERS_KEY, users);
     }

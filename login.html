@@ -16,9 +16,12 @@
   <!-- 2. Kakao JavaScript SDK v1 (팝업 및 API 완벽 호환) -->
   <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
   <!-- 3. Naver Login SDK -->
-  <script src="https://static.nid.naver.com/js/naveridlogin_js_sdk_2.0.2.js" charset="utf-8"></script>
+  <!-- Firebase SDK v10 (Compat 모드) & 클라우드 실시간 동기화 브리지 -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-db.js?v=20260930_002"></script>
 
-  <script src="auth.js?v=20260930_004"></script>
+  <script src="auth.js?v=20260930_005"></script>
 </head>
 <body class="auth-page">
 
@@ -399,7 +402,7 @@
                   picture: picture
                 });
                 if (loginResult.success) {
-                  redirectToHome();
+                  setTimeout(redirectToHome, 120);
                 } else {
                   alert(loginResult.message || '카카오 로그인에 실패했습니다.');
                 }
@@ -494,7 +497,7 @@
             picture: existing.picture || ''
           });
           if (res.success) {
-            redirectToHome();
+            setTimeout(redirectToHome, 120);
             return;
           } else {
             alert(res.message || '네이버 로그인에 실패했습니다.');
@@ -512,7 +515,7 @@
             picture: ''
           });
           if (res.success) {
-            redirectToHome();
+            setTimeout(redirectToHome, 120);
           } else {
             alert(res.message || '네이버 로그인에 실패했습니다.');
           }
