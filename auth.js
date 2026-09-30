@@ -318,11 +318,30 @@ const Auth = (() => {
           providerBadge = '<span style="font-size:10px; background:#e8f0fe; color:#1a73e8; padding:1px 5px; border-radius:4px; font-weight:700;">구글</span>';
         }
 
+        userNameEl.style.cursor = 'pointer';
+        userNameEl.title = '클릭하여 닉네임을 변경할 수 있습니다.';
+
         if (user.picture) {
-          userNameEl.innerHTML = `<img src="${user.picture}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover;vertical-align:middle;"> <span>${user.name}님</span> ${providerBadge}`;
+          userNameEl.innerHTML = `<img src="${user.picture}" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover;vertical-align:middle;"> <span>${user.name}님 <i class="fa fa-pen" style="font-size:10px; opacity:0.6; margin-left:2px;"></i></span> ${providerBadge}`;
         } else {
-          userNameEl.innerHTML = `<span>${user.name}님</span> ${providerBadge}`;
+          userNameEl.innerHTML = `<span>${user.name}님 <i class="fa fa-pen" style="font-size:10px; opacity:0.6; margin-left:2px;"></i></span> ${providerBadge}`;
         }
+
+        userNameEl.onclick = () => {
+          const newName = prompt('변경할 닉네임(이름)을 입력해 주세요:', user.name);
+          if (newName && newName.trim() && newName.trim() !== user.name) {
+            user.name = newName.trim();
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+            const users = getUsers();
+            const idx = users.findIndex(u => u.id === user.id);
+            if (idx !== -1) {
+              users[idx].name = newName.trim();
+              saveUsers(users);
+            }
+            updateHeaderUI();
+            alert('닉네임이 "' + user.name + '"으로 변경되었습니다.');
+          }
+        };
       }
     } else {
       // 비로그인 상태: Google 로그인 단축 버튼만 표시
@@ -331,6 +350,7 @@ const Auth = (() => {
       if (userNameEl) {
         userNameEl.style.display = 'none';
         userNameEl.innerHTML = '';
+        userNameEl.onclick = null;
       }
     }
 

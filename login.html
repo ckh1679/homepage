@@ -506,7 +506,8 @@
         const naverAuthUrl = 'https://nid.naver.com/oauth2.0/authorize?response_type=token'
           + '&client_id=' + encodeURIComponent(Auth.NAVER_CLIENT_ID)
           + '&redirect_uri=' + encodeURIComponent(callbackUrl)
-          + '&state=' + encodeURIComponent(state);
+          + '&state=' + encodeURIComponent(state)
+          + '&auth_type=reprompt';
         
         window.location.href = naverAuthUrl;
       } catch (e) {
