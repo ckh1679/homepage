@@ -54,8 +54,7 @@ const ShopData = {
   ],
 
   // ── 전 제품 공통 상세설명 상단 기본정보 이미지 (모든 제품에 동일하게 적용할 때 사용) ──
-  // 예: './images/common_rental_info.jpg' (지정하지 않으면 제품별 detailTopImage만 적용)
-  commonInfoImage: '',
+  commonInfoImage: './images/common_rental_info.jpg',
 
   // ── 상품 데이터 ───────────────────────────────────
   products: [
