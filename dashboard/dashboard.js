@@ -466,6 +466,10 @@ document.addEventListener('DOMContentLoaded', () => {
       Auth.addBlacklist({
         email: target.email || '',
         id: target.id || '',
+        rawId: target.kakaoId || target.naverId || target.googleId || target.id || '',
+        googleId: target.googleId || '',
+        kakaoId: target.kakaoId || '',
+        naverId: target.naverId || '',
         name: target.name || '차단회원',
         reason: reason.trim() || '관리자 지정 차단'
       });
@@ -475,6 +479,10 @@ document.addEventListener('DOMContentLoaded', () => {
       bl.unshift({
         email: target.email || '',
         id: target.id || '',
+        rawId: target.kakaoId || target.naverId || target.googleId || target.id || '',
+        googleId: target.googleId || '',
+        kakaoId: target.kakaoId || '',
+        naverId: target.naverId || '',
         name: target.name || '차단회원',
         reason: reason.trim() || '관리자 지정 차단',
         createdAt: new Date().toISOString()
@@ -527,7 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
         banDate = `${item.createdAt.slice(0, 10).replace(/-/g, '.')} ${item.createdAt.slice(11, 16)}`;
       }
 
-      const identifier = item.email || item.id || '-';
+      const identifier = item.email || item.id || item.rawId || item.kakaoId || item.naverId || item.googleId || item.name || '-';
 
       return `
         <tr>
@@ -558,7 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
       Auth.removeBlacklist(identifier);
     } else {
       let bl = JSON.parse(localStorage.getItem('pm_blacklist') || '[]');
-      bl = bl.filter(b => b.email !== identifier && b.id !== identifier);
+      bl = bl.filter(b => b.email !== identifier && b.id !== identifier && b.rawId !== identifier);
       localStorage.setItem('pm_blacklist', JSON.stringify(bl));
     }
 
@@ -585,10 +593,12 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (typeof Auth !== 'undefined' && typeof Auth.addBlacklist === 'function') {
+        const isEmail = target.includes('@');
         const ok = Auth.addBlacklist({
-          email: target.includes('@') ? target : '',
-          id: !target.includes('@') ? target : '',
-          name: '수동등록 차단',
+          email: isEmail ? target : '',
+          id: !isEmail ? target : '',
+          rawId: target,
+          name: !isEmail ? target : '수동등록 차단',
           reason: reason || '관리자 수동 차단'
         });
         if (!ok) {

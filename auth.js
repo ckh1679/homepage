@@ -29,28 +29,117 @@ const Auth = (() => {
     }
   }
 
-  function isBlacklisted(email, id) {
+  function cleanStr(s) {
+    return s ? String(s).trim().toLowerCase() : '';
+  }
+
+  function stripProviderPrefix(s) {
+    return cleanStr(s).replace(/^(google_|kakao_|naver_)/, '');
+  }
+
+  const GENERIC_NAMES = [
+    '카카오 회원', '카카오회원', '카카오 사용자',
+    '네이버 회원', '네이버회원', '네이버 사용자',
+    '구글 사용자', '회원', '사용자', '차단회원', '수동등록 차단'
+  ];
+
+  function isBlacklisted(param1, param2) {
     const list = getBlacklist();
-    const targetEmail = (email || '').trim().toLowerCase();
-    const targetId = (id || '').trim();
+    if (!list || list.length === 0) return false;
+
+    // 파라미터 유연화: 객체 또는 (email, id) 지원
+    let target = {};
+    if (param1 && typeof param1 === 'object') {
+      target = param1;
+    } else {
+      target = { email: param1, id: param2 };
+    }
+
+    const targetEmail = cleanStr(target.email);
+    const targetName = cleanStr(target.name || target.nickname);
+    
+    // 검사할 타겟 ID 후보군 모음 (대소문자, 접두어 제거, 원본)
+    const rawTargetIds = [
+      target.id,
+      target.rawId,
+      target.googleId,
+      target.kakaoId,
+      target.naverId
+    ].filter(Boolean).map(cleanStr);
+
+    const targetIdPool = new Set();
+    rawTargetIds.forEach(id => {
+      targetIdPool.add(id);
+      const stripped = stripProviderPrefix(id);
+      if (stripped) targetIdPool.add(stripped);
+    });
 
     return list.some(item => {
-      const itemEmail = (item.email || '').trim().toLowerCase();
-      const itemId = (item.id || '').trim();
+      // 1. 이메일 일치 검증
+      const itemEmail = cleanStr(item.email);
       if (targetEmail && itemEmail && targetEmail === itemEmail) return true;
-      if (targetId && itemId && targetId === itemId) return true;
+
+      // 2. ID 일치 검증 (고유 ID, rawId, 접두어 제거 ID, 끝자리 매칭)
+      const itemRawIds = [
+        item.id,
+        item.rawId,
+        item.googleId,
+        item.kakaoId,
+        item.naverId,
+        item.identifier
+      ].filter(Boolean).map(cleanStr);
+
+      const itemIdPool = new Set();
+      itemRawIds.forEach(id => {
+        itemIdPool.add(id);
+        const stripped = stripProviderPrefix(id);
+        if (stripped) itemIdPool.add(stripped);
+      });
+
+      // ID 풀 간의 교차 일치 검사
+      for (const tId of targetIdPool) {
+        if (!tId) continue;
+        for (const iId of itemIdPool) {
+          if (!iId) continue;
+          if (tId === iId) return true;
+          // 끝자리 6자리 매칭 (카카오/구글 shortId 끝자리 vs 전체 ID)
+          if (tId.length >= 6 && iId.length >= 6) {
+            if (tId.endsWith(iId) || iId.endsWith(tId)) return true;
+          }
+        }
+      }
+
+      // 3. 이름/닉네임 일치 검증 (일반적인 기본 닉네임 제외)
+      const itemName = cleanStr(item.name);
+      if (itemName && !GENERIC_NAMES.includes(itemName)) {
+        if (targetName && targetName === itemName) return true;
+        // 관리자가 수동으로 아이디/이메일 칸에 닉네임을 적어둔 경우
+        if (itemEmail && targetName === itemEmail) return true;
+        if (itemRawIds.includes(targetName)) return true;
+      }
+
+      // 4. 관리자가 수동 등록창에 입력한 문자열이 타겟 이메일/ID/닉네임과 일치하는 경우
+      if (itemEmail && (targetIdPool.has(itemEmail) || (targetName && targetName === itemEmail))) return true;
+      for (const iId of itemIdPool) {
+        if (targetEmail && iId === targetEmail) return true;
+      }
+
       return false;
     });
   }
 
-  function addBlacklist({ email, id, name, reason }) {
+  function addBlacklist({ email, id, rawId, googleId, kakaoId, naverId, name, reason }) {
     const list = getBlacklist();
-    if (isBlacklisted(email, id)) return false;
+    if (isBlacklisted({ email, id, rawId, googleId, kakaoId, naverId, name })) return false;
     list.unshift({
       email: (email || '').trim(),
       id: (id || '').trim(),
-      name: name || '차단회원',
-      reason: reason || '관리자 지정 차단',
+      rawId: (rawId || '').trim(),
+      googleId: (googleId || '').trim(),
+      kakaoId: (kakaoId || '').trim(),
+      naverId: (naverId || '').trim(),
+      name: (name || '차단회원').trim(),
+      reason: (reason || '관리자 지정 차단').trim(),
       createdAt: new Date().toISOString()
     });
     saveBlacklist(list);
@@ -59,11 +148,19 @@ const Auth = (() => {
 
   function removeBlacklist(identifier) {
     let list = getBlacklist();
-    const target = (identifier || '').trim().toLowerCase();
+    const target = cleanStr(identifier);
+    const targetClean = stripProviderPrefix(target);
+
     list = list.filter(item => {
-      const e = (item.email || '').trim().toLowerCase();
-      const i = (item.id || '').trim().toLowerCase();
-      return e !== target && i !== target;
+      const e = cleanStr(item.email);
+      const i = cleanStr(item.id);
+      const r = cleanStr(item.rawId);
+      const n = cleanStr(item.name);
+      const iClean = stripProviderPrefix(i);
+
+      if (e === target || i === target || r === target || n === target) return false;
+      if (targetClean && iClean && targetClean === iClean) return false;
+      return true;
     });
     saveBlacklist(list);
   }
@@ -85,8 +182,16 @@ const Auth = (() => {
     return true;
   }
 
-  // ── 초기화: 특별한 작업 없음 (소셜 로그인 중심) ──
+  // ── 초기화: 페이지 로드 시 차단된 세션 즉시 만료 ──
   function init() {
+    try {
+      const cur = getCurrentUser();
+      if (cur && isBlacklisted(cur)) {
+        sessionStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem('pm_naver_user_id');
+        localStorage.removeItem('pm_naver_user_name');
+      }
+    } catch (e) {}
   }
 
   // ── 회원 목록 조회 ──────────────────────────────────
@@ -159,8 +264,9 @@ const Auth = (() => {
 
     const { sub: googleId, email, name, picture } = payload;
 
-    // 블랙리스트 차단 여부 확인
-    if (isBlacklisted(email, googleId)) {
+    // 블랙리스트 차단 여부 확인 (이메일, 원본 sub ID, shortId, 이름 종합 검증)
+    const shortId = 'google_' + String(googleId).slice(-6);
+    if (isBlacklisted({ email, id: shortId, rawId: String(googleId), googleId: String(googleId), name })) {
       return { success: false, message: '이용이 제한(차단)된 계정입니다.\n관리자에게 문의해 주세요.' };
     }
 
@@ -171,7 +277,6 @@ const Auth = (() => {
 
     if (!user) {
       // 2. 신규 사용자면 자동 간편 회원가입 처리
-      const shortId = 'google_' + googleId.slice(-6);
       user = {
         id: shortId,
         googleId: googleId,
@@ -215,7 +320,9 @@ const Auth = (() => {
     }
 
     const strKakaoId = String(kakaoId);
-    if (isBlacklisted(email, strKakaoId)) {
+    const shortId = 'kakao_' + strKakaoId.slice(-6);
+    // 블랙리스트 차단 여부 확인 (이메일, 카카오 숫자 고유ID, shortId, 닉네임 종합 검증)
+    if (isBlacklisted({ email, id: shortId, rawId: strKakaoId, kakaoId: strKakaoId, name: nickname })) {
       return { success: false, message: '이용이 제한(차단)된 계정입니다.\n관리자에게 문의해 주세요.' };
     }
 
@@ -223,7 +330,6 @@ const Auth = (() => {
     let user = users.find(u => u.kakaoId === strKakaoId || (email && u.email === email));
 
     if (!user) {
-      const shortId = 'kakao_' + strKakaoId.slice(-6);
       user = {
         id: shortId,
         kakaoId: strKakaoId,
@@ -271,7 +377,15 @@ const Auth = (() => {
     }
 
     const strNaverId = String(naverId);
-    if (isBlacklisted(email, strNaverId)) {
+    const shortId = strNaverId.startsWith('naver_') ? strNaverId : ('naver_' + strNaverId.slice(-6));
+    const displayName = name || nickname || '네이버 사용자';
+
+    // 블랙리스트 차단 여부 확인 (이메일, 네이버 고유 ID, shortId, 닉네임 종합 검증)
+    if (isBlacklisted({ email, id: shortId, rawId: strNaverId, naverId: strNaverId, name: displayName })) {
+      try {
+        localStorage.removeItem('pm_naver_user_id');
+        localStorage.removeItem('pm_naver_user_name');
+      } catch (e) {}
       return { success: false, message: '이용이 제한(차단)된 계정입니다.\n관리자에게 문의해 주세요.' };
     }
 
@@ -379,6 +493,19 @@ const Auth = (() => {
   // 각 페이지의 헤더 영역을 현재 로그인 상태에 맞게 변경
   function updateHeaderUI() {
     const user = getCurrentUser();
+
+    // 블랙리스트 차단 검사: 현재 세션의 유저가 차단 대상인 경우 즉시 세션 파기 및 로그아웃
+    if (user && isBlacklisted(user)) {
+      sessionStorage.removeItem(SESSION_KEY);
+      try {
+        localStorage.removeItem('pm_naver_user_id');
+        localStorage.removeItem('pm_naver_user_name');
+      } catch (e) {}
+      alert('현재 이용 중인 계정은 관리자에 의해 차단(이용제한)되었습니다.\n세션이 강제 종료됩니다.');
+      window.location.reload();
+      return;
+    }
+
     const googleShortcut = document.getElementById('headerGoogleShortcut');
     const loginLink = document.getElementById('headerLoginLink');
     const registerLink = document.getElementById('headerRegisterLink');

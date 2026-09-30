@@ -21,7 +21,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="firebase-db.js?v=20260930_002"></script>
 
-  <script src="auth.js?v=20260930_005"></script>
+  <script src="auth.js?v=20260930_006"></script>
 </head>
 <body class="auth-page">
 
@@ -309,9 +309,19 @@
   </footer>
 
   <script>
-    // 이미 로그인된 경우 홈 또는 지정된 페이지로 리다이렉트
+    // 이미 로그인된 경우 블랙리스트 확인 후 세션 파기 또는 홈 이동
     if (Auth.isLoggedIn()) {
-      redirectToHome();
+      const curUser = Auth.getCurrentUser();
+      if (curUser && Auth.isBlacklisted(curUser)) {
+        sessionStorage.removeItem('pm_session');
+        try {
+          localStorage.removeItem('pm_naver_user_id');
+          localStorage.removeItem('pm_naver_user_name');
+        } catch (e) {}
+        alert('이용이 제한(차단)된 계정입니다.\n관리자에게 문의해 주세요.');
+      } else {
+        redirectToHome();
+      }
     }
 
     function redirectToHome() {
@@ -494,6 +504,17 @@
         // 이미 이름을 설정해둔 기존 회원이면 모달창 전혀 없이 즉시 로그인 후 홈으로 이동!
         if (effectiveName) {
           const finalId = savedNaverId || (existing ? existing.id : ('naver_' + accessToken.slice(-8)));
+
+          // 블랙리스트 차단 사전 검증
+          if (Auth.isBlacklisted({ id: finalId, rawId: finalId, name: effectiveName, email: (existing && existing.email) || '' })) {
+            try {
+              localStorage.removeItem('pm_naver_user_id');
+              localStorage.removeItem('pm_naver_user_name');
+            } catch (e) {}
+            alert('이용이 제한(차단)된 계정입니다.\n관리자에게 문의해 주세요.');
+            return;
+          }
+
           localStorage.setItem('pm_naver_user_id', finalId);
           localStorage.setItem('pm_naver_user_name', effectiveName);
 
@@ -517,6 +538,17 @@
         const newId = savedNaverId || ('naver_' + accessToken.slice(-8));
         promptNaverNickname('네이버 회원', (chosenName) => {
           const finalChosen = chosenName || '네이버 회원';
+
+          // 블랙리스트 차단 사전 검증
+          if (Auth.isBlacklisted({ id: newId, rawId: newId, name: finalChosen, email: '' })) {
+            try {
+              localStorage.removeItem('pm_naver_user_id');
+              localStorage.removeItem('pm_naver_user_name');
+            } catch (e) {}
+            alert('이용이 제한(차단)된 계정입니다.\n관리자에게 문의해 주세요.');
+            return;
+          }
+
           localStorage.setItem('pm_naver_user_id', newId);
           localStorage.setItem('pm_naver_user_name', finalChosen);
 
@@ -536,16 +568,7 @@
 
       } catch (e) {
         console.error('네이버 로그인 처리 예외 발생:', e);
-        const savedName = localStorage.getItem('pm_naver_user_name') || '네이버 회원';
-        const finalId = localStorage.getItem('pm_naver_user_id') || ('naver_' + accessToken.slice(-8));
-        Auth.loginWithNaver({
-          id: finalId,
-          name: savedName,
-          nickname: savedName,
-          email: '',
-          picture: ''
-        });
-        setTimeout(redirectToHome, 120);
+        alert('네이버 로그인 처리 중 오류가 발생했습니다: ' + e.message);
       }
     }
 
