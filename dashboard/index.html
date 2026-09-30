@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>프린터모아 - 관리자 대시보드</title>
-  <link rel="stylesheet" href="dashboard.css?v=20260930_007">
+  <link rel="stylesheet" href="dashboard.css?v=20260930_008">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- SheetJS (Excel xlsx 업로드/다운로드 라이브러리) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -202,13 +202,18 @@
             </div>
 
             <div class="panel">
-              <div class="panel-header"><div class="panel-title">최근 활동 로그</div></div>
+              <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center;">
+                <div class="panel-title">최근 활동 로그</div>
+                <div id="homeActivityPageInfo" style="font-size:12px;color:var(--text-muted);font-weight:500;"></div>
+              </div>
               <div class="activity-list" id="homeActivityList">
                 <div style="text-align:center;padding:24px 12px;color:var(--text-muted);font-size:13px;">
                   <i class="fa fa-spinner fa-spin" style="font-size:20px;margin-bottom:8px;opacity:0.6;display:block;"></i>
                   최근 활동 내역을 불러오는 중입니다...
                 </div>
               </div>
+              <!-- 최근 활동 로그 페이지네이션 컨트롤러 -->
+              <div id="homeActivityPagination" class="activity-pagination" style="display:none;"></div>
             </div>
           </div>
         </section>
@@ -1966,6 +1971,6 @@
   <script src="../firebase-db.js?v=20260930_004"></script>
 
   <script src="../board/board.js?v=20260930_002"></script>
-  <script src="dashboard.js?v=20260930_005"></script>
+  <script src="dashboard.js?v=20260930_006"></script>
 </body>
 </html>

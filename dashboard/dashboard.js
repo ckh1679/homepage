@@ -414,6 +414,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // ──────────────────────────────────────────────────────
   const ActivityLogger = {
     STORAGE_KEY: 'pm_activity_logs',
+    currentPage: 1,
+    pageSize: 6,   // 한 페이지당 6개 표시 (총 30개 = 5페이지)
+    maxTotal: 30,  // 최대 30개까지 확인 가능
 
     getLogs() {
       try {
@@ -455,21 +458,32 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         logs.unshift(newLog);
         this.saveLogs(logs);
+        this.currentPage = 1; // 신규 로그 추가 시 첫 페이지로 이동
         this.render();
       } catch (e) {
         console.error('활동 로그 기록 실패:', e);
       }
     },
 
+    // 페이지 변경
+    setPage(page) {
+      const logs = this.getLogs();
+      const totalAvailable = Math.min((logs || []).length, this.maxTotal);
+      const totalPages = Math.max(1, Math.ceil(totalAvailable / this.pageSize));
+      const targetPage = Math.max(1, Math.min(page, totalPages));
+      this.currentPage = targetPage;
+      this.render();
+    },
+
     generateInitialLogs() {
       const generated = [];
 
-      // 1. 거래처 데이터로부터 추출
+      // 1. 거래처 데이터로부터 추출 (최대 10개)
       try {
         const rawClients = localStorage.getItem('pm_clients');
         const clients = rawClients ? JSON.parse(rawClients) : [];
         if (Array.isArray(clients)) {
-          clients.slice(0, 3).forEach((c, idx) => {
+          clients.slice(0, 10).forEach((c, idx) => {
             const devCount = (c.devices || []).length;
             const pastMinutes = (idx + 1) * 35;
             generated.push({
@@ -485,13 +499,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } catch {}
 
-      // 2. 소모품 입출고 내역으로부터 추출
+      // 2. 소모품 입출고 내역으로부터 추출 (최대 15개)
       try {
         const rawSupplies = localStorage.getItem('pm_supplies_records');
         const records = rawSupplies ? JSON.parse(rawSupplies) : [];
         if (Array.isArray(records)) {
-          records.slice(0, 4).forEach((r, idx) => {
-            const pastMinutes = (idx + 1) * 75;
+          records.slice(0, 15).forEach((r, idx) => {
+            const pastMinutes = (idx + 1) * 55;
             const isOut = r.type === 'out';
             generated.push({
               id: 'init_sup_' + (r.id || idx),
@@ -506,15 +520,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } catch {}
 
-      // 3. 가입 회원 데이터로부터 추출
+      // 3. 가입 회원 데이터로부터 추출 (최대 10개)
       try {
         const rawUsers = localStorage.getItem('pm_users');
         const users = rawUsers ? JSON.parse(rawUsers) : [];
         if (Array.isArray(users)) {
-          users.slice(0, 3).forEach((u, idx) => {
+          users.slice(0, 10).forEach((u, idx) => {
             const prov = (u.provider || '').toLowerCase();
             const provLabel = prov === 'kakao' ? '카카오' : (prov === 'naver' ? '네이버' : '구글');
-            const pastMinutes = (idx + 1) * 110;
+            const pastMinutes = (idx + 1) * 75;
             generated.push({
               id: 'init_usr_' + (u.id || idx),
               type: 'member',
@@ -553,21 +567,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     render() {
       const container = document.getElementById('homeActivityList');
+      const pageInfo = document.getElementById('homeActivityPageInfo');
+      const pagination = document.getElementById('homeActivityPagination');
       if (!container) return;
 
-      const logs = this.getLogs();
-      if (!logs || logs.length === 0) {
+      const allLogs = this.getLogs();
+      // 사용자의 요청에 따라 최대 30개까지 확인 가능하도록 제한
+      const targetLogs = (allLogs || []).slice(0, this.maxTotal);
+      const totalCount = targetLogs.length;
+
+      if (totalCount === 0) {
         container.innerHTML = `
           <div style="text-align:center;padding:28px 12px;color:var(--text-muted);font-size:13px;">
             <i class="fa fa-history" style="font-size:24px;margin-bottom:8px;opacity:0.4;display:block;"></i>
             최근 활동 내역이 없습니다.
           </div>
         `;
+        if (pageInfo) pageInfo.textContent = '';
+        if (pagination) pagination.style.display = 'none';
         return;
       }
 
-      const recentLogs = logs.slice(0, 8);
-      container.innerHTML = recentLogs.map(item => {
+      const totalPages = Math.ceil(totalCount / this.pageSize) || 1;
+      if (this.currentPage > totalPages) this.currentPage = totalPages;
+      if (this.currentPage < 1) this.currentPage = 1;
+
+      // 상단 헤더 페이지 정보 업데이트 (예: 1 / 5 페이지 (총 30개))
+      if (pageInfo) {
+        pageInfo.innerHTML = `<span style="color:#38bdf8;font-weight:700;">${this.currentPage}</span> / ${totalPages} 페이지 (총 ${totalCount}개)`;
+      }
+
+      // 현재 페이지 아이템 슬라이싱
+      const startIndex = (this.currentPage - 1) * this.pageSize;
+      const currentPageItems = targetLogs.slice(startIndex, startIndex + this.pageSize);
+
+      container.innerHTML = currentPageItems.map(item => {
         const icon = item.icon || 'fa fa-bell';
         const iconColor = item.iconColor || 'var(--accent-primary, #2563eb)';
         const title = item.title || '활동 내역';
@@ -584,6 +618,37 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         `;
       }).join('');
+
+      // 하단 페이지네이션 컨트롤러 렌더링
+      if (pagination) {
+        if (totalPages <= 1) {
+          pagination.style.display = 'none';
+        } else {
+          pagination.style.display = 'flex';
+          let pagesHtml = `
+            <button type="button" class="btn-act-page" ${this.currentPage === 1 ? 'disabled' : ''} onclick="ActivityLogger.setPage(${this.currentPage - 1})" title="이전 페이지">
+              <i class="fa fa-chevron-left"></i>
+            </button>
+          `;
+
+          for (let p = 1; p <= totalPages; p++) {
+            const isActive = p === this.currentPage;
+            pagesHtml += `
+              <button type="button" class="btn-act-page ${isActive ? 'active' : ''}" onclick="ActivityLogger.setPage(${p})">
+                ${p}
+              </button>
+            `;
+          }
+
+          pagesHtml += `
+            <button type="button" class="btn-act-page" ${this.currentPage === totalPages ? 'disabled' : ''} onclick="ActivityLogger.setPage(${this.currentPage + 1})" title="다음 페이지">
+              <i class="fa fa-chevron-right"></i>
+            </button>
+          `;
+
+          pagination.innerHTML = pagesHtml;
+        }
+      }
     }
   };
   window.ActivityLogger = ActivityLogger;

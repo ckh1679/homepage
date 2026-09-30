@@ -527,6 +527,53 @@ ul { list-style: none; }
   color: var(--text-muted);
 }
 
+/* ── Activity Pagination ── */
+.activity-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.activity-pagination .btn-act-page {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.activity-pagination .btn-act-page:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.activity-pagination .btn-act-page.active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #38bdf8;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+}
+
+.activity-pagination .btn-act-page:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 /* ── Chart Placeholder ── */
 .chart-placeholder {
   height: 300px;
