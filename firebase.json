@@ -1,0 +1,15 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "**/.*",
+      "**/node_modules/**",
+      "homepage_chat_history.*",
+      "*.xlsx",
+      "export_history.js",
+      "AGENTS.md"
+    ]
+  }
+}
