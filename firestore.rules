@@ -1,0 +1,16 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 프린터모아 전용 실시간 동기화 컬렉션 (만료일 없이 항상 작동)
+    match /system_data/{document} {
+      allow read, write: if true;
+    }
+
+    // 허가되지 않은 다른 컬렉션은 모두 차단 (보안 방어)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

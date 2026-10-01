@@ -4,6 +4,7 @@
     "ignore": [
       "firebase.json",
       ".firebaserc",
+      "firestore.rules",
       "**/.*",
       "**/node_modules/**",
       "homepage_chat_history.*",
@@ -11,5 +12,8 @@
       "export_history.js",
       "AGENTS.md"
     ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
   }
 }
