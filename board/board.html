@@ -37,7 +37,7 @@
           </div>
           <div class="auth-nav-area">
             <!-- 대시보드 진입 버튼 (특정 구글 이메일 로그인 시만 표시) -->
-            <a href="../dashboard/index.html" id="dashboardAccessBtn" title="관리자 대시보드">
+            <a href="../dashboard/index.html" id="dashboardAccessBtn" title="관리자 대시보드" style="display:none;">
               <i class="fa fa-tachometer-alt"></i> OP Board
             </a>
             <span class="header-user-name" id="headerUserName" style="display:none"></span>
@@ -156,7 +156,7 @@
       const googleShortcut = document.getElementById('headerGoogleShortcut');
       const tabRequest = document.getElementById('tabRequest');
 
-      if (Auth.isDashboardAdmin() && dashBtn) dashBtn.style.display = 'inline-flex';
+      if (dashBtn) dashBtn.style.display = Auth.isDashboardAdmin() ? "inline-flex" : "none";
       if (!Auth.isLoggedIn() && googleShortcut) googleShortcut.style.display = 'inline-flex';
 
       // 관리자일 때만 전화상담신청 게시판 탭 노출

@@ -594,7 +594,7 @@
             <a href="tel:01059223650" class="number">010-5922-3650</a>
           </div>
           <div class="auth-nav-area">
-            <a href="../dashboard/index.html" id="dashboardAccessBtn" title="관리자 대시보드">
+            <a href="../dashboard/index.html" id="dashboardAccessBtn" title="관리자 대시보드" style="display:none;">
               <i class="fa fa-tachometer-alt"></i> OP Board
             </a>
             <span class="header-user-name" id="headerUserName" style="display:none"></span>
@@ -659,7 +659,7 @@
       // 대시보드 버튼 및 구글 로그인 단축 버튼
       const dashBtn = document.getElementById('dashboardAccessBtn');
       const googleShortcut = document.getElementById('headerGoogleShortcut');
-      if (Auth.isDashboardAdmin() && dashBtn) dashBtn.style.display = 'inline-flex';
+      if (dashBtn) dashBtn.style.display = Auth.isDashboardAdmin() ? "inline-flex" : "none";
       if (!Auth.isLoggedIn() && googleShortcut) googleShortcut.style.display = 'inline-flex';
 
       const params = new URLSearchParams(window.location.search);

@@ -538,6 +538,12 @@ const Auth = (() => {
     const registerLink = document.getElementById('headerRegisterLink');
     const logoutBtn = document.getElementById('headerLogoutBtn');
     const userNameEl = document.getElementById('headerUserName');
+    const dashBtn = document.getElementById('dashboardAccessBtn');
+
+    // OP Board 관리자 버튼: 오직 관리자 계정 로그인 시에만 노출
+    if (dashBtn) {
+      dashBtn.style.display = isAdmin() ? 'inline-flex' : 'none';
+    }
 
     // 일반 회원가입 및 일반 로그인 링크는 항상 숨김 처리
     if (loginLink) loginLink.style.display = 'none';
