@@ -476,27 +476,6 @@ styleSheet.textContent = `
     background-size: cover;
     background-position: center;
   }
-
-  /* 히어로 슬라이드 장식 프린터 이모지 */
-  .hero-slide-decorator {
-    position: absolute;
-    right: 8%;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 1;
-  }
-
-  .hero-printer-icon {
-    font-size: 180px;
-    opacity: 0.3;
-    animation: floatPrinter 3s ease-in-out infinite;
-    filter: drop-shadow(0 20px 40px rgba(0,0,0,0.3));
-  }
-
-  @keyframes floatPrinter {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
-  }
 `;
 document.head.appendChild(styleSheet);
 
