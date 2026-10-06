@@ -6961,33 +6961,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     init() {
       // 초기 기본 샘플 데이터 (비어있을 경우 현실적인 샘플 등록)
+      // 초기 기본 데이터 (npg-88, npg-71, npg-67 전 시리즈 복원 데이터셋)
       if (!localStorage.getItem(this.STORAGE_KEY)) {
-        const today = ClientManager.getTodayStr ? ClientManager.getTodayStr() : new Date().toISOString().split('T')[0];
         const initialRecords = [
-          {
-            id: 'sup_' + Date.now() + '_1',
-            type: 'in',
-            itemName: '삼성 CLT-K504S 블랙 토너',
-            supplier: '현대오피스',
-            price: 38000,
-            quantity: 5,
-            totalAmount: 190000,
-            date: today,
-            memo: '정기 입고'
-          },
-          {
-            id: 'sup_' + Date.now() + '_2',
-            type: 'in',
-            itemName: '신도 D410 드럼 유닛',
-            supplier: '본사 물류센터',
-            price: 75000,
-            quantity: 3,
-            totalAmount: 225000,
-            date: today,
-            memo: '부품 확보'
-          }
+          { id: 'sup_1790751023001', type: 'in', itemName: 'NPG-88 토너 K (검정) 재생', supplier: '전국 OA', targetType: 'supplier', price: 45000, quantity: 3, totalAmount: 135000, date: '2026-09-30', memo: 'NPG-88 검정 정기 입고' },
+          { id: 'sup_1790751023002', type: 'in', itemName: 'NPG-88 토너 C (파랑) 재생', supplier: '전국 OA', targetType: 'supplier', price: 45000, quantity: 2, totalAmount: 90000, date: '2026-09-30', memo: 'NPG-88 파랑 정기 입고' },
+          { id: 'sup_1790751023003', type: 'in', itemName: 'NPG-88 토너 M (빨강) 재생', supplier: '전국 OA', targetType: 'supplier', price: 45000, quantity: 2, totalAmount: 90000, date: '2026-09-30', memo: 'NPG-88 빨강 정기 입고' },
+          { id: 'sup_1790751023004', type: 'in', itemName: 'NPG-88 토너 Y (노랑) 재생', supplier: '전국 OA', targetType: 'supplier', price: 45000, quantity: 2, totalAmount: 90000, date: '2026-09-30', memo: 'NPG-88 노랑 정기 입고' },
+          { id: 'sup_1790837423001', type: 'in', itemName: 'NPG-71 토너 K (검정) 재생', supplier: '잉크콜', targetType: 'supplier', price: 38000, quantity: 3, totalAmount: 114000, date: '2026-10-01', memo: 'NPG-71 검정 입고' },
+          { id: 'sup_1790837423002', type: 'in', itemName: 'NPG-71 토너 C (파랑) 재생', supplier: '잉크콜', targetType: 'supplier', price: 38000, quantity: 2, totalAmount: 76000, date: '2026-10-01', memo: 'NPG-71 파랑 입고' },
+          { id: 'sup_1790837423003', type: 'in', itemName: 'NPG-71 토너 M (빨강) 재생', supplier: '잉크콜', targetType: 'supplier', price: 38000, quantity: 2, totalAmount: 76000, date: '2026-10-01', memo: 'NPG-71 빨강 입고' },
+          { id: 'sup_1790837423004', type: 'in', itemName: 'NPG-71 토너 Y (노랑) 재생', supplier: '잉크콜', targetType: 'supplier', price: 38000, quantity: 2, totalAmount: 76000, date: '2026-10-01', memo: 'NPG-71 노랑 입고' },
+          { id: 'sup_1790923823001', type: 'in', itemName: 'NPG-67 토너 K (검정) 재생', supplier: '삼일', targetType: 'supplier', price: 32000, quantity: 4, totalAmount: 128000, date: '2026-10-02', memo: 'NPG-67 검정 입고' },
+          { id: 'sup_1790923823002', type: 'in', itemName: 'NPG-67 토너 C (파랑) 재생', supplier: '삼일', targetType: 'supplier', price: 32000, quantity: 2, totalAmount: 64000, date: '2026-10-02', memo: 'NPG-67 파랑 입고' },
+          { id: 'sup_1790923823003', type: 'in', itemName: 'NPG-67 토너 M (빨강) 재생', supplier: '씨앤엠', targetType: 'supplier', price: 32000, quantity: 2, totalAmount: 64000, date: '2026-10-02', memo: 'NPG-67 빨강 입고' },
+          { id: 'sup_1790923823004', type: 'in', itemName: 'NPG-67 토너 Y (노랑) 재생', supplier: '씨앤엠', targetType: 'supplier', price: 32000, quantity: 2, totalAmount: 64000, date: '2026-10-02', memo: 'NPG-67 노랑 입고' }
         ];
-        this.saveRecords(initialRecords);
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(initialRecords));
       }
 
       // 모달 바깥 클릭 시 닫기
