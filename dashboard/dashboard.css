@@ -1960,3 +1960,321 @@ ul { list-style: none; }
 
 
 
+
+
+/* ========================================================
+   모바일 전용 반응형 대시보드 미디어 쿼리 (768px 이하 전용)
+   - PC 웹(769px 이상)의 기존 화면에는 단 1%의 영향도 주지 않습니다.
+   ======================================================== */
+@media (max-width: 768px) {
+
+  /* 0. 모바일 전체 가로 스크롤 원천 차단 */
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  .dashboard-container {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  /* 1. 사이드바 및 어두운 딤드 오버레이 */
+  aside.sidebar,
+  #sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 280px !important;
+    max-width: 80vw !important;
+    height: 100vh !important;
+    z-index: 1000 !important;
+    background: #12141c !important;
+    transform: translateX(-100%) !important;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.7) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  aside.sidebar.active,
+  #sidebar.active {
+    transform: translateX(0) !important;
+  }
+
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 999;
+  }
+
+  .sidebar-overlay.active {
+    display: block !important;
+  }
+
+  /* 2. 메인 래퍼: 모바일에서는 사이드바 마진(260px) 제거 및 전폭 채움 */
+  .main-wrapper {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+  }
+
+  /* 3. 상단 헤더: 모바일 최적화 및 찌그러짐 방지 */
+  .top-header {
+    padding: 0 12px !important;
+    height: 56px !important;
+    gap: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .header-left {
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .menu-toggle {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 18px !important;
+    flex-shrink: 0 !important;
+    border-radius: 8px !important;
+  }
+
+  .search-bar {
+    display: none !important; /* 모바일 헤더 공간 확보를 위해 검색창 숨김 */
+  }
+
+  .header-right {
+    gap: 8px !important;
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+  }
+
+  /* 클라우드 상태 태그: 모바일에서는 아이콘만 표시하여 컴팩트화 */
+  #cloudSyncStatus,
+  .cloud-sync-status,
+  .top-header .header-right div[style*="border-radius"] {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+    gap: 0 !important;
+  }
+
+  #cloudSyncText {
+    display: none !important;
+  }
+
+  /* 클라우드 올리기 버튼: 모바일에서 숨김 (헤더 넘침 방지) */
+  .top-header .header-right .btn-secondary {
+    display: none !important;
+  }
+
+  /* 알림 버튼 */
+  .top-header .icon-btn {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  /* 관리자 프로필: 텍스트 숨기고 아바타 아이콘만 표시 */
+  .user-profile {
+    padding: 2px !important;
+    gap: 0 !important;
+  }
+
+  .user-profile span,
+  .user-profile .fa-chevron-down {
+    display: none !important;
+  }
+
+  .user-profile .avatar {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 13px !important;
+  }
+
+  /* 4. 메인 콘텐츠 영역 여백 최적화 */
+  .content-area {
+    padding: 16px 12px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .page-title {
+    margin-bottom: 16px !important;
+  }
+
+  .page-title h2 {
+    font-size: 18px !important;
+  }
+
+  .page-title p {
+    font-size: 12px !important;
+  }
+
+  /* 5. 통계 카드: 2x2 단정한 2열 카드 그리드 */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .stat-card {
+    padding: 14px 12px !important;
+    border-radius: 12px !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
+  }
+
+  .stat-icon {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 16px !important;
+    border-radius: 10px !important;
+  }
+
+  .stat-title {
+    font-size: 12px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .stat-value {
+    font-size: 22px !important;
+    font-weight: 800 !important;
+  }
+
+  .stat-trend {
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    word-break: keep-all !important;
+  }
+
+  /* 6. 대시보드 홈 메인 그리드: 세로 1열 스택 */
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .panel {
+    padding: 16px 12px !important;
+    border-radius: 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .panel-header {
+    margin-bottom: 12px !important;
+  }
+
+  .panel-title {
+    font-size: 15px !important;
+  }
+
+  /* 7. 데이터 테이블: 가로 스와이프 스크롤 & 글씨 찌그러짐 원천 차단 */
+  .table-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+    display: block !important;
+  }
+
+  .data-table {
+    min-width: 540px !important; /* 좁은 모바일 화면에서도 컬럼 압축 방지 */
+    width: 100% !important;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 10px 8px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+
+  .data-table td:nth-child(3) {
+    white-space: normal !important;
+    min-width: 160px !important;
+    max-width: 240px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* 7. 최근 활동 로그 리스트 최적화 */
+  .activity-item {
+    padding: 10px 8px !important;
+    gap: 10px !important;
+  }
+
+  .activity-title {
+    font-size: 13px !important;
+  }
+
+  .activity-time {
+    font-size: 11px !important;
+  }
+
+  /* 8. 거래처 관리 등 하위 페이지 모바일 대응 */
+  .month-navigator-card {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    justify-content: space-between !important;
+    padding: 6px 10px !important;
+  }
+
+  .month-navigator-card input[type="month"] {
+    font-size: 13px !important;
+    padding: 2px 4px !important;
+  }
+
+  .action-bar,
+  .filter-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .modal-content,
+  .popup-card {
+    width: 95% !important;
+    max-width: 95% !important;
+    max-height: 90vh !important;
+    padding: 16px 12px !important;
+    border-radius: 14px !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* ==============================================
+   초소형 스마트폰 (480px 이하)
+   ============================================== */
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .top-header {
+    padding: 0 8px !important;
+  }
+}

@@ -27,8 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
       item.classList.toggle('active', item.dataset.page === pageId);
     });
 
-    if (window.innerWidth <= 768) {
-      document.getElementById('sidebar').classList.remove('active');
+    if (window.innerWidth <= 768 && window.toggleDashboardSidebar) {
+      window.toggleDashboardSidebar(false);
     }
 
     if (pageId === 'home') {
@@ -63,10 +63,24 @@ document.addEventListener('DOMContentLoaded', () => {
   // ──────────────────────────────────────────────────────
   // 2. 사이드바 토글 (모바일)
   // ──────────────────────────────────────────────────────
+    // 2. 사이드바 토글 및 오버레이 (모바일)
+  // ──────────────────────────────────────────────────────
   const menuToggle = document.getElementById('menuToggle');
   const sidebar    = document.getElementById('sidebar');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+  window.toggleDashboardSidebar = function(open) {
+    if (!sidebar) return;
+    const shouldOpen = open !== undefined ? open : !sidebar.classList.contains('active');
+    sidebar.classList.toggle('active', shouldOpen);
+    if (sidebarOverlay) sidebarOverlay.classList.toggle('active', shouldOpen);
+  };
+
   if (menuToggle && sidebar) {
-    menuToggle.addEventListener('click', () => sidebar.classList.toggle('active'));
+    menuToggle.addEventListener('click', () => window.toggleDashboardSidebar());
+  }
+  if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', () => window.toggleDashboardSidebar(false));
   }
 
   // ──────────────────────────────────────────────────────
