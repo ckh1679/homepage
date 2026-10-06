@@ -46,7 +46,7 @@
         <div class="top-phone">
           <div class="phone-info-block">
             <div class="label">상담 전화</div>
-            <span class="number">010-5922-3650</span>
+            <a href="tel:01059223650" class="number">010-5922-3650</a>
           </div>
           <div class="auth-nav-area">
             <!-- OP Board 관리자 버튼 (특정 구글 계정 전용) -->
@@ -74,8 +74,14 @@
        ============================================ -->
   <nav class="gnb" id="gnbNav">
     <div class="container">
+      <!-- 모바일 햄버거 버튼 -->
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="메뉴 열기">
+        <i class="fa fa-bars"></i>
+      </button>
+      <!-- 모바일 메뉴 오버레이 -->
+      <div class="gnb-overlay" id="gnbOverlay"></div>
       <div class="gnb-menu">
-          <ul>
+          <ul id="gnbMenuList">
             <li><a href="shop/shop.html?category=inkjet" id="navInkjet">잉크젯복합기</a></li>
             <li><a href="shop/shop.html?category=laser" id="navLaser">레이저복합기</a></li>
             <li><a href="shop/shop.html?category=doc" id="navDoc">문서세단기</a></li>
@@ -728,7 +734,9 @@
         <div class="customer-center reveal">
           <h3>고객센터</h3>
           <div class="phone">
-            <span>010-5922-3650</span>
+            <a href="tel:01059223650" style="color:inherit;text-decoration:none;">
+              <span>010-5922-3650</span>
+            </a>
           </div>
           <div class="hours">
             평일 AM 09:00 - PM 17:00<br>

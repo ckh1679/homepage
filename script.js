@@ -15,7 +15,55 @@ document.addEventListener('DOMContentLoaded', () => {
   initStickyForm();
   initGNBScroll();
   initProductHover();
+  initMobileMenu(); // 모바일 햄버거 메뉴
 });
+
+// =============================================
+// 0. 모바일 햄버거 메뉴
+// =============================================
+/**
+ * 모바일(768px 이하)에서 GNB 메뉴를 햄버거 버튼으로 열고닫는 기능
+ * - 버튼 클릭: 메뉴 열기/닫기 토글
+ * - 오버레이 클릭: 메뉴 닫기
+ * - 메뉴 항목 클릭: 페이지 이동 후 자동 닫기
+ */
+function initMobileMenu() {
+  const menuBtn  = document.getElementById('mobileMenuBtn');
+  const menuList = document.getElementById('gnbMenuList');
+  const overlay  = document.getElementById('gnbOverlay');
+
+  if (!menuBtn || !menuList) return;
+
+  // 메뉴 열기/닫기 토글
+  function toggleMenu(open) {
+    const isOpen = open !== undefined ? open : !menuList.classList.contains('open');
+    menuList.classList.toggle('open', isOpen);
+    if (overlay) overlay.classList.toggle('active', isOpen);
+    menuBtn.setAttribute('aria-label', isOpen ? '메뉴 닫기' : '메뉴 열기');
+    // 아이콘 전환 (bars ↔ times)
+    const icon = menuBtn.querySelector('i');
+    if (icon) {
+      icon.className = isOpen ? 'fa fa-times' : 'fa fa-bars';
+    }
+  }
+
+  menuBtn.addEventListener('click', () => toggleMenu());
+
+  // 오버레이 클릭 시 닫기
+  if (overlay) {
+    overlay.addEventListener('click', () => toggleMenu(false));
+  }
+
+  // 메뉴 항목 클릭 시 자동 닫기 (페이지 이동 포함)
+  menuList.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => toggleMenu(false));
+  });
+
+  // ESC 키로 닫기
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') toggleMenu(false);
+  });
+}
 
 // =============================================
 // 1. 히어로 슬라이더
