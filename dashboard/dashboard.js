@@ -7932,6 +7932,16 @@ document.addEventListener('DOMContentLoaded', () => {
   try { SettlementHistoryManager.init(); } catch (e) { console.error('SettlementHistoryManager init error:', e); }
   try { SuppliesManager.init(); } catch (e) { console.error('SuppliesManager init error:', e); }
 
+  // FirebaseDB 클라우드 데이터 수신 시 소모품 관리 실시간 리렌더링 리스너 등록
+  if (typeof FirebaseDB !== 'undefined' && typeof FirebaseDB.onUpdate === 'function') {
+    FirebaseDB.onUpdate((key) => {
+      if (key === 'pm_supplies_records' && window.SuppliesManager) {
+        window.SuppliesManager.render();
+      }
+    });
+  }
+
+
   // 모든 모듈 초기화 완료 후 대시보드 통계, 최근 상담내역, 최근 활동 로그 최종 동기화 (첫 접속 시에도 즉시 계산 반영)
   try {
     if (typeof updateGlobalDashboardStats === 'function') {
