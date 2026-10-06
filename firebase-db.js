@@ -118,7 +118,7 @@ const FirebaseDB = (() => {
     }
   }
 
-  // ── 특정 키에 대한 단일 동기화 (클라우드 vs 로컬 비교) ─
+  // ── 특정 키에 대한 단일 동기화 (클라우드 최우선 동기화) ─
   async function syncKey(key) {
     if (!db) return;
 
@@ -127,12 +127,11 @@ const FirebaseDB = (() => {
       const docSnap = await docRef.get();
       const localRaw = localStorage.getItem(key);
       const localData = localRaw ? JSON.parse(localRaw) : null;
-      const localTs = Number(localStorage.getItem(`pm_ts_${key}`) || '0');
 
       if (!docSnap.exists) {
-        // [경우 1] 클라우드에 아직 데이터가 없는 경우 (새 DB 생성 직후)
-        // 현재 PC의 로컬 데이터가 있으면 클라우드로 즉시 업로드 (최초 마이그레이션)
-        if (localData !== null) {
+        // [경우 1] 클라우드에 아직 문서 자체가 없는 극히 예외적인 경우
+        // 로컬 데이터가 실제로 유효하게 존재할 때만 최초 생성
+        if (localData !== null && ((Array.isArray(localData) && localData.length > 0) || (typeof localData === 'object' && Object.keys(localData).length > 0))) {
           const now = Date.now();
           await docRef.set({
             payload: localData,
@@ -140,34 +139,22 @@ const FirebaseDB = (() => {
             updatedBy: 'initial_pc_sync'
           });
           localStorage.setItem(`pm_ts_${key}`, String(now));
-          console.log(`[최초 마이그레이션] ${key} 로컬 데이터를 클라우드로 업로드했습니다.`);
+          console.log(`[최초 마이그레이션] ${key} 로컬 데이터를 클라우드로 생성했습니다.`);
         }
       } else {
-        // [경우 2] 클라우드에 데이터가 이미 존재하는 경우
+        // [경우 2 - 클라우드 절대 우선]: 클라우드DB가 항상 단 하나의 진실(Single Source of Truth)
+        // 브라우저 로컬 저장소의 구버전/빈 데이터가 클라우드를 덮어쓰지 못하도록
+        // 항상 클라우드 최신 데이터를 로컬로 안전하게 내려받음
         const cloudDoc = docSnap.data();
-        const cloudTs = Number(cloudDoc.updatedAt || '0');
+        if (cloudDoc && cloudDoc.payload !== undefined && cloudDoc.payload !== null) {
+          const cloudPayloadStr = JSON.stringify(cloudDoc.payload);
+          const currentLocalStr = localStorage.getItem(key);
 
-        if (localData === null) {
-          // 로컬이 비어있는 새 기기(다른 PC/모바일)인 경우 -> 클라우드에서 바로 내려받음
-          if (cloudDoc.payload !== undefined) {
-            localStorage.setItem(key, JSON.stringify(cloudDoc.payload));
-            localStorage.setItem(`pm_ts_${key}`, String(cloudTs));
+          if (currentLocalStr !== cloudPayloadStr) {
+            localStorage.setItem(key, cloudPayloadStr);
+            localStorage.setItem(`pm_ts_${key}`, String(cloudDoc.updatedAt || Date.now()));
+            console.log(`[클라우드 우선 동기화] ${key} 클라우드 최신 데이터를 로컬로 반영 완료`);
             notifyListeners(key, cloudDoc.payload);
-          }
-        } else {
-          // 양쪽에 모두 데이터가 있는 경우 타임스탬프 또는 항목 수 비교
-          if (cloudTs > localTs) {
-            // 클라우드가 더 최신이면 로컬 갱신
-            localStorage.setItem(key, JSON.stringify(cloudDoc.payload));
-            localStorage.setItem(`pm_ts_${key}`, String(cloudTs));
-            notifyListeners(key, cloudDoc.payload);
-          } else if (localTs > cloudTs) {
-            // 로컬이 더 최신이면 클라우드에 푸시
-            await docRef.set({
-              payload: localData,
-              updatedAt: localTs,
-              updatedBy: 'local_update'
-            });
           }
         }
       }
@@ -176,7 +163,7 @@ const FirebaseDB = (() => {
     }
   }
 
-  // ── 데이터 저장 메서드 (로컬 + 클라우드 동시 기록) ────
+  // ── 데이터 저장 메서드 (사용자가 화면에서 직접 등록/수정/삭제 시만 호출) ────
   function save(key, data) {
     // 1. 로컬스토리지 즉시 저장 (UI 지연 방지)
     try {
@@ -214,13 +201,13 @@ const FirebaseDB = (() => {
       }
     }
 
-    updateStatusUI('syncing', '전체 데이터 동기화 중...');
+    updateStatusUI('syncing', '클라우드 데이터 동기화 중...');
     try {
       for (const key of SYNC_KEYS) {
         await syncKey(key);
       }
       updateStatusUI('online', '클라우드 동기화 완료');
-      showToast('☁️ 클라우드 최신 데이터와 동기화되었습니다!');
+      showToast('☁️ 클라우드의 최신 데이터를 안전하게 내려받았습니다!');
       
       // 대시보드 모든 모듈 화면 자동 새로고침
       triggerAllDashboardRenders();
@@ -231,17 +218,37 @@ const FirebaseDB = (() => {
     }
   }
 
-  // ── 현재 PC의 로컬 데이터를 클라우드로 강제 업로드 ───
+  // ── 현재 PC의 로컬 데이터를 클라우드로 강제 업로드 (안전 검증 포함) ───
   async function forceUploadLocal() {
     if (!db) return;
-    if (!confirm('현재 브라우저에 있는 업체정보 및 데이터를 클라우드로 즉시 업로드하시겠습니까?')) return;
+    if (!confirm('현재 브라우저에 있는 데이터를 클라우드로 업로드하시겠습니까?\n(빈 데이터나 불완전한 데이터는 클라우드 덮어쓰기가 자동 차단됩니다)')) return;
 
-    updateStatusUI('syncing', '클라우드로 업로드 중...');
+    updateStatusUI('syncing', '클라우드로 업로드 검증 중...');
     try {
+      let uploadedCount = 0;
+      let blockedCount = 0;
+
       for (const key of SYNC_KEYS) {
         const localRaw = localStorage.getItem(key);
-        if (localRaw) {
-          const localData = JSON.parse(localRaw);
+        if (!localRaw) continue;
+
+        const localData = JSON.parse(localRaw);
+        const isArray = Array.isArray(localData);
+        const isEmpty = isArray ? localData.length === 0 : (typeof localData === 'object' && Object.keys(localData).length === 0);
+
+        // 클라우드 기존 데이터 확인 (안전 가드: 클라우드에 이미 데이터가 있는데 로컬이 비어있으면 덮어쓰기 절대 차단)
+        const cloudSnap = await db.collection('system_data').doc(key).get();
+        if (cloudSnap.exists) {
+          const cloudData = cloudSnap.data()?.payload;
+          const cloudIsArray = Array.isArray(cloudData);
+          if (cloudIsArray && cloudData.length > 0 && isEmpty) {
+            console.warn(`[덮어쓰기 차단] ${key}: 클라우드에 ${cloudData.length}건이 존재하여 빈 로컬 데이터로의 덮어쓰기를 차단했습니다.`);
+            blockedCount++;
+            continue;
+          }
+        }
+
+        if (!isEmpty) {
           const now = Date.now();
           await db.collection('system_data').doc(key).set({
             payload: localData,
@@ -249,10 +256,16 @@ const FirebaseDB = (() => {
             updatedBy: 'force_upload'
           });
           localStorage.setItem(`pm_ts_${key}`, String(now));
+          uploadedCount++;
         }
       }
+
       updateStatusUI('online', '클라우드 동기화 완료');
-      showToast('✅ 모든 로컬 데이터가 클라우드에 성공적으로 업로드되었습니다!');
+      if (blockedCount > 0) {
+        showToast(`✅ 업로드 완료 (빈 데이터 ${blockedCount}건은 클라우드 보호를 위해 덮어쓰기 차단됨)`);
+      } else {
+        showToast('✅ 로컬 데이터가 클라우드에 안전하게 업로드되었습니다!');
+      }
     } catch (e) {
       console.error('강제 업로드 실패:', e);
       showToast('업로드 중 오류가 발생했습니다.');
