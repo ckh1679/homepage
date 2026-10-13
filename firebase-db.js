@@ -57,6 +57,7 @@ const FirebaseDB = (() => {
         firebase.initializeApp(firebaseConfig);
       }
       db = firebase.firestore();
+      window._pmFirestoreDb = db; // 방문자 추적 모듈(visitor-tracker.js)에서도 사용 가능하도록 전역 노출
       isInitialized = true;
       console.log('Firebase Firestore 연결 성공:', firebaseConfig.projectId);
       updateStatusUI('syncing', '클라우드 동기화 중...');

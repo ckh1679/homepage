@@ -1,4 +1,4 @@
-// 범용 HTML 이스케이프 유틸리티 (전역 스코프)
+﻿// 범용 HTML 이스케이프 유틸리티 (전역 스코프)
 function escapeHtml(str) {
   if (!str) return '';
   return str.toString()
@@ -52,6 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (pageId === 'consult') {
       window.renderConsultPage && window.renderConsultPage();
+    }
+    if (pageId === 'analytics' && window.AnalyticsManager) {
+      window.AnalyticsManager.render();
     }
   }
   window.showPage = showPage;
@@ -7957,3 +7960,338 @@ document.addEventListener('DOMContentLoaded', () => {
 }); // END DOMContentLoaded
 
 
+
+// ============================================================
+// AnalyticsManager - 방문자 통계 대시보드 모듈
+// Firebase Firestore의 pm_visitor_stats 문서를 읽어
+// 차트·통계 카드·유입경로·기기유형·인기페이지를 렌더링합니다.
+// ============================================================
+const AnalyticsManager = (() => {
+  const COLLECTION = 'system_data';
+  const DOC_STATS  = 'pm_visitor_stats';
+
+  let chartInstance = null; // Chart.js 인스턴스 (재생성 시 destroy 필요)
+
+  // ── 오늘 날짜 키 (YYYY-MM-DD) ────────────────────────────
+  function getDateKey(offset = 0) {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  // ── 최근 N일 날짜 키 배열 반환 ──────────────────────────
+  function getRecentDays(n) {
+    return Array.from({ length: n }, (_, i) => getDateKey(-(n - 1 - i)));
+  }
+
+  // ── Firestore에서 통계 데이터 로드 ─────────────────────
+  async function loadStats() {
+    const db = window._pmFirestoreDb;
+    if (!db) {
+      showError('Firebase가 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+      return null;
+    }
+    try {
+      const snap = await db.collection(COLLECTION).doc(DOC_STATS).get();
+      return snap.exists ? (snap.data() || {}) : {};
+    } catch (err) {
+      console.error('[AnalyticsManager] 데이터 로드 실패:', err);
+      showError('데이터를 불러오는 중 오류가 발생했습니다: ' + err.message);
+      return null;
+    }
+  }
+
+  // ── 에러 메시지 표시 ────────────────────────────────────
+  function showError(msg) {
+    ['analytics-today', 'analytics-week', 'analytics-mobile', 'analytics-yesterday'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '—';
+    });
+    ['analytics-today-trend', 'analytics-week-trend', 'analytics-mobile-trend', 'analytics-yesterday-trend'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = msg;
+    });
+  }
+
+  // ── 숫자 퍼센트 포맷 ────────────────────────────────────
+  function pct(part, total) {
+    if (!total) return '0%';
+    return Math.round((part / total) * 100) + '%';
+  }
+
+  // ── 바(bar) 형태 진행률 HTML 생성 ──────────────────────
+  function makeBar(label, count, total, color) {
+    const p = total ? Math.round((count / total) * 100) : 0;
+    return `
+      <div style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:12.5px;font-weight:600;color:var(--text-primary);">${label}</span>
+          <span style="font-size:12px;color:var(--text-muted);">${count.toLocaleString()}명 (${p}%)</span>
+        </div>
+        <div style="height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${p}%;background:${color};border-radius:3px;transition:width 0.6s ease;"></div>
+        </div>
+      </div>`;
+  }
+
+  // ── 통계 카드 업데이트 ──────────────────────────────────
+  function updateCards(stats) {
+    const today = getDateKey(0);
+    const yesterday = getDateKey(-1);
+
+    const todayData = stats[today] || {};
+    const yData     = stats[yesterday] || {};
+
+    // 이번 주 합산 (월요일~오늘)
+    const weekDays = getRecentDays(7);
+    const weekTotal = weekDays.reduce((sum, k) => sum + (stats[k]?.total || 0), 0);
+
+    // 모바일 비율 (최근 7일 합산 기준)
+    const weekMobile  = weekDays.reduce((sum, k) => sum + (stats[k]?.mobile || 0), 0);
+    const weekDesktop = weekDays.reduce((sum, k) => sum + (stats[k]?.desktop || 0), 0);
+    const weekTablet  = weekDays.reduce((sum, k) => sum + (stats[k]?.tablet || 0), 0);
+    const weekAllDevice = weekMobile + weekDesktop + weekTablet;
+    const mobileRatio = weekAllDevice ? Math.round((weekMobile / weekAllDevice) * 100) : 0;
+
+    // 오늘 vs 어제 비교
+    const todayTotal = todayData.total || 0;
+    const yTotal     = yData.total || 0;
+    const diff = todayTotal - yTotal;
+    const diffText = diff > 0 ? `▲ ${diff}명 (어제 대비)` : diff < 0 ? `▼ ${Math.abs(diff)}명 (어제 대비)` : '어제와 동일';
+    const diffClass = diff > 0 ? 'trend-up' : diff < 0 ? 'trend-down' : '';
+
+    // DOM 업데이트
+    const setValue = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const setHTML  = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+
+    setValue('analytics-today', todayTotal.toLocaleString());
+    setHTML('analytics-today-trend', `<span class="${diffClass}">${diffText}</span>`);
+
+    setValue('analytics-week', weekTotal.toLocaleString());
+    setHTML('analytics-week-trend', `<i class="fa fa-calendar-week"></i> 최근 7일 합계`);
+
+    setValue('analytics-mobile', mobileRatio + '%');
+    setHTML('analytics-mobile-trend', `PC ${pct(weekDesktop, weekAllDevice)} · 태블릿 ${pct(weekTablet, weekAllDevice)}`);
+
+    setValue('analytics-yesterday', yTotal.toLocaleString());
+    setHTML('analytics-yesterday-trend', `<i class="fa fa-history"></i> ${yesterday}`);
+
+    // 마지막 업데이트 시각
+    const lastUpdate = document.getElementById('analytics-last-updated');
+    if (lastUpdate) lastUpdate.textContent = `업데이트: ${new Date().toLocaleTimeString('ko-KR')}`;
+  }
+
+  // ── 방문자 추이 차트 (Chart.js) ───────────────────────
+  function renderChart(stats) {
+    const days = getRecentDays(7);
+    const labels = days.map(d => {
+      const [, m, day] = d.split('-');
+      return `${parseInt(m)}/${parseInt(day)}`;
+    });
+    const data = days.map(d => stats[d]?.total || 0);
+
+    const canvas = document.getElementById('analytics-chart-visits');
+    const emptyEl = document.getElementById('analytics-chart-empty');
+    if (!canvas) return;
+
+    const hasData = data.some(v => v > 0);
+
+    if (!hasData) {
+      canvas.style.display = 'none';
+      if (emptyEl) { emptyEl.style.display = 'flex'; }
+      return;
+    }
+
+    canvas.style.display = 'block';
+    if (emptyEl) emptyEl.style.display = 'none';
+
+    // 기존 차트 인스턴스 제거 (메모리 누수 방지)
+    if (chartInstance) {
+      chartInstance.destroy();
+      chartInstance = null;
+    }
+
+    chartInstance = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: '방문자 수',
+          data,
+          fill: true,
+          backgroundColor: 'rgba(14,165,233,0.12)',
+          borderColor: 'rgba(14,165,233,0.9)',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#0ea5e9',
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(15,23,42,0.95)',
+            titleColor: '#e2e8f0',
+            bodyColor: '#94a3b8',
+            borderColor: 'rgba(14,165,233,0.4)',
+            borderWidth: 1,
+            callbacks: {
+              label: ctx => `방문자: ${ctx.parsed.y.toLocaleString()}명`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.06)' },
+            ticks: { color: '#64748b', font: { size: 11 } }
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(255,255,255,0.06)' },
+            ticks: {
+              color: '#64748b',
+              font: { size: 11 },
+              stepSize: 1,
+              callback: v => v.toLocaleString()
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ── 유입 경로 패널 렌더링 ───────────────────────────────
+  function renderReferrer(stats) {
+    const days = getRecentDays(7);
+    const agg = { direct: 0, search: 0, social: 0, referral: 0 };
+
+    days.forEach(d => {
+      const s = stats[d] || {};
+      agg.direct   += s.direct   || 0;
+      agg.search   += s.search   || 0;
+      agg.social   += s.social   || 0;
+      agg.referral += s.referral || 0;
+    });
+
+    const total = Object.values(agg).reduce((a, b) => a + b, 0);
+    const panel = document.getElementById('analytics-referrer-panel');
+    if (!panel) return;
+
+    if (!total) {
+      panel.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">데이터 없음</div>';
+      return;
+    }
+
+    panel.innerHTML = `
+      ${makeBar('🔗 직접 방문', agg.direct, total, '#0ea5e9')}
+      ${makeBar('🔍 검색 유입', agg.search, total, '#10b981')}
+      ${makeBar('📱 소셜 미디어', agg.social, total, '#8b5cf6')}
+      ${makeBar('🌐 외부 링크', agg.referral, total, '#f59e0b')}
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);font-size:11.5px;color:var(--text-muted);">
+        최근 7일 기준 · 총 ${total.toLocaleString()}명
+      </div>`;
+  }
+
+  // ── 기기 유형 패널 렌더링 ───────────────────────────────
+  function renderDevice(stats) {
+    const days = getRecentDays(7);
+    const agg = { desktop: 0, mobile: 0, tablet: 0 };
+
+    days.forEach(d => {
+      const s = stats[d] || {};
+      agg.desktop += s.desktop || 0;
+      agg.mobile  += s.mobile  || 0;
+      agg.tablet  += s.tablet  || 0;
+    });
+
+    const total = agg.desktop + agg.mobile + agg.tablet;
+    const panel = document.getElementById('analytics-device-panel');
+    if (!panel) return;
+
+    if (!total) {
+      panel.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">데이터 없음</div>';
+      return;
+    }
+
+    panel.innerHTML = `
+      ${makeBar('🖥️ PC / 데스크탑', agg.desktop, total, '#0ea5e9')}
+      ${makeBar('📱 모바일', agg.mobile, total, '#10b981')}
+      ${makeBar('📟 태블릿', agg.tablet, total, '#f59e0b')}
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);font-size:11.5px;color:var(--text-muted);">
+        최근 7일 기준 · 총 ${total.toLocaleString()}명
+      </div>`;
+  }
+
+  // ── 인기 페이지 Top5 패널 렌더링 ────────────────────────
+  function renderPages(stats) {
+    const days = getRecentDays(7);
+    const pageAgg = {};
+
+    days.forEach(d => {
+      const pages = stats[d]?.pages || {};
+      Object.entries(pages).forEach(([page, cnt]) => {
+        pageAgg[page] = (pageAgg[page] || 0) + cnt;
+      });
+    });
+
+    const panel = document.getElementById('analytics-pages-panel');
+    if (!panel) return;
+
+    const sorted = Object.entries(pageAgg).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const maxCnt = sorted[0]?.[1] || 1;
+
+    if (!sorted.length) {
+      panel.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">데이터 없음</div>';
+      return;
+    }
+
+    const colors = ['#0ea5e9', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444'];
+    const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+
+    panel.innerHTML = sorted.map(([page, cnt], i) => `
+      <div style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+          <span style="font-size:12.5px;font-weight:600;color:var(--text-primary);">${medals[i]} ${page}</span>
+          <span style="font-size:12px;color:var(--text-muted);">${cnt.toLocaleString()}회</span>
+        </div>
+        <div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${Math.round((cnt/maxCnt)*100)}%;background:${colors[i]};border-radius:3px;transition:width 0.6s ease;"></div>
+        </div>
+      </div>`).join('') +
+      `<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);font-size:11.5px;color:var(--text-muted);">
+        최근 7일 기준
+      </div>`;
+  }
+
+  // ── 메인 렌더 함수 ─────────────────────────────────────
+  async function render() {
+    // 로딩 스피너 표시
+    ['analytics-today', 'analytics-week', 'analytics-mobile', 'analytics-yesterday'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<i class="fa fa-spinner fa-spin" style="font-size:18px;"></i>';
+    });
+
+    const stats = await loadStats();
+    if (!stats) return;
+
+    updateCards(stats);
+    renderChart(stats);
+    renderReferrer(stats);
+    renderDevice(stats);
+    renderPages(stats);
+  }
+
+  // ── 새로고침 ────────────────────────────────────────────
+  function reload() {
+    render();
+  }
+
+  // ── 공개 API ────────────────────────────────────────────
+  return { render, reload };
+})();
+
+window.AnalyticsManager = AnalyticsManager;
