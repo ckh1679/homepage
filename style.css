@@ -1,10 +1,33 @@
-﻿/* =============================================
+/* =============================================
    프린터모아 홈페이지 - 전체 스타일시트
    참고: printpro.kr
    ============================================= */
 
 /* ---- 폰트 임포트 ---- */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+
+/* ---- 폰트 정의 (TDTD서울로체 로컬 시스템 폰트 및 웹폰트 지원) ---- */
+@font-face {
+  font-family: 'TDTD서울로체';
+  src: local('TDTD서울로체'), local('TDTD SeoulRo'), local('TDTDSeoulRo'), local('TDTD Seoul Ro'),
+       url('fonts/TDTDSeoulRo.woff2') format('woff2'),
+       url('fonts/TDTDSeoulRo.woff') format('woff'),
+       url('fonts/TDTDSeoulRo.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'TDTDSeoulRo';
+  src: local('TDTDSeoulRo'), local('TDTD서울로체'), local('TDTD SeoulRo'),
+       url('fonts/TDTDSeoulRo.woff2') format('woff2'),
+       url('fonts/TDTDSeoulRo.woff') format('woff'),
+       url('fonts/TDTDSeoulRo.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* ---- CSS 변수 (디자인 토큰) ---- */
 :root {
@@ -28,7 +51,7 @@
   --radius-md: 10px;
   --radius-lg: 16px;
   --transition: all 0.25s ease;
-  --font: 'Noto Sans KR', sans-serif;
+  --font: 'TDTD서울로체', 'TDTDSeoulRo', 'TDTD SeoulRo', 'Noto Sans KR', sans-serif;
   --container-width: 1024px;
 }
 
@@ -136,14 +159,30 @@ button {
 .logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.logo-img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+  border-radius: 6px;
+  transition: transform 0.2s ease;
+}
+
+.logo:hover .logo-img {
+  transform: scale(1.05);
 }
 
 .logo-text {
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 900;
   color: var(--primary);
   letter-spacing: -1px;
+  line-height: 1;
 }
 
 .logo-text span {
@@ -2323,7 +2362,13 @@ body {
   .logo {
     display: flex;
     align-items: center;
+    gap: 8px;
     text-decoration: none;
+  }
+
+  .logo-img {
+    width: 34px;
+    height: 34px;
   }
 
   .logo-text {
