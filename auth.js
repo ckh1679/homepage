@@ -7,6 +7,22 @@
  *   sessionStorage['pm_session'] = JSON 객체 (현재 로그인 유저)
  */
 
+// ── HTML 이스케이프 유틸리티 (전역 폴백) ───────────────────
+// dashboard.js가 로드되지 않는 login.html 등 페이지에서도
+// escapeHtml을 사용할 수 있도록 auth.js 내에 자체 정의합니다.
+// dashboard.js가 먼저 로드되어 이미 정의된 경우에는 덮어쓰지 않습니다.
+if (typeof window.escapeHtml !== 'function') {
+  window.escapeHtml = function escapeHtml(str) {
+    if (!str) return '';
+    return str.toString()
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+}
+
 const Auth = (() => {
   const USERS_KEY = 'pm_users';
   const SESSION_KEY = 'pm_session';
