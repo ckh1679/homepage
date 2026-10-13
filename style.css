@@ -141,8 +141,10 @@ button {
 }
 
 .logo-img {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
+  max-width: 42px;
+  max-height: 42px;
   object-fit: contain;
   display: block;
   flex-shrink: 0;
@@ -151,10 +153,13 @@ button {
 }
 
 .logo-text-img {
-  height: 38px;
+  height: 34px;
+  max-height: 34px;
   width: auto;
+  max-width: 180px;
   object-fit: contain;
   display: block;
+  flex-shrink: 0;
   transition: transform 0.2s ease;
 }
 
@@ -2333,12 +2338,17 @@ body {
 @media (max-width: 768px) {
 
   /* ---- 상단 탑바: 로고 좌측, 간편로그인 우측 ---- */
+  .top-bar {
+    padding: 8px 0 !important;
+  }
+
   .top-bar .inner {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 16px;
-    gap: 12px;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 0 12px !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
   }
 
   .top-search {
@@ -2346,24 +2356,30 @@ body {
   }
 
   .logo {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    text-decoration: none !important;
+    flex-shrink: 1 !important;
+    min-width: 0 !important;
   }
 
   .logo-img {
-    width: 32px;
-    height: 32px;
+    width: 28px !important;
+    height: 28px !important;
+    max-width: 28px !important;
+    max-height: 28px !important;
+    flex-shrink: 0 !important;
+    object-fit: contain !important;
   }
 
   .logo-text-img {
-    height: 26px;
-  }
-
-  .logo-text {
-    font-size: 24px;
-    letter-spacing: -0.5px;
+    height: 22px !important;
+    max-height: 22px !important;
+    width: auto !important;
+    max-width: 120px !important;
+    flex-shrink: 1 !important;
+    object-fit: contain !important;
   }
 
   .top-phone {
