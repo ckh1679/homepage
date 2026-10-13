@@ -150,8 +150,17 @@ button {
   transition: transform 0.2s ease;
 }
 
-.logo:hover .logo-img {
-  transform: scale(1.05);
+.logo-text-img {
+  height: 38px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  transition: transform 0.2s ease;
+}
+
+.logo:hover .logo-img,
+.logo:hover .logo-text-img {
+  transform: scale(1.03);
 }
 
 .logo-text {
@@ -2344,8 +2353,12 @@ body {
   }
 
   .logo-img {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .logo-text-img {
+    height: 26px;
   }
 
   .logo-text {
