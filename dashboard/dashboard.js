@@ -7067,6 +7067,12 @@ document.addEventListener('DOMContentLoaded', () => {
           if (e.target === modal) this.closeModal();
         });
       }
+      const adjModal = document.getElementById('suppliesAdjustModal');
+      if (adjModal) {
+        adjModal.addEventListener('click', (e) => {
+          if (e.target === adjModal) this.closeAdjustModal();
+        });
+      }
 
       this.updateSortDropdownOptions();
       this.render();
@@ -7857,12 +7863,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
       tbody.innerHTML = filtered.map(r => {
         const isIn = r.type === 'in';
-        const typeBadge = isIn
-          ? '<span class="badge-in"><i class="fa fa-arrow-down"></i> 입고</span>'
-          : '<span class="badge-out"><i class="fa fa-arrow-up"></i> 출고</span>';
+        const isAdj = r.targetType === 'adjustment' || r.isAdjustment;
+
+        let typeBadge = '';
+        if (isAdj) {
+          typeBadge = isIn
+            ? '<span class="badge-in" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-weight:700;"><i class="fa fa-plus-circle"></i> 입고 (조정)</span>'
+            : '<span class="badge-out" style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);font-weight:700;"><i class="fa fa-minus-circle"></i> 출고 (조정)</span>';
+        } else {
+          typeBadge = isIn
+            ? '<span class="badge-in"><i class="fa fa-arrow-down"></i> 입고</span>'
+            : '<span class="badge-out"><i class="fa fa-arrow-up"></i> 출고</span>';
+        }
 
         let targetHtml = '';
-        if (isIn) {
+        if (isAdj) {
+          targetHtml = '<span style="color:#a78bfa;font-weight:700;font-size:13px;"><i class="fa fa-sliders" style="margin-right:4px;"></i>재고 실사 조정</span>';
+        } else if (isIn) {
           targetHtml = `<span style="color:#38bdf8;font-weight:600;font-size:13px;"><i class="fa fa-truck" style="margin-right:4px;"></i>${escapeHtml(r.supplier || '-')}</span>`;
         } else {
           if (r.targetType === 'client') {
@@ -7873,8 +7890,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let linkHtml = '';
-        if (!isIn && r.targetType === 'client') {
+        if (isAdj) {
+          linkHtml = '<span class="badge-sync-ok" style="background:rgba(167,139,250,0.15);color:#c084fc;border:1px solid rgba(167,139,250,0.3);"><i class="fa fa-sliders"></i> 실사조정</span>';
+        } else if (!isIn && r.targetType === 'client') {
           linkHtml = '<span class="badge-sync-ok" title="렌탈수익성분석 원가/비용 설정에 자동 추가됨"><i class="fa fa-check-circle"></i> 렌탈수익성 연동</span>';
+        }
+
+        // 수량 표시: 조정 건 및 일반 건에 대해 증가(+) / 감소(-) 명확히 표기
+        let qtyHtml = '';
+        const qtyNum = Number(r.quantity) || 0;
+        if (isAdj) {
+          if (isIn) {
+            qtyHtml = `<span style="font-weight:800;color:#10b981;font-size:14px;background:rgba(16,185,129,0.12);padding:2px 8px;border-radius:12px;display:inline-block;white-space:nowrap;">+${qtyNum.toLocaleString()}개</span>`;
+          } else {
+            qtyHtml = `<span style="font-weight:800;color:#f87171;font-size:14px;background:rgba(239,68,68,0.12);padding:2px 8px;border-radius:12px;display:inline-block;white-space:nowrap;">-${qtyNum.toLocaleString()}개</span>`;
+          }
+        } else {
+          if (isIn) {
+            qtyHtml = `<span style="font-weight:700;color:#38bdf8;font-size:14px;white-space:nowrap;">+${qtyNum.toLocaleString()}개</span>`;
+          } else {
+            qtyHtml = `<span style="font-weight:700;color:#fbbf24;font-size:14px;white-space:nowrap;">-${qtyNum.toLocaleString()}개</span>`;
+          }
         }
 
         const memoText = r.memo ? escapeHtml(r.memo) : '-';
@@ -7886,7 +7922,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <td style="font-weight:700;color:#f8fafc;font-size:14px;">${escapeHtml(r.itemName)}</td>
             <td>${targetHtml}</td>
             <td style="text-align:right;color:#e2e8f0;font-size:13.5px;font-weight:500;white-space:nowrap;">${Number(r.price).toLocaleString()}원</td>
-            <td style="text-align:center;font-weight:700;color:#38bdf8;font-size:14px;white-space:nowrap;">${Number(r.quantity).toLocaleString()}개</td>
+            <td style="text-align:center;white-space:nowrap;">${qtyHtml}</td>
             <td style="text-align:right;font-weight:700;color:#60a5fa;font-size:14px;white-space:nowrap;">${Number(r.totalAmount).toLocaleString()}원</td>
             <td style="font-size:12.5px;color:#94a3b8;">
               <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -7977,7 +8013,7 @@ document.addEventListener('DOMContentLoaded', () => {
       this.updateSortIcons();
 
       if (items.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:32px;">등록된 품목 재고 정보가 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:32px;">등록된 품목 재고 정보가 없습니다.</td></tr>';
         return;
       }
 
@@ -7991,15 +8027,29 @@ document.addEventListener('DOMContentLoaded', () => {
           statusBadge = '<span class="badge-stock-ok">재고 여유</span>';
         }
 
+        const safeItemName = escapeHtml(it.name);
+
         return `
           <tr>
             <td style="text-align:center;color:#94a3b8;">${idx + 1}</td>
-            <td style="font-weight:700;color:#f8fafc;font-size:14px;">${escapeHtml(it.name)}</td>
+            <td style="font-weight:700;color:#f8fafc;font-size:14px;">${safeItemName}</td>
             <td style="text-align:right;color:#38bdf8;font-weight:600;font-size:13.5px;white-space:nowrap;">${it.totalIn.toLocaleString()}개</td>
             <td style="text-align:right;color:#fbbf24;font-weight:600;font-size:13.5px;white-space:nowrap;">${it.totalOut.toLocaleString()}개</td>
-            <td style="text-align:right;font-size:15px;font-weight:800;color:${it.stock <= 0 ? '#f87171' : '#f8fafc'};white-space:nowrap;">${it.stock.toLocaleString()}개</td>
+            <td style="text-align:right;white-space:nowrap;">
+              <div style="display:inline-flex;align-items:center;justify-content:flex-end;gap:5px;">
+                <span style="font-size:15px;font-weight:800;color:${it.stock <= 0 ? '#f87171' : '#f8fafc'};">${it.stock.toLocaleString()}개</span>
+                <button type="button" class="btn-action-icon" title="현재고 수량 직접 수정" onclick="SuppliesManager.openAdjustModal('${safeItemName}', ${it.stock})" style="color:#38bdf8;background:none;border:none;cursor:pointer;font-size:12px;padding:2px 4px;opacity:0.75;transition:opacity 0.2s;">
+                  <i class="fa fa-pen"></i>
+                </button>
+              </div>
+            </td>
             <td style="text-align:center;white-space:nowrap;">${statusBadge}</td>
             <td style="text-align:center;color:#cbd5e1;font-size:13px;white-space:nowrap;">${it.lastDate || '-'}</td>
+            <td style="text-align:center;white-space:nowrap;">
+              <button type="button" class="btn-primary-sm" style="padding:4px 10px;font-size:12px;background:rgba(56,189,248,0.12);color:#38bdf8;border:1px solid rgba(56,189,248,0.25);border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s;" onclick="SuppliesManager.openAdjustModal('${safeItemName}', ${it.stock})" title="현재고 수량 직접 수정 (실사 조정)">
+                <i class="fa fa-sliders"></i> 수량 수정
+              </button>
+            </td>
           </tr>
         `;
       }).join('');
@@ -8212,6 +8262,155 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         this.exportInventoryCSV();
       }
+    },
+
+    // ============================================
+    // 품목별 현재고 수량 직접 수정 (재고 실사 조정) 모달 기능
+    // ============================================
+    openAdjustModal(itemName, currentStock) {
+      const modal = document.getElementById('suppliesAdjustModal');
+      if (!modal) return;
+
+      const nameDisplay = document.getElementById('supAdjItemNameDisplay');
+      const nameInput = document.getElementById('supAdjItemName');
+      const curStockDisplay = document.getElementById('supAdjCurStockDisplay');
+      const curStockInput = document.getElementById('supAdjCurStock');
+      const newStockInput = document.getElementById('supAdjNewStock');
+      const dateInput = document.getElementById('supAdjDate');
+      const memoInput = document.getElementById('supAdjMemo');
+
+      const stockNum = Number(currentStock) || 0;
+
+      if (nameDisplay) nameDisplay.textContent = itemName;
+      if (nameInput) nameInput.value = itemName;
+      if (curStockDisplay) curStockDisplay.textContent = `${stockNum.toLocaleString()}개`;
+      if (curStockInput) curStockInput.value = stockNum;
+      if (newStockInput) newStockInput.value = stockNum;
+
+      if (dateInput) {
+        dateInput.value = ClientManager.getTodayStr ? ClientManager.getTodayStr() : new Date().toISOString().split('T')[0];
+      }
+      if (memoInput) {
+        memoInput.value = '재고 실사 수량 조정';
+      }
+
+      this.calcAdjustDiff();
+
+      modal.style.display = 'flex';
+
+      if (newStockInput) {
+        setTimeout(() => {
+          newStockInput.focus();
+          newStockInput.select();
+        }, 80);
+      }
+    },
+
+    closeAdjustModal() {
+      const modal = document.getElementById('suppliesAdjustModal');
+      if (modal) modal.style.display = 'none';
+    },
+
+    calcAdjustDiff() {
+      const curStock = Number(document.getElementById('supAdjCurStock')?.value) || 0;
+      const newStockVal = document.getElementById('supAdjNewStock')?.value;
+      const diffBanner = document.getElementById('supAdjDiffBanner');
+      const diffText = document.getElementById('supAdjDiffText');
+      if (!diffBanner || !diffText) return;
+
+      if (newStockVal === '' || isNaN(Number(newStockVal))) {
+        diffBanner.style.background = '#f8fafc';
+        diffBanner.style.color = '#64748b';
+        diffBanner.style.borderColor = '#cbd5e1';
+        diffText.innerHTML = '수량을 입력하세요';
+        return;
+      }
+
+      const newStock = Number(newStockVal);
+      const diff = newStock - curStock;
+
+      if (diff > 0) {
+        diffBanner.style.background = 'rgba(16,185,129,0.12)';
+        diffBanner.style.color = '#10b981';
+        diffBanner.style.borderColor = '#6ee7b7';
+        diffText.innerHTML = `<span style="color:#059669;font-weight:700;">입고 추가:</span> <strong style="font-size:15px;color:#10b981;">+${diff.toLocaleString()}개</strong> (재고 증가 반영)`;
+      } else if (diff < 0) {
+        diffBanner.style.background = 'rgba(239,68,68,0.12)';
+        diffBanner.style.color = '#ef4444';
+        diffBanner.style.borderColor = '#fca5a5';
+        diffText.innerHTML = `<span style="color:#dc2626;font-weight:700;">출고 차감:</span> <strong style="font-size:15px;color:#ef4444;">${diff.toLocaleString()}개</strong> (재고 감소 반영)`;
+      } else {
+        diffBanner.style.background = '#f1f5f9';
+        diffBanner.style.color = '#64748b';
+        diffBanner.style.borderColor = '#cbd5e1';
+        diffText.innerHTML = '변동 없음 (현재 전산 재고와 동일)';
+      }
+    },
+
+    saveStockAdjustment(event) {
+      if (event) event.preventDefault();
+
+      const itemName = document.getElementById('supAdjItemName')?.value;
+      const curStock = Number(document.getElementById('supAdjCurStock')?.value) || 0;
+      const newStockVal = document.getElementById('supAdjNewStock')?.value;
+      const adjDate = document.getElementById('supAdjDate')?.value || new Date().toISOString().split('T')[0];
+      const adjMemo = (document.getElementById('supAdjMemo')?.value || '').trim();
+
+      if (!itemName) {
+        alert('품목 정보가 올바르지 않습니다.');
+        return;
+      }
+
+      if (newStockVal === '' || isNaN(Number(newStockVal)) || Number(newStockVal) < 0) {
+        alert('0 이상의 올바른 수량을 입력해주세요.');
+        return;
+      }
+
+      const newStock = Number(newStockVal);
+      const diff = newStock - curStock;
+
+      if (diff === 0) {
+        alert('현재 전산 재고와 동일한 수량입니다. 변경할 수량을 입력해주세요.');
+        return;
+      }
+
+      const records = this.getRecords();
+      // 기존 거래 내역 중 마지막 단가 조회 (참고용, 실사조정이므로 합계금액은 0원 처리)
+      const lastRec = records.find(r => r.itemName === itemName && Number(r.price) > 0);
+      const refPrice = lastRec ? Number(lastRec.price) : 0;
+
+      const isIn = diff > 0;
+      const changeQty = Math.abs(diff);
+      const signText = diff > 0 ? `+${diff}` : `${diff}`;
+
+      const memoText = adjMemo
+        ? `${adjMemo} (${signText}개 실사조정, ${curStock}개→${newStock}개)`
+        : `재고 실사 수량 조정 (${signText}개, ${curStock}개→${newStock}개)`;
+
+      const newRecord = {
+        id: 'sup_adj_' + Date.now(),
+        type: isIn ? 'in' : 'out',
+        itemName: itemName,
+        supplier: isIn ? '재고 실사 조정' : '',
+        clientName: isIn ? '' : '재고 실사 조정',
+        targetType: 'adjustment',
+        price: refPrice,
+        quantity: changeQty,
+        totalAmount: 0, // 실사 수량 조율이므로 지출/수익 총액 왜곡 방지 0원
+        date: adjDate,
+        memo: memoText,
+        isAdjustment: true,
+        diff: diff,
+        beforeStock: curStock,
+        afterStock: newStock
+      };
+
+      records.unshift(newRecord);
+      this.saveRecords(records);
+      this.closeAdjustModal();
+      this.render();
+
+      alert(`[재고 수정 완료]\n'${itemName}' 품목의 현재고가 ${curStock}개에서 ${newStock}개로 정상 수정되었습니다.\n\n[입·출고 전체내역]에 '${signText}개' 내역이 등록되었습니다.`);
     }
   };
 
