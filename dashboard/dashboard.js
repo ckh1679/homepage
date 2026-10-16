@@ -6895,22 +6895,35 @@ document.addEventListener('DOMContentLoaded', () => {
     STORAGE_KEY: 'pm_supplies_records',
     currentTab: 'records', // 'records' | 'inventory'
     currentType: 'in',     // 'in' | 'out'
-    sortField: 'date',     // 'date' | 'item' | 'target' | 'price' | 'total'
-    sortOrder: 'desc',     // 'asc' | 'desc'
+    sortField: 'date',     // 입·출고 내역 호환용
+    sortOrder: 'desc',     // 입·출고 내역 호환용
+    recordsSortField: 'date',
+    recordsSortOrder: 'desc',
+    invSortField: 'item',
+    invSortOrder: 'asc',
 
-    // 헤더 클릭 시 정렬 토글
+    // 헤더 클릭 시 정렬 토글 (탭별 분리 동작)
     setSort(field) {
-      if (this.sortField === field) {
-        this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+      if (this.currentTab === 'records') {
+        if (this.recordsSortField === field) {
+          this.recordsSortOrder = this.recordsSortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.recordsSortField = field;
+          // 품목명, 거래처는 가나다순(asc) 기본, 일자/가격은 내림차순(desc) 기본
+          this.recordsSortOrder = (field === 'item' || field === 'target') ? 'asc' : 'desc';
+        }
+        this.sortField = this.recordsSortField;
+        this.sortOrder = this.recordsSortOrder;
       } else {
-        this.sortField = field;
-        // 품목명, 거래처는 가나다순(asc) 기본, 일자/가격은 내림차순(desc) 기본
-        this.sortOrder = (field === 'item' || field === 'target') ? 'asc' : 'desc';
+        if (this.invSortField === field) {
+          this.invSortOrder = this.invSortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.invSortField = field;
+          // 품목명, 상태는 가나다순(asc) 기본, 수량/날짜는 많은순/최신순(desc) 기본
+          this.invSortOrder = (field === 'item' || field === 'status') ? 'asc' : 'desc';
+        }
       }
-      const select = document.getElementById('supSortSelect');
-      if (select) {
-        select.value = `${this.sortField}_${this.sortOrder}`;
-      }
+      this.updateSortDropdownOptions();
       this.render();
     },
 
@@ -6918,27 +6931,91 @@ document.addEventListener('DOMContentLoaded', () => {
     onSortSelectChange(value) {
       if (!value) return;
       const parts = value.split('_');
-      this.sortField = parts[0] || 'date';
-      this.sortOrder = parts[1] || 'desc';
+      const field = parts[0];
+      const order = parts[1] || 'asc';
+      if (this.currentTab === 'records') {
+        this.recordsSortField = field || 'date';
+        this.recordsSortOrder = order || 'desc';
+        this.sortField = this.recordsSortField;
+        this.sortOrder = this.recordsSortOrder;
+      } else {
+        this.invSortField = field || 'item';
+        this.invSortOrder = order || 'asc';
+      }
       this.render();
+    },
+
+    // 현재 탭에 맞는 정렬 드롭다운 옵션 구성 및 선택값 동기화
+    updateSortDropdownOptions() {
+      const select = document.getElementById('supSortSelect');
+      if (!select) return;
+
+      if (this.currentTab === 'records') {
+        select.innerHTML = `
+          <option value="date_desc">📅 일자 최신순</option>
+          <option value="date_asc">📅 일자 오래된순</option>
+          <option value="item_asc">🏷️ 품목명 (가나다순)</option>
+          <option value="item_desc">🏷️ 품목명 (역순)</option>
+          <option value="target_asc">🏢 거래처/입고처 (가나다순)</option>
+          <option value="target_desc">🏢 거래처/입고처 (역순)</option>
+          <option value="price_desc">💰 가격(단가) 높은순</option>
+          <option value="price_asc">💰 가격(단가) 낮은순</option>
+          <option value="total_desc">💳 합계금액 높은순</option>
+          <option value="total_asc">💳 합계금액 낮은순</option>
+        `;
+        select.value = `${this.recordsSortField}_${this.recordsSortOrder}`;
+      } else {
+        select.innerHTML = `
+          <option value="item_asc">🏷️ 품목명 (가나다순)</option>
+          <option value="item_desc">🏷️ 품목명 (역순)</option>
+          <option value="stock_desc">📦 현재고 많은순</option>
+          <option value="stock_asc">⚠️ 현재고 적은순 (부족순)</option>
+          <option value="in_desc">📥 총 입고 많은순</option>
+          <option value="in_asc">📥 총 입고 적은순</option>
+          <option value="out_desc">📤 총 출고 많은순</option>
+          <option value="out_asc">📤 총 출고 적은순</option>
+          <option value="status_asc">🚨 재고상태 (부족순)</option>
+          <option value="status_desc">✅ 재고상태 (여유순)</option>
+          <option value="date_desc">📅 최근 거래일 최신순</option>
+          <option value="date_asc">📅 최근 거래일 오래된순</option>
+        `;
+        select.value = `${this.invSortField}_${this.invSortOrder}`;
+      }
     },
 
     // 테이블 헤더 정렬 아이콘 업데이트
     updateSortIcons() {
-      const fields = ['date', 'item', 'target', 'price', 'total'];
-      fields.forEach(f => {
-        const th = document.getElementById(`supTh_${f}`);
-        const iconSpan = document.getElementById(`supSortIcon_${f}`);
-        if (!th || !iconSpan) return;
+      if (this.currentTab === 'records') {
+        const fields = ['date', 'item', 'target', 'price', 'total'];
+        fields.forEach(f => {
+          const th = document.getElementById(`supTh_${f}`);
+          const iconSpan = document.getElementById(`supSortIcon_${f}`);
+          if (!th || !iconSpan) return;
 
-        th.classList.remove('sorted-asc', 'sorted-desc');
-        if (this.sortField === f) {
-          th.classList.add(this.sortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
-          iconSpan.innerHTML = `<i class="fa fa-sort-${this.sortOrder === 'asc' ? 'up' : 'down'}"></i>`;
-        } else {
-          iconSpan.innerHTML = `<i class="fa fa-sort" style="color:#64748b;"></i>`;
-        }
-      });
+          th.classList.remove('sorted-asc', 'sorted-desc');
+          if (this.recordsSortField === f) {
+            th.classList.add(this.recordsSortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
+            iconSpan.innerHTML = `<i class="fa fa-sort-${this.recordsSortOrder === 'asc' ? 'up' : 'down'}"></i>`;
+          } else {
+            iconSpan.innerHTML = `<i class="fa fa-sort" style="color:#64748b;"></i>`;
+          }
+        });
+      } else {
+        const fields = ['item', 'in', 'out', 'stock', 'status', 'date'];
+        fields.forEach(f => {
+          const th = document.getElementById(`supInvTh_${f}`);
+          const iconSpan = document.getElementById(`supInvSortIcon_${f}`);
+          if (!th || !iconSpan) return;
+
+          th.classList.remove('sorted-asc', 'sorted-desc');
+          if (this.invSortField === f) {
+            th.classList.add(this.invSortOrder === 'asc' ? 'sorted-asc' : 'sorted-desc');
+            iconSpan.innerHTML = `<i class="fa fa-sort-${this.invSortOrder === 'asc' ? 'up' : 'down'}"></i>`;
+          } else {
+            iconSpan.innerHTML = `<i class="fa fa-sort" style="color:#64748b;"></i>`;
+          }
+        });
+      }
     },
 
     getRecords() {
@@ -6991,6 +7068,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
 
+      this.updateSortDropdownOptions();
       this.render();
     },
 
@@ -7000,18 +7078,28 @@ document.addEventListener('DOMContentLoaded', () => {
       const tabInv = document.getElementById('supTabInventory');
       const viewRec = document.getElementById('supViewRecords');
       const viewInv = document.getElementById('supViewInventory');
+      const filterType = document.getElementById('supFilterType');
+      const filterPeriod = document.getElementById('supFilterPeriod');
+      const searchInput = document.getElementById('supSearchInput');
 
       if (tab === 'records') {
         if (tabRec) tabRec.className = 'btn-tab active';
         if (tabInv) tabInv.className = 'btn-tab';
         if (viewRec) viewRec.style.display = 'block';
         if (viewInv) viewInv.style.display = 'none';
+        if (filterType) filterType.style.display = '';
+        if (filterPeriod) filterPeriod.style.display = '';
+        if (searchInput) searchInput.placeholder = '품목명, 거래처/입고처 검색';
       } else {
         if (tabRec) tabRec.className = 'btn-tab';
         if (tabInv) tabInv.className = 'btn-tab active';
         if (viewRec) viewRec.style.display = 'none';
         if (viewInv) viewInv.style.display = 'block';
+        if (filterType) filterType.style.display = 'none';
+        if (filterPeriod) filterPeriod.style.display = 'none';
+        if (searchInput) searchInput.placeholder = '품목명 검색';
       }
+      this.updateSortDropdownOptions();
       this.render();
     },
 
@@ -7715,36 +7803,39 @@ document.addEventListener('DOMContentLoaded', () => {
       // [정렬 적용]
       filtered.sort((a, b) => {
         let cmp = 0;
-        if (this.sortField === 'date') {
+        const sortField = this.recordsSortField || this.sortField;
+        const sortOrder = this.recordsSortOrder || this.sortOrder;
+
+        if (sortField === 'date') {
           const dateA = a.date || '';
           const dateB = b.date || '';
           cmp = dateA.localeCompare(dateB);
-        } else if (this.sortField === 'item') {
+        } else if (sortField === 'item') {
           const itemA = (a.itemName || '').trim();
           const itemB = (b.itemName || '').trim();
           cmp = itemA.localeCompare(itemB, 'ko');
-        } else if (this.sortField === 'target') {
+        } else if (sortField === 'target') {
           const targetA = (a.type === 'in' ? (a.supplier || '') : (a.clientName || '')).trim();
           const targetB = (b.type === 'in' ? (b.supplier || '') : (b.clientName || '')).trim();
           cmp = targetA.localeCompare(targetB, 'ko');
-        } else if (this.sortField === 'price') {
+        } else if (sortField === 'price') {
           const priceA = Number(a.price) || 0;
           const priceB = Number(b.price) || 0;
           cmp = priceA - priceB;
-        } else if (this.sortField === 'total') {
+        } else if (sortField === 'total') {
           const totalA = Number(a.totalAmount) || 0;
           const totalB = Number(b.totalAmount) || 0;
           cmp = totalA - totalB;
         }
 
         // 값이 동일한 경우 날짜 최신순으로 2차 정렬
-        if (cmp === 0 && this.sortField !== 'date') {
+        if (cmp === 0 && sortField !== 'date') {
           const dateA = a.date || '';
           const dateB = b.date || '';
           return dateB.localeCompare(dateA);
         }
 
-        return this.sortOrder === 'asc' ? cmp : -cmp;
+        return sortOrder === 'asc' ? cmp : -cmp;
       });
 
       // 헤더 정렬 아이콘 갱신
@@ -7843,6 +7934,38 @@ document.addEventListener('DOMContentLoaded', () => {
       if (keyword) {
         items = items.filter(it => it.name.toLowerCase().includes(keyword));
       }
+
+      // [품목별 재고 현황 정렬 적용]
+      items.sort((a, b) => {
+        let cmp = 0;
+        const field = this.invSortField || 'item';
+        if (field === 'item') {
+          cmp = (a.name || '').trim().localeCompare((b.name || '').trim(), 'ko');
+        } else if (field === 'in') {
+          cmp = (a.totalIn || 0) - (b.totalIn || 0);
+        } else if (field === 'out') {
+          cmp = (a.totalOut || 0) - (b.totalOut || 0);
+        } else if (field === 'stock') {
+          cmp = (a.stock || 0) - (b.stock || 0);
+        } else if (field === 'status') {
+          // 재고 부족순(오름차순) or 여유순(내림차순)
+          cmp = (a.stock || 0) - (b.stock || 0);
+        } else if (field === 'date') {
+          const dateA = a.lastDate || '';
+          const dateB = b.lastDate || '';
+          cmp = dateA.localeCompare(dateB);
+        }
+
+        // 1차 정렬 값이 같을 때 품목명 가나다순으로 2차 정렬
+        if (cmp === 0 && field !== 'item') {
+          return (a.name || '').trim().localeCompare((b.name || '').trim(), 'ko');
+        }
+
+        return this.invSortOrder === 'asc' ? cmp : -cmp;
+      });
+
+      // 헤더 정렬 아이콘 및 클래스 동기화
+      this.updateSortIcons();
 
       if (items.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:32px;">등록된 품목 재고 정보가 없습니다.</td></tr>';

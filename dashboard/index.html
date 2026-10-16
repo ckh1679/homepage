@@ -525,12 +525,24 @@
                 <thead>
                   <tr>
                     <th style="width:50px;text-align:center;">#</th>
-                    <th>품목명</th>
-                    <th style="width:130px;text-align:right;">총 입고 수량</th>
-                    <th style="width:130px;text-align:right;">총 출고 수량</th>
-                    <th style="width:140px;text-align:right;">현재고 수량</th>
-                    <th style="width:130px;text-align:center;">재고 상태</th>
-                    <th style="width:130px;text-align:center;">최근 거래일</th>
+                    <th id="supInvTh_item" class="th-sortable" onclick="SuppliesManager.setSort('item')" title="클릭하여 품목별 정렬">
+                      품목명 <span id="supInvSortIcon_item" class="sort-icon"><i class="fa fa-sort"></i></span>
+                    </th>
+                    <th id="supInvTh_in" class="th-sortable" style="width:130px;text-align:right;white-space:nowrap;" onclick="SuppliesManager.setSort('in')" title="클릭하여 총 입고 수량 정렬">
+                      총 입고 수량 <span id="supInvSortIcon_in" class="sort-icon"><i class="fa fa-sort"></i></span>
+                    </th>
+                    <th id="supInvTh_out" class="th-sortable" style="width:130px;text-align:right;white-space:nowrap;" onclick="SuppliesManager.setSort('out')" title="클릭하여 총 출고 수량 정렬">
+                      총 출고 수량 <span id="supInvSortIcon_out" class="sort-icon"><i class="fa fa-sort"></i></span>
+                    </th>
+                    <th id="supInvTh_stock" class="th-sortable" style="width:140px;text-align:right;white-space:nowrap;" onclick="SuppliesManager.setSort('stock')" title="클릭하여 현재고 수량 정렬">
+                      현재고 수량 <span id="supInvSortIcon_stock" class="sort-icon"><i class="fa fa-sort"></i></span>
+                    </th>
+                    <th id="supInvTh_status" class="th-sortable" style="width:130px;text-align:center;white-space:nowrap;" onclick="SuppliesManager.setSort('status')" title="클릭하여 재고 상태별 정렬">
+                      재고 상태 <span id="supInvSortIcon_status" class="sort-icon"><i class="fa fa-sort"></i></span>
+                    </th>
+                    <th id="supInvTh_date" class="th-sortable" style="width:130px;text-align:center;white-space:nowrap;" onclick="SuppliesManager.setSort('date')" title="클릭하여 최근 거래일별 정렬">
+                      최근 거래일 <span id="supInvSortIcon_date" class="sort-icon"><i class="fa fa-sort"></i></span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody id="supInventoryTbody">
