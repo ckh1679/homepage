@@ -7081,6 +7081,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const filterType = document.getElementById('supFilterType');
       const filterPeriod = document.getElementById('supFilterPeriod');
       const searchInput = document.getElementById('supSearchInput');
+      const exportBtn = document.getElementById('supExportBtn');
 
       if (tab === 'records') {
         if (tabRec) tabRec.className = 'btn-tab active';
@@ -7090,6 +7091,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (filterType) filterType.style.display = '';
         if (filterPeriod) filterPeriod.style.display = '';
         if (searchInput) searchInput.placeholder = '품목명, 거래처/입고처 검색';
+        if (exportBtn) {
+          exportBtn.innerHTML = '<i class="fa fa-file-excel" style="color:#10b981;margin-right:4px;"></i> 엑셀 다운로드';
+          exportBtn.title = '입·출고 전체 내역 엑셀 파일 다운로드';
+        }
       } else {
         if (tabRec) tabRec.className = 'btn-tab';
         if (tabInv) tabInv.className = 'btn-tab active';
@@ -7098,6 +7103,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (filterType) filterType.style.display = 'none';
         if (filterPeriod) filterPeriod.style.display = 'none';
         if (searchInput) searchInput.placeholder = '품목명 검색';
+        if (exportBtn) {
+          exportBtn.innerHTML = '<i class="fa fa-file-excel" style="color:#10b981;margin-right:4px;"></i> 현재고 엑셀 다운로드';
+          exportBtn.title = '품목별 현재고 현황 엑셀 파일 다운로드';
+        }
       }
       this.updateSortDropdownOptions();
       this.render();
@@ -7996,15 +8005,74 @@ document.addEventListener('DOMContentLoaded', () => {
       }).join('');
     },
 
-    exportCSV() {
+    // 1. 입·출고 전체 내역 CSV 다운로드
+    exportRecordsCSV() {
       const records = this.getRecords();
       if (records.length === 0) {
         alert('다운로드할 소모품 내역이 없습니다.');
         return;
       }
 
+      const filterType = document.getElementById('supFilterType')?.value || 'ALL';
+      const filterPeriod = document.getElementById('supFilterPeriod')?.value || 'ALL';
+      const keyword = (document.getElementById('supSearchInput')?.value || '').trim().toLowerCase();
+
+      const now = new Date();
+      const curYear = now.getFullYear();
+      const curMonth = String(now.getMonth() + 1).padStart(2, '0');
+      const curYearMonth = `${curYear}-${curMonth}`;
+      const prevD = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevYearMonth = `${prevD.getFullYear()}-${String(prevD.getMonth() + 1).padStart(2, '0')}`;
+
+      let filtered = records.filter(r => {
+        if (filterType !== 'ALL' && r.type !== filterType) return false;
+        if (filterPeriod === 'THIS_MONTH') {
+          if (!r.date || !r.date.startsWith(curYearMonth)) return false;
+        } else if (filterPeriod === 'PREV_MONTH') {
+          if (!r.date || !r.date.startsWith(prevYearMonth)) return false;
+        } else if (filterPeriod === 'THIS_YEAR') {
+          if (!r.date || !r.date.startsWith(String(curYear))) return false;
+        }
+        if (keyword) {
+          const matchItem = (r.itemName || '').toLowerCase().includes(keyword);
+          const matchTarget = (r.supplier || r.clientName || '').toLowerCase().includes(keyword);
+          const matchMemo = (r.memo || '').toLowerCase().includes(keyword);
+          if (!matchItem && !matchTarget && !matchMemo) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        alert('조건에 일치하는 소모품 내역이 없습니다.');
+        return;
+      }
+
+      // 현재 정렬 기준 반영
+      const sortField = this.recordsSortField || this.sortField || 'date';
+      const sortOrder = this.recordsSortOrder || this.sortOrder || 'desc';
+      filtered.sort((a, b) => {
+        let cmp = 0;
+        if (sortField === 'date') {
+          cmp = (a.date || '').localeCompare(b.date || '');
+        } else if (sortField === 'item') {
+          cmp = (a.itemName || '').trim().localeCompare((b.itemName || '').trim(), 'ko');
+        } else if (sortField === 'target') {
+          const targetA = (a.type === 'in' ? (a.supplier || '') : (a.clientName || '')).trim();
+          const targetB = (b.type === 'in' ? (b.supplier || '') : (b.clientName || '')).trim();
+          cmp = targetA.localeCompare(targetB, 'ko');
+        } else if (sortField === 'price') {
+          cmp = (Number(a.price) || 0) - (Number(b.price) || 0);
+        } else if (sortField === 'total') {
+          cmp = (Number(a.totalAmount) || 0) - (Number(b.totalAmount) || 0);
+        }
+        if (cmp === 0 && sortField !== 'date') {
+          return (b.date || '').localeCompare(a.date || '');
+        }
+        return sortOrder === 'asc' ? cmp : -cmp;
+      });
+
       const headers = ['일자', '구분', '품목명', '거래처/입고처', '거래처구분', '단가', '수량', '합계금액', '비고'];
-      const rows = records.map(r => {
+      const rows = filtered.map(r => {
         const isIn = r.type === 'in';
         const typeStr = isIn ? '입고' : '출고';
         const target = isIn ? (r.supplier || '') : (r.clientName || '');
@@ -8031,6 +8099,119 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+    },
+
+    // 2. 품목별 현재고 현황 CSV 다운로드
+    exportInventoryCSV() {
+      const records = this.getRecords();
+      if (records.length === 0) {
+        alert('다운로드할 소모품 재고 데이터가 없습니다.');
+        return;
+      }
+
+      const keyword = (document.getElementById('supSearchInput')?.value || '').trim().toLowerCase();
+
+      // 품목별 집계
+      const itemMap = {};
+      records.forEach(r => {
+        const name = r.itemName;
+        if (!itemMap[name]) {
+          itemMap[name] = {
+            name,
+            totalIn: 0,
+            totalOut: 0,
+            stock: 0,
+            lastDate: r.date || ''
+          };
+        }
+        const qty = Number(r.quantity) || 0;
+        if (r.type === 'in') {
+          itemMap[name].totalIn += qty;
+          itemMap[name].stock += qty;
+        } else {
+          itemMap[name].totalOut += qty;
+          itemMap[name].stock -= qty;
+        }
+        if (r.date && (!itemMap[name].lastDate || r.date > itemMap[name].lastDate)) {
+          itemMap[name].lastDate = r.date;
+        }
+      });
+
+      let items = Object.values(itemMap);
+      if (keyword) {
+        items = items.filter(it => it.name.toLowerCase().includes(keyword));
+      }
+
+      if (items.length === 0) {
+        alert('조건에 일치하는 품목 재고 데이터가 없습니다.');
+        return;
+      }
+
+      // 현재 정렬 기준 반영
+      items.sort((a, b) => {
+        let cmp = 0;
+        const field = this.invSortField || 'item';
+        if (field === 'item') {
+          cmp = (a.name || '').trim().localeCompare((b.name || '').trim(), 'ko');
+        } else if (field === 'in') {
+          cmp = (a.totalIn || 0) - (b.totalIn || 0);
+        } else if (field === 'out') {
+          cmp = (a.totalOut || 0) - (b.totalOut || 0);
+        } else if (field === 'stock') {
+          cmp = (a.stock || 0) - (b.stock || 0);
+        } else if (field === 'status') {
+          cmp = (a.stock || 0) - (b.stock || 0);
+        } else if (field === 'date') {
+          const dateA = a.lastDate || '';
+          const dateB = b.lastDate || '';
+          cmp = dateA.localeCompare(dateB);
+        }
+
+        if (cmp === 0 && field !== 'item') {
+          return (a.name || '').trim().localeCompare((b.name || '').trim(), 'ko');
+        }
+
+        return this.invSortOrder === 'asc' ? cmp : -cmp;
+      });
+
+      const headers = ['No', '품목명', '총 입고 수량', '총 출고 수량', '현재고 수량', '재고 상태', '최근 거래일'];
+      const rows = items.map((it, idx) => {
+        let statusStr = '재고 여유';
+        if (it.stock <= 0) {
+          statusStr = '재고 없음';
+        } else if (it.stock <= 2) {
+          statusStr = '재고 부족';
+        }
+
+        return [
+          idx + 1,
+          `"${(it.name || '').replace(/"/g, '""')}"`,
+          it.totalIn || 0,
+          it.totalOut || 0,
+          it.stock || 0,
+          statusStr,
+          it.lastDate || '-'
+        ].join(',');
+      });
+
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `소모품_품목별_현재고현황_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    },
+
+    // 3. 현재 활성화된 탭에 따라 맞춤 엑셀 다운로드
+    exportCSV() {
+      if (this.currentTab === 'records') {
+        this.exportRecordsCSV();
+      } else {
+        this.exportInventoryCSV();
+      }
     }
   };
 
