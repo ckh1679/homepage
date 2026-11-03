@@ -3893,7 +3893,8 @@ document.addEventListener('DOMContentLoaded', () => {
           paidDate: '',
           taxStatus: 'unissued',
           taxDate: '',
-          finalBill: curBill
+          finalBill: curBill,
+          billingStatus: 'pending'
         };
       }
 
@@ -3936,7 +3937,8 @@ document.addEventListener('DOMContentLoaded', () => {
           paidDate: '',
           taxStatus: 'unissued',
           taxDate: '',
-          finalBill: curBill
+          finalBill: curBill,
+          billingStatus: 'pending'
         };
       }
 
@@ -4006,6 +4008,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (window.RentalCalendarManager) window.RentalCalendarManager.render();
     },
 
+    // 검침 수정 모달 내 당월 입금액 직접 입력 핸들러 (사용자가 수기 변경했음을 플래그로 기록)
+    onPaidAmountInput() {
+      this._meterModalUserModifiedPaid = true;
+      this.updateMeterModalPreview();
+    },
+
     // 검침 수정 모달 내 전액 완납 입력 바로가기
     fillFullPayment() {
       const finalBillEl = document.getElementById('meterFinalBill');
@@ -4019,6 +4027,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (paidDateInput && !paidDateInput.value) {
         paidDateInput.value = this.getTodayStr();
       }
+      this._meterModalUserModifiedPaid = true;
+      this._meterModalOriginalPayStatus = 'paid';
       this.updateMeterModalPreview();
     },
 
@@ -4153,18 +4163,39 @@ document.addEventListener('DOMContentLoaded', () => {
       if (monthInput) monthInput.value = month;
       if (dateInput) dateInput.value = record.readingDate || this.getTodayStr();
 
-      // 수금 및 세금계산서 정산 입력값 로드
+      // 수금 및 세금계산서 정산 입력값 로드 (기존 수금 상태 분석 및 보존)
       const totals = this.calcClientTotals(client);
       const curBill = (record.summary?.finalBill !== undefined)
         ? record.summary.finalBill
         : ((record.summary?.totalBill !== undefined) ? record.summary.totalBill : totals.totalMonthBill) || 0;
-      const st = record.settlement || {
-        paidAmount: curBill,
-        unpaidAmount: 0,
+
+      const existingSt = record.settlement || null;
+      let originalPayStatus = 'unpaid';
+      let originalPaid = 0;
+      if (existingSt) {
+        originalPaid = Number(existingSt.paidAmount) || 0;
+        const stBill = (existingSt.finalBill !== undefined) ? Number(existingSt.finalBill) : curBill;
+        if (originalPaid >= stBill && stBill > 0) {
+          originalPayStatus = 'paid';
+        } else if (originalPaid > 0) {
+          originalPayStatus = 'partial';
+        } else {
+          originalPayStatus = 'unpaid';
+        }
+      }
+
+      this._meterModalOriginalPayStatus = originalPayStatus;
+      this._meterModalOriginalPaid = originalPaid;
+      this._meterModalUserModifiedPaid = false;
+
+      const st = existingSt || {
+        paidAmount: (originalPayStatus === 'paid') ? curBill : 0,
+        unpaidAmount: (originalPayStatus === 'paid') ? 0 : curBill,
         paidDate: '',
         taxStatus: 'unissued',
         taxDate: '',
-        vatType: client.vatType || 'tax'
+        vatType: client.vatType || 'tax',
+        billingStatus: 'done'
       };
 
       // 부가세 과세 / 면세 라디오 초기화
@@ -4190,10 +4221,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const paidInput = document.getElementById('meterPaidAmount');
       const paidDateInput = document.getElementById('meterPaidDate');
+      const billingStatusInput = document.getElementById('meterBillingStatus');
       const taxStatusInput = document.getElementById('meterTaxStatus');
       const taxDateInput = document.getElementById('meterTaxDate');
-      if (paidInput) paidInput.value = (st.paidAmount !== undefined && st.paidAmount !== null) ? st.paidAmount : '';
+      if (paidInput) {
+        if (originalPayStatus === 'paid') {
+          paidInput.value = (existingSt && existingSt.paidAmount !== undefined) ? existingSt.paidAmount : curBill;
+        } else if (originalPayStatus === 'partial') {
+          paidInput.value = originalPaid;
+        } else {
+          paidInput.value = ''; // 미납 상태는 빈 칸(0원) 유지
+        }
+      }
       if (paidDateInput) paidDateInput.value = st.paidDate || '';
+      // 검침 수정 시 그 오른쪽의 청구 버튼은 기본적으로 '청구완료(done)'로 변경
+      if (billingStatusInput) billingStatusInput.value = 'done';
       if (taxStatusInput) taxStatusInput.value = st.taxStatus || 'unissued';
       if (taxDateInput) taxDateInput.value = st.taxDate || '';
 
@@ -4505,11 +4547,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const finalBillEl = document.getElementById('meterFinalBill');
       if (finalBillEl) finalBillEl.textContent = finalBill.toLocaleString() + '원';
 
-      // 당월 수금 / 미수금 실시간 계산 연동 (최종 정산금액 기준)
+      // 당월 수금 / 미수금 실시간 계산 연동 (기존 수금 상태 그대로 보존)
       const paidInput = document.getElementById('meterPaidAmount');
       const unpaidEl = document.getElementById('meterUnpaidAmount');
-      const paidAmount = Number(paidInput ? paidInput.value : 0) || 0;
-      const unpaidAmount = Math.max(0, finalBill - paidAmount);
+      let curPaid = 0;
+      if (this._meterModalUserModifiedPaid) {
+        curPaid = Number(paidInput ? paidInput.value : 0) || 0;
+      } else {
+        if (this._meterModalOriginalPayStatus === 'paid') {
+          curPaid = finalBill;
+          if (paidInput) paidInput.value = finalBill > 0 ? finalBill : '';
+        } else if (this._meterModalOriginalPayStatus === 'partial') {
+          curPaid = this._meterModalOriginalPaid || 0;
+          if (paidInput) paidInput.value = curPaid > 0 ? curPaid : '';
+        } else {
+          curPaid = 0;
+          if (paidInput) paidInput.value = '';
+        }
+      }
+      const unpaidAmount = Math.max(0, finalBill - curPaid);
       if (unpaidEl) unpaidEl.value = unpaidAmount.toLocaleString() + '원';
     },
 
@@ -4595,10 +4651,32 @@ document.addEventListener('DOMContentLoaded', () => {
       const finalVat = isFree ? 0 : Math.round(discountedSupply * 0.1); // 할인 후 부가세
       const finalBill = discountedSupply + finalVat;                    // 최종 정산금액
 
-      // 당월 수금 및 세금계산서 정산 정보 (최종 정산금액 기준)
-      const paidAmount = Number(document.getElementById('meterPaidAmount')?.value) || 0;
-      const unpaidAmount = Math.max(0, finalBill - paidAmount);
-      const paidDate = document.getElementById('meterPaidDate')?.value || '';
+      // 당월 수금 및 세금계산서 정산 정보 (기존 수금/미수금 상태 그대로 보존)
+      let paidAmount = 0;
+      let unpaidAmount = 0;
+      let paidDate = document.getElementById('meterPaidDate')?.value || '';
+
+      if (this._meterModalUserModifiedPaid) {
+        paidAmount = Number(document.getElementById('meterPaidAmount')?.value) || 0;
+        unpaidAmount = Math.max(0, finalBill - paidAmount);
+      } else {
+        // 사용자가 수금을 명시적으로 건드리지 않은 경우: 기존 상태 100% 보존
+        if (this._meterModalOriginalPayStatus === 'paid') {
+          paidAmount = finalBill;
+          unpaidAmount = 0;
+          if (!paidDate) paidDate = this.getTodayStr();
+        } else if (this._meterModalOriginalPayStatus === 'partial') {
+          paidAmount = this._meterModalOriginalPaid || 0;
+          unpaidAmount = Math.max(0, finalBill - paidAmount);
+        } else {
+          paidAmount = 0;
+          unpaidAmount = finalBill;
+          paidDate = '';
+        }
+      }
+
+      // 청구 상태: 검침내역 수정 시 청구완료('done')로 변경!
+      const billingStatus = document.getElementById('meterBillingStatus')?.value || 'done';
       const taxStatus = document.getElementById('meterTaxStatus')?.value || 'unissued';
       const taxDate = document.getElementById('meterTaxDate')?.value || '';
 
@@ -4609,6 +4687,7 @@ document.addEventListener('DOMContentLoaded', () => {
         paidDate,
         taxStatus,
         taxDate,
+        billingStatus, // 검침내용 수정 시 청구완료('done') 반영
         discountAmount,
         discountedSupply, // 할인 후 공급가액
         finalVat,         // 할인 후 VAT
