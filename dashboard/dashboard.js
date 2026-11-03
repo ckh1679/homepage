@@ -2686,7 +2686,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (paidAmount >= curBill && curBill > 0) {
           payBadge = `<span class="badge-pay paid" onclick="ClientManager.togglePayStatus('${client.id}', null, event)" title="완납 상태 (클릭 시 미납 전환)"><i class="fa fa-check"></i> 완납</span>`;
         } else if (paidAmount > 0) {
-          payBadge = `<span class="badge-pay partial" onclick="ClientManager.togglePayStatus('${client.id}', null, event)" title="입금: ${paidAmount.toLocaleString()}원 / 미수: ${unpaidAmount.toLocaleString()}원 (클릭 시 전액완납 전환)"><i class="fa fa-adjust"></i> 부분 (${unpaidAmount.toLocaleString()}원 미수)</span>`;
+          payBadge = `<span class="badge-pay partial" onclick="ClientManager.togglePayStatus('${client.id}', null, event)" title="입금: ${paidAmount.toLocaleString()}원 / 미수: ${unpaidAmount.toLocaleString()}원 (클릭 시 전액완납 전환)"><i class="fa fa-adjust"></i> 부분 (${unpaidAmount.toLocaleString()}원)</span>`;
         } else {
           payBadge = `<span class="badge-pay unpaid" onclick="ClientManager.togglePayStatus('${client.id}', null, event)" title="미납 총액: ${unpaidAmount.toLocaleString()}원 (클릭 시 전액완납 전환)"><i class="fa fa-exclamation-circle"></i> 미납 (${unpaidAmount.toLocaleString()}원)</span>`;
         }
@@ -2727,9 +2727,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <td style="text-align:right;color:#60a5fa;font-weight:700;font-size:15px;">
               ${curBill.toLocaleString()}원
             </td>
-            <td style="text-align:center;" onclick="event.stopPropagation();">${taxBadge}</td>
-            <td style="text-align:center;" onclick="event.stopPropagation();">${payBadge}</td>
-            <td style="text-align:center;" onclick="event.stopPropagation();">${billingBadge}</td>
+            <td style="text-align:center;overflow:visible;" onclick="event.stopPropagation();">${taxBadge}</td>
+            <td style="text-align:center;overflow:visible;" onclick="event.stopPropagation();">${payBadge}</td>
+            <td style="text-align:center;overflow:visible;" onclick="event.stopPropagation();">${billingBadge}</td>
             <td style="text-align:right;" title="거래처 전체 월 누적 결제금액: ${totalPaidAmount.toLocaleString()}원">
               ${totalPaidAmount > 0
                 ? `<strong style="color:#10b981;font-weight:700;">${totalPaidAmount.toLocaleString()}원</strong>`

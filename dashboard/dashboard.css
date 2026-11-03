@@ -880,7 +880,7 @@ ul { list-style: none; }
 .client-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1390px; /* thead 커럼 합계(1390px)에 맞춰 조정 */
+  min-width: 1440px; /* thead 컬럼 합계에 맞춰 수금/미수금 컬럼 확장 반영 */
   /*
     [table-layout: fixed 핵심 해결재]
     - 이 설정이 없으면 하위 서브테이블(13개 커럼)이
@@ -904,6 +904,13 @@ ul { list-style: none; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 상태 배지가 들어가는 셀(세금계산서, 수금/미수금, 청구)은 내용이 잘리지 않도록 overflow 표시 */
+.client-table td:nth-child(10),
+.client-table td:nth-child(11),
+.client-table td:nth-child(12) {
+  overflow: visible !important;
+}
+
 /* 서브테이블 row의 td는 overflow 제한 없이 wrap이 스크롤을 담당 */
 .client-table .device-subtable-row > td {
   overflow: visible !important;
@@ -1497,7 +1504,15 @@ ul { list-style: none; }
   font-weight: 700;
   white-space: nowrap;
   min-width: 95px;
+  max-width: 100%;
   box-sizing: border-box;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.badge-pay:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.95);
 }
 .badge-pay.paid {
   background: #dcfce7;
