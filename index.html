@@ -1,8 +1,22 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+  <!-- 대표 도메인(https://printermoa.co.kr) 자동 통일 리다이렉트 (www, .com -> .co.kr) -->
+  <script>
+    (function() {
+      var h = window.location.hostname;
+      var isLocal = h === 'localhost' || h === '127.0.0.1' || h.endsWith('.local');
+      var isDev = h.endsWith('.web.app') || h.endsWith('.firebaseapp.com');
+      if (!isLocal && !isDev) {
+        if (h !== 'printermoa.co.kr' || window.location.protocol !== 'https:') {
+          window.location.replace('https://printermoa.co.kr' + window.location.pathname + window.location.search + window.location.hash);
+        }
+      }
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="canonical" href="https://printermoa.co.kr/">
   <title>프린터모아 - 복합기·프린터 렌탈 전문 | 전국 설치 가능 | 010-5922-3650</title>
   <meta name="description" content="복합기, 프린터, 노트북 렌탈 전문 기업 프린터모아. 전국 모든 지역 설치 가능, 잉크젯 가격으로 레이저 렌탈. 무상 AS, 토너 무료 서비스 제공. 상담 010-5922-3650">
   <meta name="keywords" content="복합기렌탈, 프린터렌탈, 레이저복합기, 잉크젯복합기, 사무기기렌탈, 신도리코, 삼성복합기, 캐논, 프린터모아">
